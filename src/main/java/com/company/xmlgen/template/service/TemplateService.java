@@ -2,6 +2,7 @@ package com.company.xmlgen.template.service;
 
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
+import com.company.xmlgen.template.dto.response.TemplateResponse;
 
 /**
  * Template lifecycle operations.
@@ -11,4 +12,6 @@ import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 public interface TemplateService {
 
     CreateTemplateResponse create(CreateTemplateRequest request);
+
+    TemplateResponse findById(Long id);
 }

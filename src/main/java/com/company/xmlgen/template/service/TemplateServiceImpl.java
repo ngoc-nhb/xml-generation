@@ -2,8 +2,10 @@ package com.company.xmlgen.template.service;
 
 import com.company.xmlgen.authentication.domain.AuthenticatedUser;
 import com.company.xmlgen.exception.ConflictException;
+import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
+import com.company.xmlgen.template.dto.response.TemplateResponse;
 import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.exception.TemplateErrorCode;
@@ -45,6 +47,21 @@ public class TemplateServiceImpl implements TemplateService {
 
         TemplateEntity saved = templateRepository.save(template);
         return new CreateTemplateResponse(saved.getId());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public TemplateResponse findById(Long id) {
+        TemplateEntity template = templateRepository
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+
+        return new TemplateResponse(
+                template.getId(),
+                template.getCode(),
+                template.getName(),
+                template.getDescription(),
+                template.getStatus());
     }
 
     private AuthenticatedUser getCurrentUser() {

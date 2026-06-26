@@ -10,8 +10,10 @@ import static org.mockito.Mockito.when;
 
 import com.company.xmlgen.authentication.domain.AuthenticatedUser;
 import com.company.xmlgen.exception.ConflictException;
+import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
+import com.company.xmlgen.template.dto.response.TemplateResponse;
 import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.exception.TemplateErrorCode;
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import java.util.Optional;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -89,5 +92,34 @@ class TemplateServiceImplTest {
                 .isEqualTo(TemplateErrorCode.TEMPLATE_CODE_ALREADY_EXISTS);
 
         verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void findById_success() {
+        TemplateEntity entity = mock(TemplateEntity.class);
+        when(entity.getId()).thenReturn(10L);
+        when(entity.getCode()).thenReturn(TEMPLATE_CODE);
+        when(entity.getName()).thenReturn(TEMPLATE_NAME);
+        when(entity.getDescription()).thenReturn(DESCRIPTION);
+        when(entity.getStatus()).thenReturn(TemplateStatus.ACTIVE);
+        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+
+        TemplateResponse response = templateService.findById(10L);
+
+        assertThat(response.id()).isEqualTo(10L);
+        assertThat(response.templateCode()).isEqualTo(TEMPLATE_CODE);
+        assertThat(response.templateName()).isEqualTo(TEMPLATE_NAME);
+        assertThat(response.description()).isEqualTo(DESCRIPTION);
+        assertThat(response.status()).isEqualTo(TemplateStatus.ACTIVE);
+    }
+
+    @Test
+    void findById_notFound() {
+        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> templateService.findById(99L))
+                .isInstanceOf(NotFoundException.class)
+                .extracting(ex -> ((NotFoundException) ex).getErrorCode())
+                .isEqualTo(TemplateErrorCode.TEMPLATE_NOT_FOUND);
     }
 }
