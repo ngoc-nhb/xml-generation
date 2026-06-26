@@ -81,8 +81,42 @@ Prerequisites:
 export SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5433/xmlgen
 export SPRING_DATASOURCE_USERNAME=xmlgen
 export SPRING_DATASOURCE_PASSWORD=xmlgen
+export JWT_SECRET=dev-only-jwt-secret-minimum-32-characters-long
 ./gradlew bootRun
 ```
+
+### Authentication (local dev)
+
+Flyway migration order:
+
+```text
+V3 → create users table
+V4 → seed development admin user
+V5 → add templates.created_by foreign key
+```
+
+Seed admin (development only):
+
+| Setting  | Value      |
+| -------- | ---------- |
+| Username | `admin`    |
+| Password | `admin123` |
+
+Login:
+
+```bash
+curl -s -X POST http://localhost:8080/api/v1/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}'
+```
+
+The response `data` includes `userId`, `username`, `isAdmin`, and `accessToken`. Use the token on protected routes:
+
+```bash
+curl -H "Authorization: Bearer <accessToken>" http://localhost:8080/actuator/info
+```
+
+Configure `JWT_SECRET` in every non-dev environment. The secret must be at least 32 characters for HMAC-SHA256.
 
 ### Health check
 
@@ -90,7 +124,7 @@ export SPRING_DATASOURCE_PASSWORD=xmlgen
 curl http://localhost:8080/actuator/health
 ```
 
-All other endpoints return `401 Unauthorized` until the Authentication module is implemented.
+Protected endpoints require a valid JWT from `POST /api/v1/auth/login`.
 
 ## Project Layout
 

@@ -6,26 +6,29 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- * Minimal stateless security configuration for the bootstrap milestone.
+ * Stateless JWT security configuration.
  *
- * <p>Permits only the actuator health and info endpoints and OPTIONS pre-flights.
- * Every other endpoint is locked down and returns the standard API error envelope
- * via {@link RestAuthenticationEntryPoint} (401) or {@link RestAccessDeniedHandler} (403).
- * The full authentication chain (JWT filter, login endpoint, role rules) is
- * introduced in the Authentication module milestone.
+ * <p>Permits login and actuator endpoints. All other routes require authentication and return
+ * the standard API error envelope via {@link RestAuthenticationEntryPoint} (401) or
+ * {@link RestAccessDeniedHandler} (403).
  */
 @Configuration
 public class SecurityConfig {
 
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(RestAuthenticationEntryPoint authenticationEntryPoint,
-                          RestAccessDeniedHandler accessDeniedHandler) {
+    public SecurityConfig(
+            RestAuthenticationEntryPoint authenticationEntryPoint,
+            RestAccessDeniedHandler accessDeniedHandler,
+            JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
     }
 
     @Bean
@@ -38,11 +41,14 @@ public class SecurityConfig {
                 .logout(l -> l.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/login").permitAll()
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info")
+                        .permitAll()
                         .anyRequest().authenticated())
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
-                        .accessDeniedHandler(accessDeniedHandler));
+                        .accessDeniedHandler(accessDeniedHandler))
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 }
