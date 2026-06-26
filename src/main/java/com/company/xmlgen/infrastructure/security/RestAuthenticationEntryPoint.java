@@ -1,13 +1,10 @@
 package com.company.xmlgen.infrastructure.security;
 
-import com.company.xmlgen.common.api.ApiError;
-import com.company.xmlgen.common.api.ApiResponse;
 import com.company.xmlgen.exception.CommonErrorCode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.company.xmlgen.exception.ErrorResponseWriter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.stereotype.Component;
@@ -21,21 +18,19 @@ import java.io.IOException;
 @Component
 public class RestAuthenticationEntryPoint implements AuthenticationEntryPoint {
 
-    private final ObjectMapper objectMapper;
+    private final ErrorResponseWriter errorResponseWriter;
 
-    public RestAuthenticationEntryPoint(ObjectMapper objectMapper) {
-        this.objectMapper = objectMapper;
+    public RestAuthenticationEntryPoint(ErrorResponseWriter errorResponseWriter) {
+        this.errorResponseWriter = errorResponseWriter;
     }
 
     @Override
     public void commence(HttpServletRequest request,
                          HttpServletResponse response,
                          AuthenticationException authException) throws IOException {
-        response.setStatus(HttpStatus.UNAUTHORIZED.value());
-        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.setCharacterEncoding("UTF-8");
-        objectMapper.writeValue(
-                response.getOutputStream(),
-                ApiResponse.failure(ApiError.of(CommonErrorCode.UNAUTHORIZED.code())));
+        errorResponseWriter.writeError(
+                response,
+                HttpStatus.UNAUTHORIZED.value(),
+                CommonErrorCode.UNAUTHORIZED);
     }
 }

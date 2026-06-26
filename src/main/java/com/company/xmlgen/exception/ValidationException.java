@@ -1,27 +1,25 @@
 package com.company.xmlgen.exception;
 
-import com.company.xmlgen.common.api.ApiError;
-
 import java.util.List;
 
 /**
- * Thrown when input validation fails. May carry multiple field-level errors.
+ * Thrown when input validation fails. May carry multiple field-level violations.
  */
 public class ValidationException extends ApplicationException {
 
-    private final List<ApiError> errors;
+    private final List<FieldViolation> violations;
 
-    public ValidationException(List<ApiError> errors) {
+    public ValidationException(List<FieldViolation> violations) {
         super(CommonErrorCode.VALIDATION_FAILED);
-        this.errors = List.copyOf(errors);
+        this.violations = List.copyOf(violations);
     }
 
     public ValidationException(ErrorCode errorCode, String field, String message) {
         super(errorCode, field, message);
-        this.errors = List.of(ApiError.of(field, errorCode.code()));
+        this.violations = List.of(FieldViolation.of(field, errorCode.code(), message));
     }
 
-    public List<ApiError> getErrors() {
-        return errors;
+    public List<FieldViolation> getViolations() {
+        return violations;
     }
 }

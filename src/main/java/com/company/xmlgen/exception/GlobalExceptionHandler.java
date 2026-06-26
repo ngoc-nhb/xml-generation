@@ -28,10 +28,16 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private final ErrorResponseWriter errorResponseWriter;
+
+    public GlobalExceptionHandler(ErrorResponseWriter errorResponseWriter) {
+        this.errorResponseWriter = errorResponseWriter;
+    }
+
     @ExceptionHandler(ValidationException.class)
     public ResponseEntity<ApiResponse<Void>> handleValidation(ValidationException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.failure(ex.getErrors()));
+                .body(errorResponseWriter.violationsToFailure(ex.getViolations()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -40,74 +46,74 @@ public class GlobalExceptionHandler {
                 .map(fe -> ApiError.of(fe.getField(), CommonErrorCode.VALIDATION_FAILED.code()))
                 .toList();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.failure(errors));
+                .body(errorResponseWriter.failure(errors));
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnreadable(HttpMessageNotReadableException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.failure(ApiError.of(CommonErrorCode.VALIDATION_FAILED.code())));
+                .body(errorResponseWriter.failure(CommonErrorCode.VALIDATION_FAILED));
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ApiResponse<Void>> handleTooLarge(MaxUploadSizeExceededException ex) {
         return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                .body(ApiResponse.failure(ApiError.of(CommonErrorCode.PAYLOAD_TOO_LARGE.code())));
+                .body(errorResponseWriter.failure(CommonErrorCode.PAYLOAD_TOO_LARGE));
     }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(ApiResponse.failure(ApiError.of(ex.getErrorCode().code())));
+                .body(errorResponseWriter.failure(ex.getErrorCode()));
     }
 
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ApiResponse<Void>> handleConflict(ConflictException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(ApiResponse.failure(ApiError.of(ex.getErrorCode().code())));
+                .body(errorResponseWriter.failure(ex.getErrorCode()));
     }
 
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.failure(ApiError.of(ex.getErrorCode().code())));
+                .body(errorResponseWriter.failure(ex.getErrorCode()));
     }
 
     @ExceptionHandler(ForbiddenException.class)
     public ResponseEntity<ApiResponse<Void>> handleForbidden(ForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.failure(ApiError.of(ex.getErrorCode().code())));
+                .body(errorResponseWriter.failure(ex.getErrorCode()));
     }
 
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<ApiResponse<Void>> handleBusiness(BusinessException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                .body(ApiResponse.failure(ApiError.of(ex.getErrorCode().code())));
+                .body(errorResponseWriter.failure(ex.getErrorCode()));
     }
 
     @ExceptionHandler(StorageException.class)
     public ResponseEntity<ApiResponse<Void>> handleStorage(StorageException ex) {
         log.error("Storage failure", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.failure(ApiError.of(ex.getErrorCode().code())));
+                .body(errorResponseWriter.failure(ex.getErrorCode()));
     }
 
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ApiResponse<Void>> handleAuthn(AuthenticationException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(ApiResponse.failure(ApiError.of(CommonErrorCode.UNAUTHORIZED.code())));
+                .body(errorResponseWriter.failure(CommonErrorCode.UNAUTHORIZED));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(ApiResponse.failure(ApiError.of(CommonErrorCode.FORBIDDEN.code())));
+                .body(errorResponseWriter.failure(CommonErrorCode.FORBIDDEN));
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(ApiResponse.failure(ApiError.of(CommonErrorCode.INTERNAL_SERVER_ERROR.code())));
+                .body(errorResponseWriter.failure(CommonErrorCode.INTERNAL_SERVER_ERROR));
     }
 }
