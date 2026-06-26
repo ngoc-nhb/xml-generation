@@ -2,12 +2,17 @@ package com.company.xmlgen.template.controller;
 
 import com.company.xmlgen.common.api.ApiResponse;
 import com.company.xmlgen.common.api.PageResult;
+import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
+import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
 import com.company.xmlgen.template.service.TemplateService;
+import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,6 +39,11 @@ public class TemplateController {
             @RequestParam(required = false) String keyword) {
         PageResult<TemplateListResponse> result = templateService.findAll(page, pageSize, keyword);
         return ApiResponse.ok(result.content(), result.meta());
+    }
+
+    @PostMapping
+    public ApiResponse<CreateTemplateResponse> create(@Valid @RequestBody CreateTemplateRequest request) {
+        return ApiResponse.ok(templateService.create(request));
     }
 
     @GetMapping("/{id}")
