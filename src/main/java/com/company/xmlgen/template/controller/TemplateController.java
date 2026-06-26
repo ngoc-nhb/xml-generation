@@ -1,11 +1,15 @@
 package com.company.xmlgen.template.controller;
 
 import com.company.xmlgen.common.api.ApiResponse;
+import com.company.xmlgen.common.api.PageResult;
+import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
 import com.company.xmlgen.template.service.TemplateService;
+import java.util.List;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -21,6 +25,15 @@ public class TemplateController {
 
     public TemplateController(TemplateService templateService) {
         this.templateService = templateService;
+    }
+
+    @GetMapping
+    public ApiResponse<List<TemplateListResponse>> findAll(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int pageSize,
+            @RequestParam(required = false) String keyword) {
+        PageResult<TemplateListResponse> result = templateService.findAll(page, pageSize, keyword);
+        return ApiResponse.ok(result.content(), result.meta());
     }
 
     @GetMapping("/{id}")
