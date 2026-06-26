@@ -1,0 +1,524 @@
+# 08-class-diagram.md
+
+# Part 1. Overall Architecture
+
+---
+
+# 1. Purpose
+
+## Responsibility
+
+Define the implementation architecture of the XML Generation System.
+
+This document serves as the implementation blueprint for developers.
+
+Unlike previous design documents, this document focuses on software components, dependencies, and responsibilities rather than business requirements.
+
+---
+
+## Objectives
+
+* Define implementation layers.
+* Define package organization.
+* Define dependency rules.
+* Define responsibilities of each package.
+* Provide the foundation for implementation.
+
+---
+
+# 2. Architecture Style
+
+## Architecture
+
+The application adopts a layered architecture.
+
+```text
+Presentation Layer
+        │
+        ▼
+Application Layer
+        │
+        ▼
+Domain Layer
+        │
+        ▼
+Infrastructure Layer
+```
+
+Business logic shall always reside inside the Application Layer or Domain Layer.
+
+Controllers and Repositories shall never contain business logic.
+
+---
+
+## Characteristics
+
+* Layered Architecture
+* Stateless Application Services
+* Repository Pattern
+* Builder Pattern
+* Factory Pattern
+* Dependency Injection
+* Single Responsibility Principle
+
+---
+
+# 3. Package Organization
+
+## Packages
+
+```text
+controller/
+
+service/
+
+repository/
+
+entity/
+
+dto/
+
+engine/
+
+validator/
+
+builder/
+
+factory/
+
+mapper/
+
+config/
+
+exception/
+
+util/
+```
+
+---
+
+## Package Overview
+
+| Package    | Responsibility            |
+| ---------- | ------------------------- |
+| controller | HTTP endpoints            |
+| service    | Business workflows        |
+| repository | Database access           |
+| entity     | Domain entities           |
+| dto        | Request / Response models |
+| engine     | XML generation pipeline   |
+| validator  | Validation components     |
+| builder    | XML construction          |
+| factory    | Object creation           |
+| mapper     | Entity / DTO conversion   |
+| config     | Configuration             |
+| exception  | Application exceptions    |
+| util       | Shared utilities          |
+
+---
+
+# 4. Layer Responsibilities
+
+## Presentation Layer
+
+### Responsibility
+
+Handle HTTP communication.
+
+### Owns
+
+* Controllers
+* DTOs
+
+### Allowed Dependencies
+
+```text
+Controller
+
+↓
+
+Service
+```
+
+### Forbidden
+
+```text
+Controller
+
+↓
+
+Repository
+```
+
+```text
+Controller
+
+↓
+
+Database
+```
+
+---
+
+## Application Layer
+
+### Responsibility
+
+Coordinate business use cases.
+
+### Owns
+
+* Services
+
+### Responsibilities
+
+* Execute business workflows.
+* Manage transactions.
+* Invoke repositories.
+* Invoke XML Engine.
+
+### Allowed Dependencies
+
+```text
+Service
+
+↓
+
+Repository
+
+Service
+
+↓
+
+Engine
+```
+
+---
+
+## Domain Layer
+
+### Responsibility
+
+Contain business models and XML Generation Engine.
+
+### Owns
+
+* Entities
+* Validators
+* Builders
+* Runtime Models
+* XML Engine
+
+The Domain Layer shall not depend on HTTP or database implementation details.
+
+---
+
+## Infrastructure Layer
+
+### Responsibility
+
+Interact with external systems.
+
+### Owns
+
+* Repositories
+* Configurations
+* Utilities
+
+Infrastructure components shall not contain business rules.
+
+---
+
+# 5. Dependency Rules
+
+## Allowed Dependencies
+
+```text
+Controller
+        │
+        ▼
+DTO
+        │
+        ▼
+Mapper
+        │
+        ▼
+Service
+```
+
+```text
+Service
+        │
+        ▼
+Repository
+```
+
+```text
+Service
+        │
+        ▼
+Engine
+```
+
+```text
+Engine
+        │
+        ▼
+Builder
+```
+
+```text
+Engine
+        │
+        ▼
+Validator
+```
+
+```text
+Builder
+        │
+        ▼
+Factory
+```
+
+---
+
+## DTO Mapping Rule
+
+DTOs belong exclusively to the Presentation Layer.
+
+Controllers shall convert Request DTOs into Domain Models or Runtime Models before invoking the Service layer.
+
+Likewise, Services shall convert Domain Models into Response DTOs before returning data to Controllers.
+
+The Domain Layer and XML Engine shall never depend on DTO classes.
+
+Mapping responsibilities belong to dedicated Mapper components.
+
+---
+
+## Forbidden Dependencies
+
+The following dependencies are prohibited.
+
+```text
+Controller
+        ▼
+Repository
+```
+
+```text
+Repository
+        ▼
+Controller
+```
+
+```text
+Repository
+        ▼
+Engine
+```
+
+```text
+Entity
+        ▼
+Repository
+```
+
+```text
+Controller
+        ▼
+Engine
+```
+
+```text
+Engine
+        ▼
+DTO
+```
+
+```text
+Domain
+        ▼
+DTO
+```
+
+Business logic shall never bypass the Service layer.
+
+
+---
+
+# 6. Runtime Communication
+
+## Standard Flow
+
+```text
+HTTP Request
+
+↓
+
+Controller
+
+↓
+
+Service
+
+├────────────► Repository
+
+└────────────► XML Engine
+
+                    │
+
+                    ▼
+
+           Validation Engine
+
+                    │
+
+                    ▼
+
+             XML Builder
+
+                    │
+
+                    ▼
+
+          Export Processor
+
+↓
+
+Repository
+
+↓
+
+Controller
+
+↓
+
+Global Exception Handler
+
+↓
+
+HTTP Response
+```
+
+---
+
+## Exception Handling
+
+The Presentation Layer shall provide a centralized exception handling mechanism.
+
+Examples include:
+
+* Controller Advice
+* Exception Middleware
+* Global Error Handler
+
+Responsibilities include:
+
+* Catch unhandled exceptions.
+* Convert exceptions into standardized HTTP responses.
+* Return the Error Codes defined in `06-api-design.md`.
+* Prevent internal implementation details from being exposed to clients.
+
+Business components shall throw domain-specific exceptions.
+
+Presentation components are responsible for translating them into HTTP responses.
+
+---
+
+## Notes
+
+Every request shall pass through the Service layer.
+
+Controllers never communicate directly with Repositories.
+
+Repositories never invoke business workflows.
+
+XML Engine components shall not generate HTTP responses or interact with transport-specific exception handling.
+
+
+---
+
+# 7. Design Principles
+
+## Single Responsibility Principle
+
+Every component shall have exactly one primary responsibility.
+
+---
+
+## Separation of Concerns
+
+Presentation, business logic, persistence, and XML generation shall remain independent.
+
+---
+
+## Stateless Services
+
+Services shall not maintain user session state.
+
+Every request shall contain all information required for execution.
+
+---
+
+## Reusable XML Engine
+
+The XML Generation Engine shall be independent from:
+
+* HTTP
+* Database
+* UI
+
+The Engine should be reusable from:
+
+* REST APIs
+* Batch Jobs
+* CLI Tools
+
+---
+
+## Testability
+
+Business logic shall be testable without requiring:
+
+* HTTP Server
+* Database
+* UI
+
+Dependency Injection is recommended for all Services and Engine components.
+
+---
+
+# 8. Phase 1 Architecture Decisions
+
+| Topic                | Decision             |
+| -------------------- | -------------------- |
+| Architecture         | Layered Architecture |
+| Business Logic       | Service Layer        |
+| Persistence          | Repository Pattern   |
+| XML Generation       | Dedicated Engine     |
+| Validation           | Validator Components |
+| XML Construction     | Builder Pattern      |
+| Object Creation      | Factory Pattern      |
+| DTO Mapping          | Mapper Components    |
+| Dependency Injection | Supported            |
+| Event Bus            | Not Included         |
+| Background Workers   | Not Included         |
+| Microservices        | Not Included         |
+
+---
+
+# 9. Deliverables
+
+This Part defines the architectural foundation for all implementation components.
+
+The following Parts will build upon this foundation:
+
+* Part 2 – Domain Model Classes
+* Part 3 – Repository Layer
+* Part 4 – Service Layer
+* Part 5 – XML Engine Classes
+* Part 6 – Controllers & DTOs
+* Part 7 – Factory, Builder & Helper Components
+* Part 8 – Dependency Rules & UML Generation

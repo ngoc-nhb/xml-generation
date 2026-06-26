@@ -1,0 +1,537 @@
+# 03-database-design.md
+
+# 1. Overview
+
+This document defines the physical database design for the XML Generator System.
+
+The design supports:
+
+* Template-based XML generation
+* Master Data management
+* Template Guide management
+* User Draft management
+* Export History management
+* Template Pre-compilation
+* Future CSV Import
+* Future XML-to-Template conversion
+
+Recommended Database:
+
+```text
+PostgreSQL
+```
+
+Recommended JSON Type:
+
+```text
+JSONB
+```
+
+---
+
+# 2. Database Overview
+
+```text
+users
+
+templates
+template_fields
+template_guides
+
+master_data_types
+master_data_fields
+master_data_records
+
+template_master_data_mappings
+
+saved_inputs
+
+export_histories
+```
+
+---
+
+# 3. Pre-compilation Architecture
+
+The system adopts a Pre-compilation strategy.
+
+When an Admin creates or updates a Template:
+
+```text
+Template
+    +
+TemplateField
+    +
+TemplateMasterDataMapping
+
+        ↓
+
+Compiled Schema
+
+        ↓
+
+templates.compiled_schema_json
+```
+
+The XML Generation Engine shall use:
+
+```text
+compiled_schema_json
+```
+
+instead of rebuilding:
+
+```text
+Template Tree
++
+Mapping Rules
+```
+
+for every request.
+
+Benefits:
+
+* Faster XML generation
+* Reduced database queries
+* Reduced recursive processing
+* Simpler runtime logic
+
+---
+
+# 4. Table Definitions
+
+## 4.1 users
+
+Stores system users.
+
+| Column        | Type         | Constraint             |
+| ------------- | ------------ | ---------------------- |
+| id            | bigint       | PK                     |
+| username      | varchar(100) | UNIQUE, NOT NULL       |
+| password_hash | varchar(255) | NOT NULL               |
+| is_admin      | boolean      | NOT NULL DEFAULT false |
+| is_active     | boolean      | NOT NULL DEFAULT true  |
+| created_at    | timestamp    | NOT NULL               |
+| updated_at    | timestamp    | NOT NULL               |
+| deleted_at    | timestamp    | NULL                   |
+
+Indexes:
+
+```text
+UNIQUE(username)
+INDEX(is_active)
+```
+
+---
+
+## 4.2 templates
+
+Stores XML Templates.
+
+| Column               | Type         | Constraint       |
+| -------------------- | ------------ | ---------------- |
+| id                   | bigint       | PK               |
+| code                 | varchar(100) | UNIQUE, NOT NULL |
+| name                 | varchar(255) | NOT NULL         |
+| description          | text         | NULL             |
+| status               | varchar(20)  | NOT NULL         |
+| compiled_schema_json | jsonb        | NULL             |
+| created_by           | bigint       | FK -> users.id   |
+| created_at           | timestamp    | NOT NULL         |
+| updated_at           | timestamp    | NOT NULL         |
+| deleted_at           | timestamp    | NULL             |
+
+Status:
+
+```text
+ACTIVE
+INACTIVE
+```
+
+Indexes:
+
+```text
+UNIQUE(code)
+
+INDEX(status)
+```
+
+---
+
+## 4.3 template_fields
+
+Stores XML node definitions.
+
+| Column                      | Type          | Constraint               |
+| --------------------------- | ------------- | ------------------------ |
+| id                          | bigint        | PK                       |
+| template_id                 | bigint        | FK                       |
+| parent_id                   | bigint        | FK -> template_fields.id |
+| name                        | varchar(255)  | NOT NULL                 |
+| field_type                  | varchar(20)   | NOT NULL                 |
+| data_type                   | varchar(50)   | NOT NULL                 |
+| occurrence_rule             | varchar(30)   | NOT NULL                 |
+| empty_value_rule            | varchar(30)   | NOT NULL                 |
+| required_when_parent_exists | boolean       | NOT NULL                 |
+| display_order               | integer       | NOT NULL                 |
+| xml_path                    | varchar(1000) | NOT NULL                 |
+| description                 | text          | NULL                     |
+| created_at                  | timestamp     | NOT NULL                 |
+| updated_at                  | timestamp     | NOT NULL                 |
+
+Field Type:
+
+```text
+GROUP
+ELEMENT
+ATTRIBUTE
+```
+
+Data Type:
+
+```text
+STRING
+INTEGER
+LONG
+DECIMAL
+BOOLEAN
+DATE
+DATETIME
+```
+
+Occurrence Rule:
+
+```text
+ONE_OR_MORE
+ZERO_OR_MORE
+ZERO_OR_ONE
+```
+
+Empty Value Rule:
+
+```text
+REQUIRED
+OMIT_IF_EMPTY
+EMPTY_TAG_IF_EMPTY
+ZERO_IF_EMPTY
+```
+
+Indexes:
+
+```text
+INDEX(template_id)
+
+INDEX(parent_id)
+
+INDEX(template_id, display_order)
+```
+
+---
+
+## 4.4 template_guides
+
+Stores template guide documents.
+
+| Column      | Type          | Constraint     |
+| ----------- | ------------- | -------------- |
+| id          | bigint        | PK             |
+| template_id | bigint        | FK             |
+| file_name   | varchar(255)  | NOT NULL       |
+| file_path   | varchar(1000) | NOT NULL       |
+| file_type   | varchar(20)   | NOT NULL       |
+| uploaded_by | bigint        | FK -> users.id |
+| created_at  | timestamp     | NOT NULL       |
+| updated_at  | timestamp     | NOT NULL       |
+
+Supported Types:
+
+```text
+PDF
+DOCX
+XLSX
+```
+
+Indexes:
+
+```text
+INDEX(template_id)
+```
+
+---
+
+## 4.5 master_data_types
+
+Stores Master Data categories.
+
+| Column      | Type         | Constraint |
+| ----------- | ------------ | ---------- |
+| id          | bigint       | PK         |
+| code        | varchar(100) | UNIQUE     |
+| name        | varchar(255) | NOT NULL   |
+| description | text         | NULL       |
+| created_at  | timestamp    | NOT NULL   |
+| updated_at  | timestamp    | NOT NULL   |
+| deleted_at  | timestamp    | NULL       |
+
+Indexes:
+
+```text
+UNIQUE(code)
+```
+
+---
+
+## 4.6 master_data_fields
+
+Stores schema definitions for Master Data Types.
+
+| Column              | Type         | Constraint             |
+| ------------------- | ------------ | ---------------------- |
+| id                  | bigint       | PK                     |
+| master_data_type_id | bigint       | FK                     |
+| field_name          | varchar(255) | NOT NULL               |
+| data_type           | varchar(50)  | NOT NULL               |
+| is_required         | boolean      | NOT NULL DEFAULT false |
+| display_order       | integer      | NOT NULL               |
+| created_at          | timestamp    | NOT NULL               |
+| updated_at          | timestamp    | NOT NULL               |
+
+Data Type:
+
+```text
+STRING
+INTEGER
+LONG
+DECIMAL
+BOOLEAN
+DATE
+DATETIME
+```
+
+Indexes:
+
+```text
+INDEX(master_data_type_id)
+
+UNIQUE(master_data_type_id, field_name)
+```
+
+---
+
+## 4.7 master_data_records
+
+Stores actual Master Data values.
+
+| Column              | Type      | Constraint |
+| ------------------- | --------- | ---------- |
+| id                  | bigint    | PK         |
+| master_data_type_id | bigint    | FK         |
+| data_json           | jsonb     | NOT NULL   |
+| created_at          | timestamp | NOT NULL   |
+| updated_at          | timestamp | NOT NULL   |
+| deleted_at          | timestamp | NULL       |
+
+Example:
+
+```json
+{
+  "game_kind_id": 2,
+  "game_kind_name": "J1"
+}
+```
+
+Indexes:
+
+```text
+INDEX(master_data_type_id)
+
+GIN(data_json)
+```
+
+---
+
+## 4.8 template_master_data_mappings
+
+Defines mappings between Master Data Fields and Template Fields.
+
+| Column               | Type      | Constraint |
+| -------------------- | --------- | ---------- |
+| id                   | bigint    | PK         |
+| master_data_field_id | bigint    | FK         |
+| template_field_id    | bigint    | FK         |
+| created_at           | timestamp | NOT NULL   |
+| updated_at           | timestamp | NOT NULL   |
+
+Example:
+
+```text
+game_kind_id
+        ↓
+GameKindID
+
+game_kind_name
+        ↓
+GameKindName
+```
+
+Indexes:
+
+```text
+INDEX(master_data_field_id)
+
+INDEX(template_field_id)
+```
+
+---
+
+## 4.9 saved_inputs
+
+Stores user draft data.
+
+| Column                    | Type      | Constraint |
+| ------------------------- | --------- | ---------- |
+| id                        | bigint    | PK         |
+| user_id                   | bigint    | FK         |
+| template_id               | bigint    | FK         |
+| input_data_json           | jsonb     | NOT NULL   |
+| selected_master_data_json | jsonb     | NULL       |
+| created_at                | timestamp | NOT NULL   |
+| updated_at                | timestamp | NOT NULL   |
+| expired_at                | timestamp | NULL       |
+
+Constraints:
+
+```text
+UNIQUE(user_id, template_id)
+```
+
+Behavior:
+
+```text
+Existing Draft
+    ↓
+UPDATE
+
+No Draft
+    ↓
+INSERT
+```
+
+Indexes:
+
+```text
+INDEX(user_id)
+
+INDEX(template_id)
+
+INDEX(expired_at)
+
+UNIQUE(user_id, template_id)
+```
+
+---
+
+## 4.10 export_histories
+
+Stores immutable XML export history.
+
+| Column                    | Type          | Constraint |
+| ------------------------- | ------------- | ---------- |
+| id                        | bigint        | PK         |
+| user_id                   | bigint        | FK         |
+| template_id               | bigint        | FK         |
+| status                    | varchar(20)   | NOT NULL   |
+| input_data_json           | jsonb         | NOT NULL   |
+| selected_master_data_json | jsonb         | NULL       |
+| file_name                 | varchar(255)  | NULL       |
+| file_path                 | varchar(1000) | NULL       |
+| file_size                 | bigint        | NULL       |
+| error_message             | text          | NULL       |
+| generated_at              | timestamp     | NOT NULL   |
+| expired_at                | timestamp     | NULL       |
+
+Status:
+
+```text
+PROCESSING
+SUCCESS
+FAILED
+```
+
+Purpose:
+
+* Export History
+* XML Download
+* Audit Trail
+* Snapshot Recovery
+
+Indexes:
+
+```text
+INDEX(user_id)
+
+INDEX(template_id)
+
+INDEX(status)
+
+INDEX(expired_at)
+```
+
+---
+
+# 5. Performance Strategy
+
+## Database Optimization
+
+Required:
+
+```text
+B-Tree Index on all Foreign Keys
+
+GIN Index on JSONB columns
+```
+
+Examples:
+
+```sql
+CREATE INDEX idx_master_data_records_json
+ON master_data_records
+USING GIN (data_json);
+```
+
+---
+
+## Runtime Optimization
+
+The system uses:
+
+```text
+Pre-compilation
+```
+
+instead of:
+
+```text
+Recursive Template Build
+on every Generate request
+```
+
+Flow:
+
+```text
+Admin Save Template
+        ↓
+Build Compiled Schema
+        ↓
+Store compiled_schema_json
+        ↓
+Generate XML
+        ↓
+Read compiled_schema_json
+        ↓
+Merge Data
+        ↓
+Output XML
+```
+
+Redis Cache is intentionally excluded from Phase 1.
