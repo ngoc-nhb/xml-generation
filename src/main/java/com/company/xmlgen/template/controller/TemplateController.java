@@ -3,10 +3,12 @@ package com.company.xmlgen.template.controller;
 import com.company.xmlgen.common.api.ApiResponse;
 import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
+import com.company.xmlgen.template.dto.request.TemplateSchemaRequest;
 import com.company.xmlgen.template.dto.request.UpdateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
+import com.company.xmlgen.template.dto.response.TemplateSchemaResponse;
 import com.company.xmlgen.template.service.TemplateService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -64,5 +66,11 @@ public class TemplateController {
     public ApiResponse<Void> delete(@PathVariable Long id) {
         templateService.delete(id);
         return ApiResponse.ok();
+    }
+
+    @PutMapping("/{id}/schema")
+    public ApiResponse<TemplateSchemaResponse> updateSchema(
+            @PathVariable Long id, @Valid @RequestBody TemplateSchemaRequest request) {
+        return ApiResponse.ok(templateService.updateSchema(id, request));
     }
 }

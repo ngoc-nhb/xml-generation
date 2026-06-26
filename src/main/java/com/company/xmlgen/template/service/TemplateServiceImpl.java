@@ -6,14 +6,17 @@ import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.ConflictException;
 import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
+import com.company.xmlgen.template.dto.request.TemplateSchemaRequest;
 import com.company.xmlgen.template.dto.request.UpdateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
+import com.company.xmlgen.template.dto.response.TemplateSchemaResponse;
 import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.exception.TemplateErrorCode;
 import com.company.xmlgen.template.repository.TemplateRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -36,9 +39,11 @@ public class TemplateServiceImpl implements TemplateService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final TemplateRepository templateRepository;
+    private final ObjectMapper objectMapper;
 
-    public TemplateServiceImpl(TemplateRepository templateRepository) {
+    public TemplateServiceImpl(TemplateRepository templateRepository, ObjectMapper objectMapper) {
         this.templateRepository = templateRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -46,7 +51,7 @@ public class TemplateServiceImpl implements TemplateService {
     public CreateTemplateResponse create(CreateTemplateRequest request) {
         AuthenticatedUser currentUser = getCurrentUser();
 
-        if (templateRepository.existsByCode(request.templateCode())) {
+        if (templateRepository.findByCode(request.templateCode()).isPresent()) {
             throw new ConflictException(TemplateErrorCode.TEMPLATE_CODE_ALREADY_EXISTS);
         }
 
@@ -87,6 +92,21 @@ public class TemplateServiceImpl implements TemplateService {
                 .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
 
         templateRepository.delete(template);
+        templateRepository.flush();
+    }
+
+    @Override
+    @Transactional
+    public TemplateSchemaResponse updateSchema(Long id, TemplateSchemaRequest request) {
+        TemplateEntity template = templateRepository
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+
+        TemplateSchemaResponse updatedSchema = new TemplateSchemaResponse(
+                request.version() + 1, request.fields(), request.mappings());
+
+        template.setCompiledSchemaJson(objectMapper.valueToTree(updatedSchema));
+        return updatedSchema;
     }
 
     @Override
