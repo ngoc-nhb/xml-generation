@@ -1,0 +1,12 @@
+spring:
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/xmlgen}
+    username: ${SPRING_DATASOURCE_USERNAME:xmlgen}
+    password: ${SPRING_DATASOURCE_PASSWORD:xmlgen}
+  jpa:
+    show-sql: false
+
+logging:
+  level:
+    root: INFO
+    com.company.xmlgen: DEBUG
