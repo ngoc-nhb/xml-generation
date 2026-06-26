@@ -14,6 +14,7 @@ import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.ConflictException;
 import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
+import com.company.xmlgen.template.dto.request.UpdateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
@@ -100,6 +101,60 @@ class TemplateServiceImplTest {
                 .isEqualTo(TemplateErrorCode.TEMPLATE_CODE_ALREADY_EXISTS);
 
         verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void update_success() {
+        TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
+        entity.setDescription(DESCRIPTION);
+        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+
+        UpdateTemplateRequest request = new UpdateTemplateRequest("Updated Name", "Updated description");
+        TemplateResponse response = templateService.update(10L, request);
+
+        assertThat(entity.getCode()).isEqualTo(TEMPLATE_CODE);
+        assertThat(entity.getName()).isEqualTo("Updated Name");
+        assertThat(entity.getDescription()).isEqualTo("Updated description");
+        assertThat(response.templateCode()).isEqualTo(TEMPLATE_CODE);
+        assertThat(response.templateName()).isEqualTo("Updated Name");
+        assertThat(response.description()).isEqualTo("Updated description");
+        assertThat(response.status()).isEqualTo(TemplateStatus.ACTIVE);
+        verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void update_notFound() {
+        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+
+        UpdateTemplateRequest request = new UpdateTemplateRequest("Updated Name", "Updated description");
+        assertThatThrownBy(() -> templateService.update(99L, request))
+                .isInstanceOf(NotFoundException.class)
+                .extracting(ex -> ((NotFoundException) ex).getErrorCode())
+                .isEqualTo(TemplateErrorCode.TEMPLATE_NOT_FOUND);
+
+        verify(templateRepository, never()).save(any());
+    }
+
+    @Test
+    void delete_success() {
+        TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
+        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+
+        templateService.delete(10L);
+
+        verify(templateRepository).delete(entity);
+    }
+
+    @Test
+    void delete_notFound() {
+        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> templateService.delete(99L))
+                .isInstanceOf(NotFoundException.class)
+                .extracting(ex -> ((NotFoundException) ex).getErrorCode())
+                .isEqualTo(TemplateErrorCode.TEMPLATE_NOT_FOUND);
+
+        verify(templateRepository, never()).delete(any());
     }
 
     @Test

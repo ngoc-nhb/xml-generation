@@ -6,6 +6,7 @@ import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.ConflictException;
 import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
+import com.company.xmlgen.template.dto.request.UpdateTemplateRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
@@ -58,6 +59,34 @@ public class TemplateServiceImpl implements TemplateService {
 
         TemplateEntity saved = templateRepository.save(template);
         return new CreateTemplateResponse(saved.getId());
+    }
+
+    @Override
+    @Transactional
+    public TemplateResponse update(Long id, UpdateTemplateRequest request) {
+        TemplateEntity template = templateRepository
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+
+        template.setName(request.templateName());
+        template.setDescription(request.description());
+
+        return new TemplateResponse(
+                template.getId(),
+                template.getCode(),
+                template.getName(),
+                template.getDescription(),
+                template.getStatus());
+    }
+
+    @Override
+    @Transactional
+    public void delete(Long id) {
+        TemplateEntity template = templateRepository
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+
+        templateRepository.delete(template);
     }
 
     @Override
