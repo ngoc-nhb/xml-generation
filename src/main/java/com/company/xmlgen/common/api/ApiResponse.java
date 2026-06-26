@@ -15,25 +15,30 @@ public record ApiResponse<T>(
         boolean success,
         T data,
         List<ApiError> errors,
-        PageMeta meta) {
+        PageMeta meta,
+        String message) {
 
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, data, null, null);
+        return new ApiResponse<>(true, data, null, null, null);
     }
 
     public static <T> ApiResponse<T> ok(T data, PageMeta meta) {
-        return new ApiResponse<>(true, data, null, meta);
+        return new ApiResponse<>(true, data, null, meta, null);
     }
 
     public static ApiResponse<Void> ok() {
-        return new ApiResponse<>(true, null, null, null);
+        return new ApiResponse<>(true, null, null, null, null);
+    }
+
+    public static ApiResponse<Void> success(String message) {
+        return new ApiResponse<>(true, null, null, null, message);
     }
 
     public static ApiResponse<Void> failure(List<ApiError> errors) {
-        return new ApiResponse<>(false, null, errors, null);
+        return new ApiResponse<>(false, null, errors, null, null);
     }
 
     public static ApiResponse<Void> failure(ApiError error) {
-        return new ApiResponse<>(false, null, List.of(error), null);
+        return new ApiResponse<>(false, null, List.of(error), null, null);
     }
 }
