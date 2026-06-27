@@ -17,15 +17,17 @@ public interface MasterDataRecordRepository extends JpaRepository<MasterDataReco
                     """
                     SELECT r.* FROM master_data_records r
                     WHERE r.master_data_type_id = :typeId
-                      AND (:#{#keyword} IS NULL
-                           OR LOWER(r.data_json::text) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
+                      AND r.deleted_at IS NULL
+                      AND (CAST(:keyword AS TEXT) IS NULL
+                           OR LOWER(CAST(r.data_json AS TEXT)) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
                     """,
             countQuery =
                     """
                     SELECT COUNT(*) FROM master_data_records r
                     WHERE r.master_data_type_id = :typeId
-                      AND (:#{#keyword} IS NULL
-                           OR LOWER(r.data_json::text) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
+                      AND r.deleted_at IS NULL
+                      AND (CAST(:keyword AS TEXT) IS NULL
+                           OR LOWER(CAST(r.data_json AS TEXT)) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
                     """,
             nativeQuery = true)
     Page<MasterDataRecordEntity> search(
