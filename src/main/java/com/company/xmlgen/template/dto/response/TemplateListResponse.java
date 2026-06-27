@@ -1,6 +1,7 @@
 package com.company.xmlgen.template.dto.response;
 
 import com.company.xmlgen.template.entity.TemplateStatus;
+import java.time.Instant;
 
 /**
  * List item payload for {@code GET /api/v1/templates}.
@@ -9,7 +10,10 @@ import com.company.xmlgen.template.entity.TemplateStatus;
  */
 public record TemplateListResponse(
         Long id,
-        String templateCode,
-        String templateName,
-        TemplateStatus status) {
+        String code,
+        String name,
+        String description,
+        TemplateStatus status,
+        Instant createdAt,
+        Instant updatedAt) {
 }

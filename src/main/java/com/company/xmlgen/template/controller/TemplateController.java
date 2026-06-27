@@ -3,12 +3,14 @@ package com.company.xmlgen.template.controller;
 import com.company.xmlgen.common.api.ApiResponse;
 import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
-import com.company.xmlgen.template.dto.request.TemplateSchemaRequest;
 import com.company.xmlgen.template.dto.request.UpdateTemplateRequest;
+import com.company.xmlgen.template.dto.request.UpdateTemplateSchemaRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateSchemaResponse;
+import com.company.xmlgen.template.dto.response.UpdateTemplateResponse;
+import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.service.TemplateService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -41,8 +43,9 @@ public class TemplateController {
     public ApiResponse<List<TemplateListResponse>> findAll(
             @RequestParam(defaultValue = "1") int page,
             @RequestParam(defaultValue = "20") int pageSize,
-            @RequestParam(required = false) String keyword) {
-        PageResult<TemplateListResponse> result = templateService.findAll(page, pageSize, keyword);
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) TemplateStatus status) {
+        PageResult<TemplateListResponse> result = templateService.findAll(page, pageSize, keyword, status);
         return ApiResponse.ok(result.content(), result.meta());
     }
 
@@ -57,7 +60,7 @@ public class TemplateController {
     }
 
     @PutMapping("/{id}")
-    public ApiResponse<TemplateResponse> update(
+    public ApiResponse<UpdateTemplateResponse> update(
             @PathVariable Long id, @Valid @RequestBody UpdateTemplateRequest request) {
         return ApiResponse.ok(templateService.update(id, request));
     }
@@ -70,7 +73,7 @@ public class TemplateController {
 
     @PutMapping("/{id}/schema")
     public ApiResponse<TemplateSchemaResponse> updateSchema(
-            @PathVariable Long id, @Valid @RequestBody TemplateSchemaRequest request) {
+            @PathVariable Long id, @Valid @RequestBody UpdateTemplateSchemaRequest request) {
         return ApiResponse.ok(templateService.updateSchema(id, request));
     }
 }

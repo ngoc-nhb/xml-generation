@@ -4,17 +4,16 @@ import com.company.xmlgen.template.entity.TemplateStatus;
 import java.time.Instant;
 
 /**
- * Response {@code data} payload for {@code GET /api/v1/templates/{id}}.
+ * Response {@code data} payload for {@code PUT /api/v1/templates/{id}}.
  *
- * @see docs/06-api-design/p3_template-api.md §23
+ * @see docs/06-api-design/p3_template-api.md §25
  */
-public record TemplateResponse(
+public record UpdateTemplateResponse(
         Long id,
         String code,
         String name,
         String description,
         TemplateStatus status,
         Instant createdAt,
-        Instant updatedAt,
-        TemplateSchemaResponse schema) {
+        Instant updatedAt) {
 }

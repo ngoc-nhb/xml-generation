@@ -1,10 +1,13 @@
 package com.company.xmlgen.template.repository;
 
 import com.company.xmlgen.template.entity.TemplateEntity;
+import com.company.xmlgen.template.entity.TemplateStatus;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 /**
  * Persistence access for {@link TemplateEntity}.
@@ -18,5 +21,13 @@ public interface TemplateRepository extends JpaRepository<TemplateEntity, Long> 
 
     boolean existsByCode(String code);
 
-    Page<TemplateEntity> findByNameContainingIgnoreCase(String name, Pageable pageable);
+    @Query("""
+            SELECT t FROM TemplateEntity t
+            WHERE (:#{#keyword} IS NULL
+                   OR LOWER(t.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
+              AND (:#{#status} IS NULL OR t.status = :status)
+            """)
+    Page<TemplateEntity> search(
+            @Param("keyword") String keyword, @Param("status") TemplateStatus status, Pageable pageable);
 }

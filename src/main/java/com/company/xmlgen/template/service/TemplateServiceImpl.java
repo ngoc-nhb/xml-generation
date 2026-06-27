@@ -6,12 +6,13 @@ import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.ConflictException;
 import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
-import com.company.xmlgen.template.dto.request.TemplateSchemaRequest;
 import com.company.xmlgen.template.dto.request.UpdateTemplateRequest;
+import com.company.xmlgen.template.dto.request.UpdateTemplateSchemaRequest;
 import com.company.xmlgen.template.dto.response.CreateTemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateListResponse;
 import com.company.xmlgen.template.dto.response.TemplateResponse;
 import com.company.xmlgen.template.dto.response.TemplateSchemaResponse;
+import com.company.xmlgen.template.dto.response.UpdateTemplateResponse;
 import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.exception.TemplateErrorCode;
@@ -51,16 +52,20 @@ public class TemplateServiceImpl implements TemplateService {
     public CreateTemplateResponse create(CreateTemplateRequest request) {
         AuthenticatedUser currentUser = getCurrentUser();
 
-        if (templateRepository.findByCode(request.templateCode()).isPresent()) {
+        if (templateRepository.findByCode(request.code()).isPresent()) {
             throw new ConflictException(TemplateErrorCode.TEMPLATE_CODE_ALREADY_EXISTS);
         }
 
         TemplateEntity template = new TemplateEntity(
-                request.templateCode(),
-                request.templateName(),
+                request.code(),
+                request.name(),
                 TemplateStatus.ACTIVE,
                 currentUser.id());
         template.setDescription(request.description());
+
+        if (request.schema() != null) {
+            template.setCompiledSchemaJson(objectMapper.valueToTree(request.schema()));
+        }
 
         TemplateEntity saved = templateRepository.save(template);
         return new CreateTemplateResponse(saved.getId());
@@ -68,20 +73,25 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     @Transactional
-    public TemplateResponse update(Long id, UpdateTemplateRequest request) {
+    public UpdateTemplateResponse update(Long id, UpdateTemplateRequest request) {
         TemplateEntity template = templateRepository
                 .findById(id)
                 .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
 
-        template.setName(request.templateName());
+        template.setName(request.name());
         template.setDescription(request.description());
+        template.setStatus(request.status());
 
-        return new TemplateResponse(
-                template.getId(),
-                template.getCode(),
-                template.getName(),
-                template.getDescription(),
-                template.getStatus());
+        TemplateEntity saved = templateRepository.save(template);
+
+        return new UpdateTemplateResponse(
+                saved.getId(),
+                saved.getCode(),
+                saved.getName(),
+                saved.getDescription(),
+                saved.getStatus(),
+                saved.getCreatedAt(),
+                saved.getUpdatedAt());
     }
 
     @Override
@@ -97,16 +107,18 @@ public class TemplateServiceImpl implements TemplateService {
 
     @Override
     @Transactional
-    public TemplateSchemaResponse updateSchema(Long id, TemplateSchemaRequest request) {
+    public TemplateSchemaResponse updateSchema(Long id, UpdateTemplateSchemaRequest request) {
         TemplateEntity template = templateRepository
                 .findById(id)
                 .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
 
-        TemplateSchemaResponse updatedSchema = new TemplateSchemaResponse(
-                request.version() + 1, request.fields(), request.mappings());
+        TemplateSchemaResponse replacedSchema = new TemplateSchemaResponse(
+                request.version(), request.fields(), request.mappings());
 
-        template.setCompiledSchemaJson(objectMapper.valueToTree(updatedSchema));
-        return updatedSchema;
+        template.setCompiledSchemaJson(objectMapper.valueToTree(replacedSchema));
+        templateRepository.save(template);
+
+        return replacedSchema;
     }
 
     @Override
@@ -121,25 +133,35 @@ public class TemplateServiceImpl implements TemplateService {
                 template.getCode(),
                 template.getName(),
                 template.getDescription(),
-                template.getStatus());
+                template.getStatus(),
+                template.getCreatedAt(),
+                template.getUpdatedAt(),
+                loadEditableSchema(template));
     }
 
     @Override
     @Transactional(readOnly = true)
-    public PageResult<TemplateListResponse> findAll(int page, int pageSize, String keyword) {
+    public PageResult<TemplateListResponse> findAll(
+            int page, int pageSize, String keyword, TemplateStatus status) {
         int normalizedPage = Math.max(page, 1);
         int normalizedPageSize = pageSize <= 0 ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
 
         Pageable pageable =
                 PageRequest.of(normalizedPage - 1, normalizedPageSize, Sort.by("id").ascending());
 
-        Page<TemplateEntity> entityPage = isBlank(keyword)
-                ? templateRepository.findAll(pageable)
-                : templateRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable);
+        String normalizedKeyword = isBlank(keyword) ? null : keyword.trim();
+        Page<TemplateEntity> entityPage =
+                templateRepository.search(normalizedKeyword, status, pageable);
 
         List<TemplateListResponse> content = entityPage.getContent().stream()
                 .map(entity -> new TemplateListResponse(
-                        entity.getId(), entity.getCode(), entity.getName(), entity.getStatus()))
+                        entity.getId(),
+                        entity.getCode(),
+                        entity.getName(),
+                        entity.getDescription(),
+                        entity.getStatus(),
+                        entity.getCreatedAt(),
+                        entity.getUpdatedAt()))
                 .toList();
 
         PageMeta meta = new PageMeta(
@@ -153,6 +175,13 @@ public class TemplateServiceImpl implements TemplateService {
 
     private static boolean isBlank(String keyword) {
         return keyword == null || keyword.isBlank();
+    }
+
+    private TemplateSchemaResponse loadEditableSchema(TemplateEntity template) {
+        if (template.getCompiledSchemaJson() == null) {
+            return null;
+        }
+        return objectMapper.convertValue(template.getCompiledSchemaJson(), TemplateSchemaResponse.class);
     }
 
     private AuthenticatedUser getCurrentUser() {

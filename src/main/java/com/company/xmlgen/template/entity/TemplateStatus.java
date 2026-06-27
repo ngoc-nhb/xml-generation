@@ -8,5 +8,12 @@ package com.company.xmlgen.template.entity;
 public enum TemplateStatus {
 
     ACTIVE,
-    INACTIVE
+    INACTIVE;
+
+    public static TemplateStatus fromValue(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return valueOf(value.trim().toUpperCase());
+    }
 }
