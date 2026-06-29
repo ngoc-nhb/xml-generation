@@ -42,8 +42,10 @@ User
 
 Template
     └── TemplateField
+    └── TemplateMapping
 
 MasterDataType
+    └── MasterDataField
     └── MasterDataRecord
 
 SavedInput
@@ -62,7 +64,7 @@ The following entities are Aggregate Roots.
 | Aggregate Root | Child Entities   |
 | -------------- | ---------------- |
 | User           | —                |
-| Template       | TemplateField    |
+| Template       | TemplateField, TemplateMapping |
 | MasterDataType | MasterDataRecord |
 | SavedInput     | —                |
 | ExportHistory  | —                |
@@ -201,6 +203,8 @@ Template
 
 ├── TemplateFields
 
+├── TemplateMappings
+
 ├── SavedInputs
 
 └── ExportHistories
@@ -242,25 +246,36 @@ Disable
 
 ## Responsibility
 
-Represent one configurable field within a Template.
+Represent one node within a Template XML structure.
 
-A TemplateField describes XML generation behavior but does not contain runtime values.
+`TemplateField` describes XML schema only. It does not contain master data mapping
+references. See `TemplateMapping`.
 
 ---
 
 ## Attributes
 
-| Attribute    | Description                  |
-| ------------ | ---------------------------- |
-| id           | Unique identifier            |
-| templateId   | Parent Template              |
-| fieldCode    | Internal identifier          |
-| displayName  | UI label                     |
-| dataType     | Value type                   |
-| sourceType   | INPUT / MASTER_DATA / STATIC |
-| xmlPath      | XML mapping path             |
-| displayOrder | UI & XML order               |
-| required     | Required flag                |
+| Attribute                 | Description                                      |
+| ------------------------- | ------------------------------------------------ |
+| id                        | Unique identifier                                |
+| templateId                | Parent Template                                  |
+| parentId                  | Parent field (hierarchy)                         |
+| fieldName                 | Internal stable key (never emitted in XML)       |
+| displayName               | UI label                                         |
+| xmlName                   | XML node or attribute name                       |
+| nodeType                  | GROUP / ELEMENT / ATTRIBUTE                      |
+| valueType                 | STRING / INTEGER / LONG / …                      |
+| sourceType                | INPUT / STATIC / MASTER_DATA                     |
+| staticValue               | Value when sourceType = STATIC                   |
+| defaultValue              | Pre-fill when sourceType = INPUT                 |
+| occurrenceRule            | ONE_OR_MORE / ZERO_OR_MORE / ZERO_OR_ONE         |
+| emptyHandling             | REQUIRED / OMIT_IF_EMPTY / …                     |
+| requiredWhenParentExists  | Conditional required inside active GROUP         |
+| triggerActivation         | Whether resolved value may activate parent GROUP |
+| displayOrder              | Sibling order                                    |
+| xmlPath                   | Materialized XML path                            |
+| namespace                 | XML namespace URI                                |
+| description               | Documentation                                    |
 
 ---
 
@@ -272,7 +287,58 @@ Template
 ↓
 
 TemplateField
+
+TemplateMapping → MasterDataField (separate entity)
 ```
+
+---
+
+## Aggregate Root
+
+No.
+
+Owned by Template.
+
+---
+
+# 15A. TemplateMapping
+
+## Responsibility
+
+Connect one `TemplateField` to one `MasterDataField`.
+
+`TemplateMapping` is owned by `Template`. Neither `TemplateField` nor
+`MasterDataField` embeds mapping information.
+
+---
+
+## Attributes
+
+| Attribute          | Description                    |
+| ------------------ | ------------------------------ |
+| id                 | Unique identifier              |
+| templateId         | Parent Template                |
+| templateFieldId    | Target TemplateField           |
+| masterDataFieldId  | Source MasterDataField         |
+
+---
+
+## Relationships
+
+```text
+Template
+
+↓
+
+TemplateMapping
+
+├─ TemplateField
+└─ MasterDataField
+```
+
+Deleting a `MasterDataField` sets `masterDataFieldId` to NULL (`ON DELETE SET NULL`).
+When `sourceType = MASTER_DATA`, exactly one mapping is required at compile time;
+`sourceType` is not derived from mapping existence.
 
 ---
 

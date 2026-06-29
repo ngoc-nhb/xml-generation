@@ -63,7 +63,7 @@ Template Updated
 
 TemplateField Updated
 
-TemplateMasterDataMapping Updated
+TemplateMapping Updated
 ```
 
 ---
@@ -79,7 +79,7 @@ TemplateField
 
     +
 
-TemplateMasterDataMapping
+TemplateMapping
 
         ↓
 
@@ -175,7 +175,7 @@ Template
 
 TemplateField
 
-TemplateMasterDataMapping
+TemplateMapping
 
 compiled_schema_json
 ```
@@ -216,7 +216,7 @@ Update TemplateField
 
         ↓
 
-Update TemplateMasterDataMapping
+Update TemplateMapping
 
         ↓
 
@@ -266,7 +266,7 @@ Template
 =
 TemplateField
 =
-TemplateMasterDataMapping
+TemplateMapping
 =
 compiled_schema_json
 ```
@@ -291,14 +291,14 @@ Invalid template configurations shall prevent compilation.
 
 
 
-### Empty Value Rule Validation
+### Empty Handling Validation
 
 Some combinations of:
 
 ```text
 dataType
 +
-emptyValueRule
+emptyHandling
 ```
 
 are not allowed.
@@ -334,7 +334,7 @@ GameDate
 
 dataType = DATE
 
-emptyValueRule = ZERO_IF_EMPTY
+emptyHandling = ZERO_IF_EMPTY
 ```
 
 Result:
@@ -342,7 +342,7 @@ Result:
 ```text
 Compilation Failed
 
-INVALID_EMPTY_VALUE_RULE
+INVALID_EMPTY_HANDLING
 ```
 
 ---
@@ -356,7 +356,7 @@ CreatedAt
 
 dataType = DATETIME
 
-emptyValueRule = EMPTY_TAG_IF_EMPTY
+emptyHandling = EMPTY_TAG_IF_EMPTY
 ```
 
 Result:
@@ -364,7 +364,7 @@ Result:
 ```text
 Compilation Failed
 
-INVALID_EMPTY_VALUE_RULE
+INVALID_EMPTY_HANDLING
 ```
 
 ---
@@ -378,7 +378,7 @@ GameID
 
 dataType = INTEGER
 
-emptyValueRule = EMPTY_TAG_IF_EMPTY
+emptyHandling = EMPTY_TAG_IF_EMPTY
 ```
 
 Result:
@@ -386,7 +386,7 @@ Result:
 ```text
 Compilation Failed
 
-INVALID_EMPTY_VALUE_RULE
+INVALID_EMPTY_HANDLING
 ```
 
 ---
@@ -576,146 +576,48 @@ Template nesting depth exceeds the allowed maximum depth.
 ```
 
 ---
-### Required and Empty Value Rule Validation
+### Conditional Required Validation
 
-The Template Compiler shall validate the relationship between:
-
-```text
-required
-
-emptyValueRule
-```
-
-Some combinations are not allowed because they create conflicting behavior.
+The Template Compiler validates `required_when_parent_exists` on child fields when
+a parent GROUP becomes active (see Part 2 §13–§14). `empty_handling` on
+`TemplateField` is the sole expression of field-level requiredness; there is no
+separate `required` boolean on template metadata.
 
 ---
 
-### Invalid Configuration
+### MASTER_DATA Mapping Validation
 
-Configuration:
+`source_type` is stored on `TemplateField` and is **not** derived from mapping
+existence.
 
-```text
-required = true
+| Condition | Rule |
+|-----------|------|
+| `source_type = MASTER_DATA` | Exactly one `TemplateMapping` must reference the field |
+| `source_type = INPUT` or `STATIC` | No `TemplateMapping` may reference the field |
+| More than one mapping per field | Compilation fails |
 
-emptyValueRule = OMIT_IF_EMPTY
-```
-
-Result:
+If `source_type = MASTER_DATA` and no mapping exists:
 
 ```text
 Compilation Failed
 
-INVALID_REQUIRED_CONFIGURATION
+MAPPING_REQUIRED
 ```
 
-Reason:
-
-```text
-Required Field
-    ↓
-Value Must Exist
-
-OMIT_IF_EMPTY
-    ↓
-Value May Be Missing
-```
-
-The rules conflict with each other.
-
----
-
-Configuration:
-
-```text
-required = true
-
-emptyValueRule = EMPTY_TAG_IF_EMPTY
-```
-
-Result:
+If a mapping exists for a field where `source_type` is not `MASTER_DATA`:
 
 ```text
 Compilation Failed
 
-INVALID_REQUIRED_CONFIGURATION
+UNEXPECTED_MAPPING
 ```
 
-Reason:
-
-```text
-Required Field
-    ↓
-Must Contain Data
-
-EMPTY_TAG_IF_EMPTY
-    ↓
-Allows Empty Value
-```
-
-The rules conflict with each other.
-
----
-
-Configuration:
-
-```text
-required = true
-
-emptyValueRule = ZERO_IF_EMPTY
-```
-
-Result:
+If `master_data_field_id` is NULL (source field deleted):
 
 ```text
 Compilation Failed
 
-INVALID_REQUIRED_CONFIGURATION
-```
-
-Reason:
-
-```text
-Required Field
-    ↓
-User Must Provide Value
-
-ZERO_IF_EMPTY
-    ↓
-System Auto-Replaces Missing Value
-```
-
-The rules conflict with each other.
-
----
-
-### Allowed Configuration
-
-If:
-
-```text
-required = true
-```
-
-then:
-
-```text
-emptyValueRule = REQUIRED
-```
-
-must be used.
-
----
-
-### Error Code
-
-```text
-INVALID_REQUIRED_CONFIGURATION
-```
-
-Description:
-
-```text
-Required field configuration conflicts with empty value handling rules.
+MASTER_DATA_FIELD_NOT_FOUND
 ```
 
 ---
@@ -880,7 +782,9 @@ template_id
 
 parent_id
 
-master_data_type_id
+template_field_id
+
+master_data_field_id
 
 user_id
 ```
@@ -1044,3 +948,56 @@ Advanced Tree Storage
 ```
 
 These features may be introduced in future phases if business requirements justify the additional complexity.
+
+---
+
+## 35. Lazy Migration (Legacy Templates)
+
+Templates created before `TemplateField` normalization may have
+`compiled_schema_json` populated but no `TemplateField` or `TemplateMapping`
+rows.
+
+### Trigger
+
+Lazy migration runs when **all** of the following are true:
+
+```text
+TemplateField count = 0
+
+compiled_schema_json IS NOT NULL
+```
+
+Typical triggers: first `GET /api/v1/templates/{id}` that needs editable schema,
+or first `PUT /api/v1/templates/{id}/schema` after upgrade.
+
+### Flow
+
+```text
+Load compiled_schema_json
+        ↓
+Parse JSON tree
+        ↓
+Create TemplateField rows
+        ↓
+Create TemplateMapping rows (from MASTER_DATA nodes)
+        ↓
+BEGIN TRANSACTION
+        ↓
+Save TemplateField + TemplateMapping
+        ↓
+Recompile
+        ↓
+Overwrite compiled_schema_json
+        ↓
+COMMIT
+```
+
+### Constraints
+
+* No Flyway data migration.
+* No SQL conversion script.
+* Parsing is application-layer only.
+* If parse or recompile fails, the transaction rolls back; the legacy JSON remains
+  unchanged until the next attempt.
+* After successful migration, `TemplateField` becomes the source of truth;
+  subsequent saves follow the Single Save Principle (ADR-002).

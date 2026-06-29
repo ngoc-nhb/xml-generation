@@ -42,7 +42,7 @@ Template
     +
 TemplateField
     +
-TemplateMasterDataMapping
+TemplateMapping
 
         ↓
 
@@ -85,6 +85,9 @@ The Template Schema is designed to:
 * Support future Template generation
 * Keep XML generation deterministic
 * Keep Template definitions independent from implementation code
+* Persist `TemplateField` and `TemplateMapping` atomically with immediate
+  compilation (Single Save Principle, ADR-002)
+* Declare `source_type` explicitly on each field; do not infer it from mappings
 
 ---
 
@@ -121,6 +124,9 @@ Example:
 ### MASTER_DATA
 
 Value loaded automatically from selected Master Data.
+
+Requires exactly one `TemplateMapping` at compile time. `source_type` is stored
+on `TemplateField` and is not derived from mapping existence.
 
 Example:
 
@@ -228,7 +234,7 @@ ZERO_OR_ONE
 
 ---
 
-## 7. Empty Value Rules
+## 7. Empty Handling Rules
 
 Defines behavior when data is missing.
 
@@ -305,6 +311,12 @@ Mapping Rules
 
 during runtime.
 
+during runtime.
+
+Compiled from `Template` + `TemplateField` + `TemplateMapping`. `masterDataType` and
+`masterDataField` in the compiled output are resolved from `TemplateMapping` at
+compile time — they are not stored on `TemplateField` metadata.
+
 ---
 
 ### Example
@@ -328,7 +340,7 @@ during runtime.
 
         "sourceType": "INPUT",
 
-        "required": true,
+        "emptyHandling": "REQUIRED",
 
         "dataType": "INTEGER",
 
@@ -342,7 +354,7 @@ during runtime.
 
         "sourceType": "INPUT",
 
-        "required": true,
+        "emptyHandling": "REQUIRED",
 
         "dataType": "DATE",
 
@@ -362,7 +374,7 @@ during runtime.
 
         "masterDataField": "game_kind_id",
 
-        "required": true,
+        "emptyHandling": "REQUIRED",
 
         "dataType": "INTEGER",
 
@@ -379,21 +391,20 @@ during runtime.
 
 Every node inside compiled_schema_json shall follow the structure below.
 
-| Property        | Description                     |
-| --------------- | ------------------------------- |
-| name            | XML node name                   |
-| fieldType       | GROUP / ELEMENT / ATTRIBUTE     |
-| sourceType      | INPUT / MASTER_DATA / STATIC    |
-| dataType        | Data type                       |
-| format          | Data format for DATE / DATETIME |
-| required        | Required flag                   |
-| displayOrder    | XML output order                |
-| occurrenceRule  | Node occurrence rule            |
-| emptyValueRule  | Empty value handling            |
-| staticValue     | Static value                    |
-| masterDataType  | Master Data Type                |
-| masterDataField | Master Data Field               |
-| children        | Child nodes                     |
+| Property        | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| name            | XML node name (`xml_name` from TemplateField)            |
+| fieldType       | GROUP / ELEMENT / ATTRIBUTE                              |
+| sourceType      | INPUT / MASTER_DATA / STATIC                             |
+| dataType        | Data type                                                |
+| format          | Data format for DATE / DATETIME                          |
+| emptyHandling   | REQUIRED / OMIT_IF_EMPTY / EMPTY_TAG_IF_EMPTY / ZERO_IF_EMPTY |
+| displayOrder    | XML output order                                         |
+| occurrenceRule  | Node occurrence rule                                     |
+| staticValue     | Static value                                             |
+| masterDataType  | Master Data Type Code (from TemplateMapping at compile)  |
+| masterDataField | Master Data Field Name (from TemplateMapping at compile) |
+| children        | Child nodes                                              |
 
 ---
 
@@ -556,15 +567,53 @@ The XML Generator Engine shall process child nodes recursively.
 
 Some GROUP nodes are optional.
 
-The group becomes active when at least one child field contains a value.
+A GROUP becomes active when at least one child node contains a resolved value that
+is allowed to trigger activation.
 
-Rule:
+A resolved value may come from:
+
+* INPUT
+* MASTER_DATA
+* STATIC
+
+However, not all child nodes may trigger group activation.
+
+Each node may define:
 
 ```text
-At least one child field contains data
-                ↓
-          Group Active
-                ↓
+trigger_activation
+```
+
+Stored on `TemplateField` (nullable boolean). When null, defaults apply by
+`source_type` (see below).
+
+Default behavior:
+
+```text
+INPUT         → trigger_activation = true
+
+MASTER_DATA   → trigger_activation = false
+
+STATIC        → trigger_activation = false
+```
+
+Group activation rule:
+
+```text
+At least one child node satisfies:
+
+trigger_activation = true
+
+and
+
+resolved value is meaningful
+
+            ↓
+
+      Group Active
+
+            ↓
+
 Validate all required child fields
 ```
 
@@ -709,6 +758,10 @@ The generated attribute shall be attached to its parent node during XML generati
 ---
 
 ## 16. Master Data Resolution
+
+At metadata level, master data bindings are defined by `TemplateMapping` (linking
+`TemplateField` to `MasterDataField`). At runtime, the compiled schema embeds
+resolved `masterDataType` and `masterDataField` per node.
 
 MASTER_DATA fields are resolved using:
 
@@ -1190,7 +1243,7 @@ Template Updated
 
 TemplateField Updated
 
-TemplateMasterDataMapping Updated
+TemplateMapping Updated
 ```
 
 ---
@@ -1206,7 +1259,7 @@ TemplateField
 
     +
 
-TemplateMasterDataMapping
+TemplateMapping
 
         ↓
 
@@ -1302,7 +1355,7 @@ Template
 
 TemplateField
 
-TemplateMasterDataMapping
+TemplateMapping
 
 compiled_schema_json
 ```
@@ -1343,7 +1396,7 @@ Update TemplateField
 
         ↓
 
-Update TemplateMasterDataMapping
+Update TemplateMapping
 
         ↓
 
@@ -1393,7 +1446,7 @@ Template
 =
 TemplateField
 =
-TemplateMasterDataMapping
+TemplateMapping
 =
 compiled_schema_json
 ```
@@ -1452,6 +1505,27 @@ Transaction Rollback
 
 ---
 
+### MASTER_DATA Mapping Validation
+
+`source_type` is stored on `TemplateField` and is **not** derived from mapping
+existence.
+
+| Condition | Rule |
+|-----------|------|
+| `source_type = MASTER_DATA` | Exactly one `TemplateMapping` must reference the field |
+| `source_type = INPUT` or `STATIC` | No `TemplateMapping` may reference the field |
+| More than one mapping per field | Compilation fails |
+
+If `source_type = MASTER_DATA` and no mapping exists: `MAPPING_REQUIRED`.
+
+If a mapping exists for a field where `source_type` is not `MASTER_DATA`:
+`UNEXPECTED_MAPPING`.
+
+If `master_data_field_id` is NULL (source field deleted):
+`MASTER_DATA_FIELD_NOT_FOUND`.
+
+---
+
 ## 30. Performance Requirements
 
 The architecture should support:
@@ -1503,7 +1577,9 @@ template_id
 
 parent_id
 
-master_data_type_id
+template_field_id
+
+master_data_field_id
 
 user_id
 ```
@@ -1667,3 +1743,52 @@ Advanced Tree Storage
 ```
 
 These features may be introduced in future phases if business requirements justify the additional complexity.
+
+---
+
+## 35. Lazy Migration (Legacy Templates)
+
+Templates created before `TemplateField` normalization may have
+`compiled_schema_json` populated but no `TemplateField` or `TemplateMapping`
+rows.
+
+### Trigger
+
+Lazy migration runs when **all** of the following are true:
+
+```text
+TemplateField count = 0
+
+compiled_schema_json IS NOT NULL
+```
+
+### Flow
+
+```text
+Load compiled_schema_json
+        ↓
+Parse JSON tree
+        ↓
+Create TemplateField rows
+        ↓
+Create TemplateMapping rows (from MASTER_DATA nodes)
+        ↓
+BEGIN TRANSACTION
+        ↓
+Save TemplateField + TemplateMapping
+        ↓
+Recompile
+        ↓
+Overwrite compiled_schema_json
+        ↓
+COMMIT
+```
+
+### Constraints
+
+* No Flyway data migration.
+* No SQL conversion script.
+* Parsing is application-layer only.
+* If parse or recompile fails, the transaction rolls back.
+* After successful migration, `TemplateField` becomes the source of truth;
+  subsequent saves follow the Single Save Principle (ADR-002).

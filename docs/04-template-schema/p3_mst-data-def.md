@@ -4,6 +4,10 @@
 
 ## 16. Master Data Resolution
 
+At metadata level, master data bindings are defined by `TemplateMapping` (linking
+`TemplateField` to `MasterDataField`). At runtime, the compiled schema embeds
+resolved `masterDataType` and `masterDataField` per node.
+
 MASTER_DATA fields are resolved using:
 
 ```text id="v5hf2w"
@@ -98,7 +102,7 @@ mapping exists
 If:
 
 ```text id="pfw5hm"
-required = true
+emptyHandling = REQUIRED
 ```
 
 and the specified Master Data cannot be resolved:
@@ -116,7 +120,7 @@ validation shall fail.
 If:
 
 ```text id="i0e1r6"
-required = false
+emptyHandling ≠ REQUIRED
 ```
 
 and the specified Master Data cannot be resolved:
@@ -136,7 +140,7 @@ null
 and processed according to:
 
 ```text id="7zztvc"
-emptyValueRule
+emptyHandling
 ```
 
 ---
@@ -151,7 +155,7 @@ Compiled Schema:
 
   "masterDataField": "game_kind_id",
 
-  "required": true
+  "emptyHandling": "REQUIRED"
 }
 ```
 
@@ -196,7 +200,7 @@ STATIC
 The XML Generator Engine shall apply:
 
 ```text id="f0t62r"
-emptyValueRule
+emptyHandling
 ```
 
 regardless of the source type.

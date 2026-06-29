@@ -106,7 +106,8 @@ UserRepository only retrieves and persists data.
 
 Persist Template aggregates.
 
-TemplateRepository manages Template together with its TemplateFields.
+TemplateRepository manages Template together with its TemplateFields and
+TemplateMappings.
 
 ---
 
@@ -130,6 +131,8 @@ Template
 ↓
 
 TemplateFields
+
+TemplateMappings
 ```
 
 ---
@@ -146,9 +149,14 @@ CompileService
 
 ## Notes
 
-TemplateFields shall always be persisted through TemplateRepository.
+TemplateFields and TemplateMappings shall be persisted through TemplateRepository
+(or dedicated repositories for large collections per aggregate rules).
 
-Separate TemplateFieldRepository is intentionally not provided.
+`TemplateField` describes XML only. `TemplateMapping` is stored separately.
+Schema saves persist fields and mappings atomically with compilation in
+`TemplateService` (Single Save Principle, ADR-002). Separate
+TemplateFieldRepository may be provided for efficient field queries;
+business validation remains in TemplateService / TemplateCompileService.
 
 ---
 

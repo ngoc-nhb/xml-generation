@@ -375,7 +375,7 @@ null
 The XML Builder shall apply:
 
 ```text
-emptyValueRule
+emptyHandling
 ```
 
 ---

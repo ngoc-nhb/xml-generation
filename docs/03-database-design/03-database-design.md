@@ -36,6 +36,7 @@ users
 
 templates
 template_fields
+template_mappings
 template_guides
 
 master_data_types
@@ -62,7 +63,7 @@ Template
     +
 TemplateField
     +
-TemplateMasterDataMapping
+TemplateMapping
 
         ↓
 
@@ -160,26 +161,34 @@ INDEX(status)
 
 ## 4.3 template_fields
 
-Stores XML node definitions.
+Stores XML node definitions. `TemplateField` describes XML structure only; it does
+not contain master data mapping references.
 
 | Column                      | Type          | Constraint               |
 | --------------------------- | ------------- | ------------------------ |
 | id                          | bigint        | PK                       |
 | template_id                 | bigint        | FK                       |
 | parent_id                   | bigint        | FK -> template_fields.id |
-| name                        | varchar(255)  | NOT NULL                 |
-| field_type                  | varchar(20)   | NOT NULL                 |
-| data_type                   | varchar(50)   | NOT NULL                 |
-| occurrence_rule             | varchar(30)   | NOT NULL                 |
-| empty_value_rule            | varchar(30)   | NOT NULL                 |
+| field_name                  | varchar(255)  | NOT NULL                 |
+| display_name                | varchar(255)  | NULL                     |
+| xml_name                    | varchar(255)  | NOT NULL                 |
+| node_type                   | varchar(20)   | NOT NULL                 |
+| value_type                  | varchar(50)   | NULL                     |
+| source_type                 | varchar(20)   | NULL                     |
+| static_value                | text          | NULL                     |
+| default_value               | text          | NULL                     |
+| occurrence_rule             | varchar(30)   | NULL                     |
+| empty_handling              | varchar(30)   | NOT NULL                 |
 | required_when_parent_exists | boolean       | NOT NULL                 |
+| trigger_activation          | boolean       | NULL                     |
 | display_order               | integer       | NOT NULL                 |
-| xml_path                    | varchar(1000) | NOT NULL                 |
+| xml_path                    | varchar(1000) | NULL                     |
+| namespace                   | varchar(255)  | NULL                     |
 | description                 | text          | NULL                     |
 | created_at                  | timestamp     | NOT NULL                 |
 | updated_at                  | timestamp     | NOT NULL                 |
 
-Field Type:
+Node Type:
 
 ```text
 GROUP
@@ -187,7 +196,7 @@ ELEMENT
 ATTRIBUTE
 ```
 
-Data Type:
+Value Type (value_type):
 
 ```text
 STRING
@@ -207,7 +216,7 @@ ZERO_OR_MORE
 ZERO_OR_ONE
 ```
 
-Empty Value Rule:
+Empty Handling:
 
 ```text
 REQUIRED
@@ -215,6 +224,19 @@ OMIT_IF_EMPTY
 EMPTY_TAG_IF_EMPTY
 ZERO_IF_EMPTY
 ```
+
+Source Type:
+
+```text
+INPUT
+MASTER_DATA
+STATIC
+```
+
+`trigger_activation` (nullable boolean): when true, a resolved child value may
+activate an optional parent GROUP. When null, defaults apply by `source_type`
+(`INPUT → true`, `MASTER_DATA` / `STATIC → false`). See `04-template-schema`
+Part 2 §13.
 
 Indexes:
 
@@ -350,33 +372,45 @@ GIN(data_json)
 
 ---
 
-## 4.8 template_master_data_mappings
+## 4.8 template_mappings
 
-Defines mappings between Master Data Fields and Template Fields.
+Defines mappings between `MasterDataField` and `TemplateField`.
 
-| Column               | Type      | Constraint |
-| -------------------- | --------- | ---------- |
-| id                   | bigint    | PK         |
-| master_data_field_id | bigint    | FK         |
-| template_field_id    | bigint    | FK         |
-| created_at           | timestamp | NOT NULL   |
-| updated_at           | timestamp | NOT NULL   |
+`TemplateMapping` is separate from `TemplateField`. Deleting a `MasterDataField`
+must not be blocked by a mapping.
+
+| Column               | Type      | Constraint                          |
+| -------------------- | --------- | ----------------------------------- |
+| id                   | bigint    | PK                                  |
+| template_id          | bigint    | FK -> templates.id                  |
+| template_field_id    | bigint    | FK -> template_fields.id            |
+| master_data_field_id | bigint    | FK -> master_data_fields.id, SET NULL |
+| created_at           | timestamp | NOT NULL                            |
+| updated_at           | timestamp | NOT NULL                            |
 
 Example:
 
 ```text
-game_kind_id
+MasterDataField: GAME_KIND.game_kind_id
         ↓
-GameKindID
+TemplateMapping
+        ↓
+TemplateField: GameKindID (xml_name)
+```
 
-game_kind_name
-        ↓
-GameKindName
+Foreign keys:
+
+```text
+template_id          ON DELETE CASCADE
+template_field_id    ON DELETE CASCADE
+master_data_field_id ON DELETE SET NULL
 ```
 
 Indexes:
 
 ```text
+INDEX(template_id)
+
 INDEX(master_data_field_id)
 
 INDEX(template_field_id)

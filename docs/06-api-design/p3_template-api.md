@@ -274,18 +274,22 @@ The request contains the complete editable XML structure.
 
 ### Processing
 
-The Backend shall:
+The Backend shall execute **one atomic transaction**:
 
-1. Validate payload structure
+1. Validate payload structure (fields and mappings together)
 2. Verify the submitted version against the current Template version
-3. Replace the existing editable schema
-4. Persist Template Fields
-5. Persist Mapping configuration
+3. Replace all `TemplateField` rows for the template
+4. Replace all `TemplateMapping` rows for the template
+5. Compile editable metadata → `compiled_schema_json`
 6. Increment the Template version
+7. Commit (or roll back entirely on any failure)
 
-The editable schema may contain validation errors.
+`TemplateField` and `TemplateMapping` are edited together. There is no standalone
+Mapping CRUD API. Compilation runs immediately after persistence in the same
+transaction. `compiled_schema_json` is generated only and is never accepted as
+input on this endpoint.
 
-Compilation is not performed.
+If compilation fails, no field or mapping changes are committed.
 
 ---
 
@@ -336,18 +340,13 @@ The client should reload the latest Template before attempting another update.
 
 ### Notes
 
-This API supports Save Draft.
+This API follows the **Single Save Principle** (ADR-002):
 
-The schema is validated only for structural integrity.
+* `fields` and `mappings` form one metadata definition and must be submitted together.
+* Business validation and compilation occur in the same transaction as persistence.
+* A successful response means `compiled_schema_json` is already up to date.
 
-Business validation and runtime compilation occur only when:
-
-```http
-POST /api/v1/templates/{id}/compile
-```
-
-is executed.
-
+Optimistic locking applies as described below.
 
 ---
 
@@ -409,19 +408,26 @@ Admin only.
 
 ## 27. POST /api/v1/templates/{id}/compile
 
-Compiles the current editable template into its runtime representation.
+> **Superseded.** Normal template editing uses `PUT /api/v1/templates/{id}/schema`,
+> which persists fields, mappings, and compiles in one transaction (Single Save
+> Principle, ADR-002). This endpoint is retained only for backward compatibility
+> during migration and may be removed in a future release.
+
+Re-compiles the current `TemplateField` and `TemplateMapping` rows into
+`compiled_schema_json` without modifying editable metadata.
 
 ---
 
 ### Purpose
 
-Generate:
+Regenerate:
 
 ```text
 compiled_schema_json
 ```
 
-used by the XML Generation Engine.
+from existing `TemplateField` and `TemplateMapping` rows (e.g. after lazy
+migration or admin repair).
 
 ---
 
@@ -431,29 +437,18 @@ The Backend shall:
 
 1. Load Template
 2. Load Template Fields
-3. Load Mapping Rules
-4. Validate Template
+3. Load Template Mappings
+4. Validate Template (including `source_type = MASTER_DATA` ↔ mapping rules)
 5. Build Template Tree
-6. Generate compiled_schema_json
+6. Generate `compiled_schema_json`
 7. Update Template
 
 All operations shall execute within a single database transaction.
 
-If compilation fails:
+If compilation fails, `compiled_schema_json` remains unchanged.
 
-* Editable Template
-* Template Fields
-* Mapping Configuration
-
-shall remain unchanged.
-
-Only:
-
-```text
-compiled_schema_json
-```
-
-shall fail to update.
+Editable `TemplateField` and `TemplateMapping` rows are not modified by this
+endpoint.
 
 ---
 

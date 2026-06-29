@@ -42,7 +42,7 @@ Template
     +
 TemplateField
     +
-TemplateMasterDataMapping
+TemplateMapping
 
         ↓
 
@@ -85,6 +85,9 @@ The Template Schema is designed to:
 * Support future Template generation
 * Keep XML generation deterministic
 * Keep Template definitions independent from implementation code
+* Persist `TemplateField` and `TemplateMapping` atomically with immediate
+  compilation (Single Save Principle, ADR-002)
+* Declare `source_type` explicitly on each field; do not infer it from mappings
 
 ---
 
@@ -121,6 +124,9 @@ Example:
 ### MASTER_DATA
 
 Value loaded automatically from selected Master Data.
+
+Requires exactly one `TemplateMapping` at compile time. `source_type` is stored
+on `TemplateField` and is not derived from mapping existence.
 
 Example:
 
@@ -228,7 +234,7 @@ ZERO_OR_ONE
 
 ---
 
-## 7. Empty Value Rules
+## 7. Empty Handling Rules
 
 Defines behavior when data is missing.
 

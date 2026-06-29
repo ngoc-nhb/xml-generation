@@ -26,8 +26,8 @@ User
 Template
 │
 ├── TemplateField
-├── TemplateGuide
-└── TemplateMasterDataMapping
+├── TemplateMapping
+└── TemplateGuide
 │
 MasterDataType
 │
@@ -128,8 +128,8 @@ updated_at
 ```text
 Template
  ├─ TemplateFields
- ├─ TemplateGuide
- └─ TemplateMasterDataMappings
+ ├─ TemplateMappings
+ └─ TemplateGuide
 ```
 
 ---
@@ -159,24 +159,59 @@ template_id
 
 parent_id
 
-name
+field_name
 
-field_type
+display_name
+
+xml_name
+
+node_type
+
+value_type
+
+source_type
+
+static_value
+
+default_value
 
 occurrence_rule
 
-empty_value_rule
+empty_handling
 
 required_when_parent_exists
+
+trigger_activation
 
 display_order
 
 xml_path
 
+namespace
+
 description
 ```
 
-### Field Type
+`field_name` is the internal stable identifier used for form binding and
+`input_data_json` keys. It is never emitted in generated XML.
+
+`xml_name` is the actual XML node or attribute name.
+
+`display_name` is the UI label for Dynamic Form Rendering.
+
+`TemplateField` describes XML structure only. It must not contain master data
+field references. See `TemplateMapping`.
+
+When `source_type = MASTER_DATA`, exactly one `TemplateMapping` must reference
+the field. Compilation fails if the mapping is missing. `source_type` is stored
+explicitly and is not derived from mapping existence.
+
+`trigger_activation` declares whether a child node's resolved value activates an
+optional parent GROUP. Defaults: `INPUT → true`, `MASTER_DATA → false`,
+`STATIC → false`. Nullable on `TemplateField`; when null, the default for the
+field's `source_type` applies.
+
+### Node Type
 
 ```text
 GROUP
@@ -200,7 +235,7 @@ Mapping:
 ?            → ZERO_OR_ONE
 ```
 
-### Empty Value Rule
+### Empty Handling
 
 ```text
 REQUIRED
@@ -361,37 +396,61 @@ updated_at
 
 ---
 
-## 10. TemplateMasterDataMapping
+## 10. TemplateMapping
 
-Defines how Master Data fields are mapped to XML template fields.
+Defines how a `MasterDataField` is mapped to a `TemplateField`.
+
+`TemplateMapping` is a separate metadata entity. Neither `TemplateField` nor
+`MasterDataField` contains mapping information.
 
 Example:
 
 ```text
-game_kind_id
-    ↓
-GameKindID
-
-game_kind_name
-    ↓
-GameKindName
+MasterDataField: GAME_KIND.game_kind_id
+        ↓
+TemplateMapping
+        ↓
+TemplateField: GameKindID (xml_name)
 ```
 
 ### Fields
 
 ```text
-TemplateMasterDataMapping
+TemplateMapping
 ------
 id
 
 template_id
 
-master_data_type_id
+template_field_id
 
-source_field
+master_data_field_id
 
-target_template_field
+created_at
+updated_at
 ```
+
+### Relationships
+
+```text
+Template
+ └─ TemplateMappings
+
+TemplateMapping
+ ├─ TemplateField
+ └─ MasterDataField
+```
+
+Deleting a `MasterDataField` must not be blocked by a mapping. The foreign key
+uses `ON DELETE SET NULL`. The Template Compiler detects invalid mappings at
+compile time; generation-time validation also reports `MASTER_DATA_NOT_FOUND`.
+
+### Lazy migration
+
+Legacy templates may store schema only in `compiled_schema_json`. When
+`TemplateField` rows are empty and `compiled_schema_json` exists, the service
+parses the JSON into `TemplateField` and `TemplateMapping` on first schema
+access, then recompiles. No Flyway data migration.
 
 ---
 
@@ -533,16 +592,17 @@ User
 
 Template
  ├─ TemplateField
- ├─ TemplateGuide
- └─ TemplateMasterDataMapping
+ ├─ TemplateMapping
+ └─ TemplateGuide
 
 MasterDataType
  ├─ MasterDataField
  └─ MasterDataRecord
 
-TemplateMasterDataMapping
+TemplateMapping
  ├─ Template
- └─ MasterDataType
+ ├─ TemplateField
+ └─ MasterDataField
 
 SavedInput
  ├─ User

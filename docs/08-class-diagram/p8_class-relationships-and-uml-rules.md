@@ -127,7 +127,7 @@ Circular references are prohibited.
 
 | Aggregate Root | Owns             |
 | -------------- | ---------------- |
-| Template       | TemplateField    |
+| Template       | TemplateField, TemplateMapping |
 | MasterDataType | MasterDataRecord |
 | User           | SavedInput       |
 | User           | ExportHistory    |

@@ -19,10 +19,14 @@ Template Tree
 
 TemplateField Hierarchy
 
-Mapping Rules
+Mapping Rules (from TemplateMapping)
 ```
 
 during runtime.
+
+Compiled from `Template` + `TemplateField` + `TemplateMapping`. `masterDataType` and
+`masterDataField` in the compiled output are resolved from `TemplateMapping` at
+compile time — they are not stored on `TemplateField` metadata.
 
 ---
 
@@ -47,7 +51,7 @@ during runtime.
 
         "sourceType": "INPUT",
 
-        "required": true,
+        "emptyHandling": "REQUIRED",
 
         "dataType": "INTEGER",
 
@@ -61,7 +65,7 @@ during runtime.
 
         "sourceType": "INPUT",
 
-        "required": true,
+        "emptyHandling": "REQUIRED",
 
         "dataType": "DATE",
 
@@ -81,7 +85,7 @@ during runtime.
 
         "masterDataField": "game_kind_id",
 
-        "required": true,
+        "emptyHandling": "REQUIRED",
 
         "dataType": "INTEGER",
 
@@ -98,21 +102,20 @@ during runtime.
 
 Every node inside compiled_schema_json shall follow the structure below.
 
-| Property        | Description                     |
-| --------------- | ------------------------------- |
-| name            | XML node name                   |
-| fieldType       | GROUP / ELEMENT / ATTRIBUTE     |
-| sourceType      | INPUT / MASTER_DATA / STATIC    |
-| dataType        | Data type                       |
-| format          | Data format for DATE / DATETIME |
-| required        | Required flag                   |
-| displayOrder    | XML output order                |
-| occurrenceRule  | Node occurrence rule            |
-| emptyValueRule  | Empty value handling            |
-| staticValue     | Static value                    |
-| masterDataType  | Master Data Type Code           |
-| masterDataField | Master Data Field Name          |
-| children        | Child nodes                     |
+| Property        | Description                                              |
+| --------------- | -------------------------------------------------------- |
+| name            | XML node name (`xml_name` from TemplateField)            |
+| fieldType       | GROUP / ELEMENT / ATTRIBUTE                              |
+| sourceType      | INPUT / MASTER_DATA / STATIC                             |
+| dataType        | Data type                                                |
+| format          | Data format for DATE / DATETIME                          |
+| emptyHandling   | REQUIRED / OMIT_IF_EMPTY / EMPTY_TAG_IF_EMPTY / ZERO_IF_EMPTY |
+| displayOrder    | XML output order                                         |
+| occurrenceRule  | Node occurrence rule                                     |
+| staticValue     | Static value                                             |
+| masterDataType  | Master Data Type Code (from TemplateMapping at compile)  |
+| masterDataField | Master Data Field Name (from TemplateMapping at compile) |
+| children        | Child nodes                                              |
 
 ---
 
@@ -288,8 +291,11 @@ However, not all child nodes may trigger group activation.
 Each node may define:
 
 ```text
-triggerActivation
+trigger_activation
 ```
+
+Stored on `TemplateField` (nullable boolean). When null, defaults apply by
+`source_type` (see below).
 
 Supported values:
 
@@ -302,11 +308,11 @@ false
 Default behavior:
 
 ```text
-INPUT         → triggerActivation = true
+INPUT         → trigger_activation = true
 
-MASTER_DATA   → triggerActivation = false
+MASTER_DATA   → trigger_activation = false
 
-STATIC        → triggerActivation = false
+STATIC        → trigger_activation = false
 ```
 
 Group activation rule:
@@ -314,7 +320,7 @@ Group activation rule:
 ```text
 At least one child node satisfies:
 
-triggerActivation = true
+trigger_activation = true
 
 and
 
@@ -360,13 +366,13 @@ GoalInfo
 
       staticValue = 1
 
-      triggerActivation = false
+      trigger_activation = false
 
  └─ PlayerName
 
       sourceType = INPUT
 
-      required = true
+      empty_handling = REQUIRED
 ```
 
 Input:
@@ -402,7 +408,7 @@ GoalInfo
 
       sourceType = INPUT
 
-      required = true
+      empty_handling = REQUIRED
 ```
 
 Input:
@@ -433,7 +439,7 @@ GoalInfo
 
       sourceType = MASTER_DATA
 
-      triggerActivation = true
+      trigger_activation = true
 ```
 
 Selected Master Data:
@@ -502,7 +508,7 @@ dataType
 
 format
 
-emptyValueRule
+emptyHandling
 ```
 
 Supported source resolution:
