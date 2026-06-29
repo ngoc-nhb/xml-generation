@@ -9,8 +9,8 @@ Manage XML Template definitions.
 The module is responsible for:
 
 * Template metadata
-* Template schema
-* Template compilation
+* Template schema metadata
+* Template schema compilation
 * Template lifecycle
 
 ---
@@ -22,27 +22,30 @@ Included
 * Create Template
 * Update Metadata
 * Update Schema
-* Compile Template
 * Delete Template
 * Retrieve Template
 
 Excluded
 
 * XML Generation
-* Master Data
+* Master Data management
 * Saved Input
+* Standalone compile endpoint (superseded by schema save)
 
 ---
 
 # 3. Components
 
-| Component              | Responsibility            |
-| ---------------------- | ------------------------- |
-| TemplateController     | Expose Template APIs      |
-| TemplateService        | Manage Template lifecycle |
-| TemplateCompileService | Compile editable schema   |
-| TemplateRepository     | Persist Template          |
-| TemplateMapper         | DTO conversion            |
+| Component                         | Responsibility                                      |
+| --------------------------------- | --------------------------------------------------- |
+| TemplateController                | Expose Template APIs                                |
+| TemplateService                   | Template CRUD and metadata validation               |
+| TemplateCompilationOrchestrator   | Coordinate parse → compile → persist pipeline       |
+| TemplateSchemaParser              | Build runtime hierarchy from loaded metadata        |
+| TemplateSchemaCompiler            | Transform runtime model into `compiled_schema_json` |
+| TemplateRepository                | Persist Template                                    |
+| TemplateFieldRepository           | Persist TemplateField                               |
+| TemplateMappingRepository         | Persist TemplateMapping                             |
 
 ---
 
@@ -54,26 +57,72 @@ Responsible for:
 
 * Create Template
 * Update metadata
-* Save editable schema (fields + mappings, atomic with compile)
-* Lazy migration of legacy `compiled_schema_json` when fields are empty
+* Replace editable schema metadata (`TemplateField` + `TemplateMapping`)
 * Delete Template
-* Retrieve Template
+* Retrieve Template and reconstruct API schema from metadata
 
-Schema save delegates compilation to `TemplateCompileService` within the same
-transaction.
+Schema save delegates compilation to `TemplateCompilationOrchestrator` within
+the same transaction.
+
+Must not:
+
+* parse runtime hierarchy for compilation
+* compile schema JSON
+* resolve Master Data mapping metadata for compilation
+* write `compiled_schema_json` directly
 
 ---
 
-## TemplateCompileService
+## TemplateCompilationOrchestrator
 
 Responsible for:
 
-* Validate editable schema (including `sourceType = MASTER_DATA` ↔ mapping rules)
-* Build compiled schema
-* Update `compiled_schema_json`
+* Load Template, TemplateField, and TemplateMapping metadata
+* Resolve `TemplateMappingEntity` → Master Data business metadata
+* Build `TemplateCompileContext`
+* Invoke `TemplateSchemaParser`
+* Invoke `TemplateSchemaCompiler`
+* Persist `compiled_schema_json`
+* Clear `compiled_schema_json` when metadata is empty
 
-Compilation during schema save runs in the caller's transaction. A standalone
-`compile()` remains for repair or post-migration recompile only.
+Must not contain parser logic, compiler logic, or XML generation logic.
+
+---
+
+## TemplateSchemaParser
+
+Responsible for:
+
+* Convert loaded `Template` and `TemplateField` metadata into `RuntimeTemplate`
+* Build hierarchy from `parent_id`
+* Preserve sibling `displayOrder`
+* Validate parser-level consistency: duplicate field names, missing parents,
+  cyclic hierarchy
+
+The parser receives already-loaded entities. It must not query repositories,
+depend on DTOs, resolve mappings, depend on Master Data metadata, write
+persistence state, serialize JSON, resolve runtime values, or generate XML.
+
+---
+
+## TemplateSchemaCompiler
+
+Responsible for:
+
+* Consume `RuntimeTemplate` and `TemplateCompileContext`
+* Produce deterministic `compiled_schema_json`
+
+The compiler is a pure transformation component. It must not access repositories,
+rebuild hierarchy, persist data, resolve database identifiers, or generate XML.
+
+`TemplateCompileContext` is intentionally part of the compiler API even when it
+contains only mappings. It is the stable extension point for future compile-time
+inputs such as namespaces, compiler options, version information, generation
+settings, and feature flags.
+
+`TemplateCompileMapping` is immutable business metadata. It must not contain
+persistence identifiers. The orchestrator resolves database identifiers into
+business metadata before constructing this object.
 
 ---
 
@@ -86,11 +135,15 @@ TemplateController
 TemplateService
         │
         ├──────────────► TemplateRepository
+        ├──────────────► TemplateFieldRepository
+        ├──────────────► TemplateMappingRepository
         │
-        └──────────────► TemplateCompileService
+        └──────────────► TemplateCompilationOrchestrator
                                 │
-                                ▼
-                     Schema Compiler
+                                ├────────► TemplateSchemaParser
+                                ├────────► TemplateSchemaCompiler
+                                ├────────► MasterDataFieldRepository
+                                └────────► MasterDataTypeRepository
 ```
 
 ---
@@ -100,15 +153,21 @@ TemplateService
 ## TemplateService
 
 * create()
-* updateMetadata()
+* update()
 * updateSchema()
 * delete()
 * findById()
 * findAll()
 
----
+## TemplateCompilationOrchestrator
 
-## TemplateCompileService
+* compileAndPersist()
+
+## TemplateSchemaParser
+
+* parse()
+
+## TemplateSchemaCompiler
 
 * compile()
 
@@ -119,14 +178,25 @@ TemplateService
 * Template
 * TemplateField
 * TemplateMapping
-* CompiledSchema
+* RuntimeTemplate
+* RuntimeField
+* TemplateCompileContext
+* TemplateCompileMapping
 
 `TemplateField` describes XML structure. `TemplateMapping` connects fields to
 `MasterDataField`. Editable metadata and `compiled_schema_json` are stored
 separately.
 
+`RuntimeTemplate` and `RuntimeField` are non-persistence runtime schema types.
+They expose business structure only and do not expose database identifiers,
+repository concerns, or parser lookup indexes.
+
+`RuntimeTemplate` and `RuntimeField` represent hierarchy only. Mapping metadata is
+provided separately through `TemplateCompileContext`.
+
 When `sourceType = MASTER_DATA`, exactly one `TemplateMapping` must exist;
-compilation fails if missing. `sourceType` is explicit and is not derived from
+compile-time validation for this rule is deferred to the dedicated
+compile-validation phase. `sourceType` is explicit and is not derived from
 mapping existence.
 
 `triggerActivation` on `TemplateField` controls group activation (nullable;
@@ -136,7 +206,7 @@ defaults by `sourceType`).
 
 # 8. Repository
 
-TemplateRepository
+TemplateRepository, TemplateFieldRepository, and TemplateMappingRepository
 
 Responsibilities
 
@@ -145,7 +215,8 @@ Responsibilities
 * Delete
 * Query
 
-Repository shall not perform business validation.
+Repositories shall not perform business validation, parsing, compilation, or
+orchestration.
 
 ---
 
@@ -154,50 +225,44 @@ Repository shall not perform business validation.
 * ValidationException
 * ConflictException
 * NotFoundException
-* BusinessException
+* TemplateSchemaParserException
 
 ---
 
 # 10. Validation Rules
 
-TemplateService validates:
+TemplateService validates metadata on create/update schema:
 
-* Metadata
-* Business rules
+* Duplicate `fieldName`
+* Invalid `parentFieldName`
+* Cyclic parent relationships
+* Orphan mappings
+* Duplicate mappings
 
-TemplateCompileService validates:
+Deferred to compile-validation phase:
 
-* XML structure (TemplateField)
-* Mapping integrity (TemplateMapping)
-* `sourceType = MASTER_DATA` requires exactly one mapping per field
+* `sourceType = MASTER_DATA` requires a valid mapping
 * `INPUT` / `STATIC` fields must not have mappings
-* Schema integrity
-* Root node
-* Circular references
-* Duplicate fields
-* Empty handling combinations (`INVALID_EMPTY_HANDLING`)
+* XML structure validation
+* Empty handling combinations beyond metadata persistence rules
 
 Template deletion shall verify all business constraints before persistence.
-
-Compilation shall verify that the editable schema version is still current before generating the compiled schema.
 
 ---
 
 # 11. Implementation Notes
 
 * Metadata update shall not trigger compilation.
-* Schema save (`updateSchema`) shall persist `Template`, `TemplateField`, and
-  `TemplateMapping` in one transaction, then compile immediately (Single Save
-  Principle, ADR-002).
-* Any compilation failure rolls back the entire transaction.
-* `compiled_schema_json` is generated only; it is never accepted as editable input.
+* Schema save (`updateSchema`) and create-with-schema shall replace all
+  `TemplateField` and `TemplateMapping` rows atomically, compile through the
+  orchestrator, and return schema reconstructed from metadata.
 * There is no standalone Mapping CRUD API.
-* Lazy migration: when `TemplateField` count is zero and `compiled_schema_json`
-  exists, parse JSON → persist fields and mappings → recompile → overwrite JSON.
-  No Flyway data migration.
-* Optimistic locking shall be applied when updating editable schema.
-* Compilation shall fail if the editable schema has been modified by another administrator.
-* Deletion behavior shall follow the business rules defined by the API specification and shall never violate referential integrity.
+* Lazy migration of legacy `compiled_schema_json` is a **rejected** architectural
+  approach. Editable metadata is the only source of truth.
+* Optimistic locking and schema versioning are deferred to later phases.
+* Deletion behavior shall follow the business rules defined by the API
+  specification and shall never violate referential integrity.
+
 ---
 
 # 12. Unit Test Strategy
@@ -210,18 +275,28 @@ TemplateService
 * Update
 * Delete
 * Find
+* Schema replace validation
 
-TemplateCompileService
+TemplateCompilationOrchestrator
 
-* Successful compile
-* Invalid schema
+* Successful compile and persist
+* Clear compiled JSON when metadata is empty
+* Mapping resolution into compile context
+
+TemplateSchemaParser
+
+* Simple and nested hierarchy
+* Invalid hierarchy detection
+
+TemplateSchemaCompiler
+
+* Deterministic JSON output
+* Mapping metadata in compiled JSON
+
+Deferred compile-validation tests:
+
 * `MAPPING_REQUIRED` when `sourceType = MASTER_DATA` without mapping
 * `UNEXPECTED_MAPPING` when mapping exists for non-MASTER_DATA field
-* Multiple root nodes
-* Circular references
-* Duplicate fields
-* `INVALID_EMPTY_HANDLING`
-* Optimistic locking
 
 ---
 
@@ -233,7 +308,7 @@ TemplateCompileService
 | Compiled Schema | `compiled_schema_json` (generated only)       |
 | Schema Save     | Atomic persist + compile (Single Save)        |
 | Mapping API     | No standalone CRUD; edited with schema        |
-| Lazy Migration  | Application-layer; no Flyway data migration   |
-| Compile Endpoint| Superseded by schema save; retained for repair  |
-| Optimistic Lock | Required                                      |
-| Schema Version  | Required                                      |
+| Lazy Migration  | Rejected                                      |
+| Compile Endpoint| Superseded by schema save; not implemented    |
+| Optimistic Lock | Deferred                                      |
+| Schema Version  | Deferred                                      |

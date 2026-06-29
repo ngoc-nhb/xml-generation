@@ -10,7 +10,13 @@ import com.company.xmlgen.exception.ErrorCode;
 public enum TemplateErrorCode implements ErrorCode {
 
     TEMPLATE_CODE_ALREADY_EXISTS,
-    TEMPLATE_NOT_FOUND;
+    TEMPLATE_NOT_FOUND,
+    TEMPLATE_FIELD_NAME_DUPLICATE,
+    TEMPLATE_FIELD_NOT_FOUND,
+    TEMPLATE_PARENT_FIELD_NOT_FOUND,
+    TEMPLATE_PARENT_CYCLE,
+    TEMPLATE_MAPPING_DUPLICATE,
+    TEMPLATE_INVALID_HIERARCHY;
 
     @Override
     public String code() {

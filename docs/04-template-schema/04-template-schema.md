@@ -306,16 +306,15 @@ Template Tree
 
 TemplateField Hierarchy
 
-Mapping Rules
+Mapping Rules (from TemplateCompileContext)
 ```
 
 during runtime.
 
-during runtime.
-
-Compiled from `Template` + `TemplateField` + `TemplateMapping`. `masterDataType` and
-`masterDataField` in the compiled output are resolved from `TemplateMapping` at
-compile time — they are not stored on `TemplateField` metadata.
+Compiled from `RuntimeTemplate` + `TemplateCompileContext`. `masterDataType` and
+`masterDataField` in the compiled output are supplied by `TemplateCompileMapping`
+business metadata at compile time — they are not stored on `TemplateField`
+metadata and are not resolved by the compiler from database identifiers.
 
 ---
 
@@ -323,65 +322,60 @@ compile time — they are not stored on `TemplateField` metadata.
 
 ```json
 {
-  "templateCode": "LIVE_GAME",
-
-  "root": {
-    "name": "LiveGame",
-
-    "fieldType": "GROUP",
-
-    "displayOrder": 1,
-
-    "children": [
-      {
-        "name": "GameID",
-
-        "fieldType": "ELEMENT",
-
-        "sourceType": "INPUT",
-
-        "emptyHandling": "REQUIRED",
-
-        "dataType": "INTEGER",
-
-        "displayOrder": 1
-      },
-
-      {
-        "name": "GameDate",
-
-        "fieldType": "ELEMENT",
-
-        "sourceType": "INPUT",
-
-        "emptyHandling": "REQUIRED",
-
-        "dataType": "DATE",
-
-        "format": "yyyyMMdd",
-
-        "displayOrder": 2
-      },
-
-      {
-        "name": "GameKindID",
-
-        "fieldType": "ELEMENT",
-
-        "sourceType": "MASTER_DATA",
-
-        "masterDataType": "GAME_KIND",
-
-        "masterDataField": "game_kind_id",
-
-        "emptyHandling": "REQUIRED",
-
-        "dataType": "INTEGER",
-
-        "displayOrder": 3
-      }
-    ]
-  }
+  "roots": [
+    {
+      "fieldName": "LiveGame",
+      "name": "LiveGame",
+      "fieldType": "GROUP",
+      "emptyHandling": "REQUIRED",
+      "requiredWhenParentExists": false,
+      "displayOrder": 1,
+      "children": [
+        {
+          "fieldName": "GameID",
+          "name": "GameID",
+          "fieldType": "ELEMENT",
+          "sourceType": "INPUT",
+          "emptyHandling": "REQUIRED",
+          "dataType": "INTEGER",
+          "requiredWhenParentExists": false,
+          "displayOrder": 1,
+          "children": []
+        },
+        {
+          "fieldName": "GameDate",
+          "name": "GameDate",
+          "fieldType": "ELEMENT",
+          "sourceType": "INPUT",
+          "emptyHandling": "REQUIRED",
+          "dataType": "DATE",
+          "requiredWhenParentExists": false,
+          "displayOrder": 2,
+          "children": []
+        },
+        {
+          "fieldName": "GameKindID",
+          "name": "GameKindID",
+          "fieldType": "ELEMENT",
+          "sourceType": "MASTER_DATA",
+          "masterDataType": "GAME_KIND",
+          "masterDataField": "game_kind_id",
+          "emptyHandling": "REQUIRED",
+          "dataType": "INTEGER",
+          "requiredWhenParentExists": false,
+          "displayOrder": 3,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "mappings": [
+    {
+      "fieldName": "GameKindID",
+      "masterDataType": "GAME_KIND",
+      "masterDataField": "game_kind_id"
+    }
+  ]
 }
 ```
 
@@ -389,10 +383,12 @@ compile time — they are not stored on `TemplateField` metadata.
 
 ## 9. Schema Node Definition
 
-Every node inside compiled_schema_json shall follow the structure below.
+Every node inside `compiled_schema_json.roots[*]` and nested `children[*]` shall
+follow the structure below.
 
 | Property        | Description                                              |
 | --------------- | -------------------------------------------------------- |
+| fieldName       | Runtime field key (`field_name` from TemplateField)      |
 | name            | XML node name (`xml_name` from TemplateField)            |
 | fieldType       | GROUP / ELEMENT / ATTRIBUTE                              |
 | sourceType      | INPUT / MASTER_DATA / STATIC                             |
@@ -405,6 +401,18 @@ Every node inside compiled_schema_json shall follow the structure below.
 | masterDataType  | Master Data Type Code (from TemplateMapping at compile)  |
 | masterDataField | Master Data Field Name (from TemplateMapping at compile) |
 | children        | Child nodes                                              |
+
+Top-level `mappings` shall be ordered by:
+
+```text
+fieldName
+masterDataType
+masterDataField
+```
+
+The top-level mappings array is compile-time metadata for runtime loaders. Node
+objects also include `masterDataType` and `masterDataField` when a mapping exists
+for that field.
 
 ---
 
@@ -1248,26 +1256,108 @@ TemplateMapping Updated
 
 ---
 
-### Compilation Process
+### Runtime Schema Parser
 
-```text id="f6thlj"
+Before compilation, the system builds an in-memory runtime schema model from
+already-loaded metadata:
+
+```text
 Template
-
     +
-
 TemplateField
-
     +
-
 TemplateMapping
 
         ↓
 
-Build Template Tree
+TemplateSchemaParser
 
         ↓
 
-Resolve Mapping Rules
+RuntimeTemplate
+ └─ RuntimeField
+     └─ child RuntimeField nodes
+```
+
+The parser is responsible only for:
+
+* Building the hierarchy from `parent_id`
+* Resolving parent-child relationships
+* Preserving sibling `display_order`
+* Detecting parser-level consistency errors such as circular hierarchy, missing
+  parent, and duplicate runtime field names
+
+The parser must not:
+
+* Query repositories
+* Generate XML
+* Resolve runtime values
+* Compile JSON
+* Write `compiled_schema_json`
+* Depend on HTTP DTOs
+
+Runtime schema models represent business structure. They do not expose database
+identifiers, repository concepts, or parser lookup indexes.
+
+---
+
+### Template Schema Compiler
+
+The compiler consumes the runtime hierarchy plus explicit compile-time context:
+
+```text
+RuntimeTemplate
+    +
+TemplateCompileContext
+        └─ TemplateCompileMapping
+
+        ↓
+
+TemplateSchemaCompiler
+
+        ↓
+
+compiled_schema_json
+```
+
+`TemplateCompileContext` is the stable extension point for future compile-time
+inputs such as namespaces, compiler options, version information, generation
+settings, and feature flags. New compile-time inputs should be added to the
+context instead of expanding the compiler method signature.
+
+`TemplateCompileMapping` is immutable business metadata. It must not contain
+persistence identifiers. The caller resolves database identifiers into business
+metadata before constructing it.
+
+Example:
+
+```text
+TemplateCompileMapping
+------
+fieldName
+masterDataTypeCode
+masterDataFieldName
+```
+
+The compiler must not:
+
+* Query repositories
+* Access JPA entities
+* Resolve database identifiers
+* Generate XML
+* Resolve runtime values
+* Do not perform lazy migration
+
+---
+
+### Compilation Process
+
+```text id="f6thlj"
+RuntimeTemplate
+
+    +
+
+TemplateCompileContext
 
         ↓
 
@@ -1746,49 +1836,12 @@ These features may be introduced in future phases if business requirements justi
 
 ---
 
-## 35. Lazy Migration (Legacy Templates)
+## 35. Lazy Migration (Rejected)
 
-Templates created before `TemplateField` normalization may have
-`compiled_schema_json` populated but no `TemplateField` or `TemplateMapping`
-rows.
+Lazy migration of legacy `compiled_schema_json` into editable metadata is
+**rejected**.
 
-### Trigger
-
-Lazy migration runs when **all** of the following are true:
-
-```text
-TemplateField count = 0
-
-compiled_schema_json IS NOT NULL
-```
-
-### Flow
-
-```text
-Load compiled_schema_json
-        ↓
-Parse JSON tree
-        ↓
-Create TemplateField rows
-        ↓
-Create TemplateMapping rows (from MASTER_DATA nodes)
-        ↓
-BEGIN TRANSACTION
-        ↓
-Save TemplateField + TemplateMapping
-        ↓
-Recompile
-        ↓
-Overwrite compiled_schema_json
-        ↓
-COMMIT
-```
-
-### Constraints
-
-* No Flyway data migration.
-* No SQL conversion script.
-* Parsing is application-layer only.
-* If parse or recompile fails, the transaction rolls back.
-* After successful migration, `TemplateField` becomes the source of truth;
-  subsequent saves follow the Single Save Principle (ADR-002).
+Editable metadata (`TemplateField`, `TemplateMapping`) is the only source of
+truth. Templates without metadata rows must be updated through normal schema
+save APIs. Runtime read APIs must not backfill metadata from
+`compiled_schema_json`.

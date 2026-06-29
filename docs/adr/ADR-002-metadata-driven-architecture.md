@@ -267,13 +267,12 @@ COMMIT (or ROLLBACK on any failure)
 
 Metadata-only updates (`PUT /api/v1/templates/{id}`) do not trigger compilation.
 
-### Lazy migration (legacy templates)
+### Rejected: Lazy migration (legacy templates)
 
-Templates created before `TemplateField` normalization may have
-`compiled_schema_json` but no field rows. On first schema load or save, if
-`TemplateField` is empty and `compiled_schema_json` exists, the service parses
-the JSON into `TemplateField` + `TemplateMapping` rows, then recompiles. No
-Flyway data migration and no SQL conversion. See `04-template-schema` Part 4.
+Lazy migration of legacy `compiled_schema_json` into editable metadata tables is
+**rejected**. Editable metadata (`TemplateField`, `TemplateMapping`) is the only
+source of truth. Legacy templates without metadata rows must be recreated through
+normal schema save APIs rather than automatic JSON backfill.
 
 ---
 

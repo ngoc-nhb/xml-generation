@@ -1,6 +1,6 @@
 package com.company.xmlgen.template.dto.request;
 
-import com.company.xmlgen.template.dto.response.TemplateSchemaResponse;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -13,5 +13,5 @@ public record CreateTemplateRequest(
         @NotBlank @Size(max = 100) String code,
         @NotBlank @Size(max = 255) String name,
         String description,
-        TemplateSchemaResponse schema) {
+        @Valid CreateTemplateSchemaRequest schema) {
 }

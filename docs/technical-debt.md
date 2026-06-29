@@ -13,6 +13,8 @@ governing prioritization.
 | TD-005 | Add controller slice tests | After Template Module | `@WebMvcTest` coverage for request validation, status codes, error envelopes. |
 | TD-006 | Investigate JSONB search optimization | After performance measurement | Only act on a demonstrated, measured bottleneck. |
 | TD-007 | Database-backed uniqueness for high concurrency | CSV Import / Batch Import / Multi-user editing | App-level uniqueness is sufficient for MVP; re-evaluate under concurrency. |
+| TD-008 | Template compile-time mapping validation | Compile-validation phase | `source_type = MASTER_DATA` mapping rules and unexpected-mapping checks are not yet enforced during compilation. |
+| TD-009 | POST /templates/{id}/compile endpoint | Future repair tooling | Superseded by schema save; documented but not implemented. |
 
 ---
 
@@ -54,3 +56,16 @@ Uniqueness for record values and `display_order` is enforced at the application
 layer (read-then-write), which is race-prone under concurrency. Re-evaluate
 database-backed constraints when implementing CSV Import, Batch Import, or
 multi-user editing.
+
+## TD-008 — Template compile-time mapping validation
+
+The orchestrator resolves mappings and compiles schema but does not yet enforce
+compile-time rules such as `source_type = MASTER_DATA` requiring a valid mapping,
+or rejecting mappings on non-`MASTER_DATA` fields. Implement in the dedicated
+compile-validation phase.
+
+## TD-009 — POST /templates/{id}/compile endpoint
+
+The API design documents a standalone compile endpoint for repair scenarios.
+Normal editing uses schema save with inline compilation. The standalone endpoint
+is not implemented in the Template Module MVP.

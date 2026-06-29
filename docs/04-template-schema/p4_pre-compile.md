@@ -68,26 +68,108 @@ TemplateMapping Updated
 
 ---
 
-### Compilation Process
+### Runtime Schema Parser
 
-```text id="f6thlj"
+Before compilation, the system builds an in-memory runtime schema model from
+already-loaded metadata:
+
+```text
 Template
-
     +
-
 TemplateField
-
     +
-
 TemplateMapping
 
         ↓
 
-Build Template Tree
+TemplateSchemaParser
 
         ↓
 
-Resolve Mapping Rules
+RuntimeTemplate
+ └─ RuntimeField
+     └─ child RuntimeField nodes
+```
+
+The parser is responsible only for:
+
+* Building the hierarchy from `parent_id`
+* Resolving parent-child relationships
+* Preserving sibling `display_order`
+* Detecting parser-level consistency errors such as circular hierarchy, missing
+  parent, and duplicate runtime field names
+
+The parser must not:
+
+* Query repositories
+* Generate XML
+* Resolve runtime values
+* Compile JSON
+* Write `compiled_schema_json`
+* Depend on HTTP DTOs
+
+Runtime schema models represent business structure. They do not expose database
+identifiers, repository concepts, or parser lookup indexes.
+
+---
+
+### Template Schema Compiler
+
+The compiler consumes the runtime hierarchy plus explicit compile-time context:
+
+```text
+RuntimeTemplate
+    +
+TemplateCompileContext
+        └─ TemplateCompileMapping
+
+        ↓
+
+TemplateSchemaCompiler
+
+        ↓
+
+compiled_schema_json
+```
+
+`TemplateCompileContext` is the stable extension point for future compile-time
+inputs such as namespaces, compiler options, version information, generation
+settings, and feature flags. New compile-time inputs should be added to the
+context instead of expanding the compiler method signature.
+
+`TemplateCompileMapping` is immutable business metadata. It must not contain
+persistence identifiers. The caller resolves database identifiers into business
+metadata before constructing it.
+
+Example:
+
+```text
+TemplateCompileMapping
+------
+fieldName
+masterDataTypeCode
+masterDataFieldName
+```
+
+The compiler must not:
+
+* Query repositories
+* Access JPA entities
+* Resolve database identifiers
+* Generate XML
+* Resolve runtime values
+* Do not perform lazy migration
+
+---
+
+### Compilation Process
+
+```text id="f6thlj"
+RuntimeTemplate
+
+    +
+
+TemplateCompileContext
 
         ↓
 
@@ -951,53 +1033,12 @@ These features may be introduced in future phases if business requirements justi
 
 ---
 
-## 35. Lazy Migration (Legacy Templates)
+## 35. Lazy Migration (Rejected)
 
-Templates created before `TemplateField` normalization may have
-`compiled_schema_json` populated but no `TemplateField` or `TemplateMapping`
-rows.
+Lazy migration of legacy `compiled_schema_json` into editable metadata is
+**rejected**.
 
-### Trigger
-
-Lazy migration runs when **all** of the following are true:
-
-```text
-TemplateField count = 0
-
-compiled_schema_json IS NOT NULL
-```
-
-Typical triggers: first `GET /api/v1/templates/{id}` that needs editable schema,
-or first `PUT /api/v1/templates/{id}/schema` after upgrade.
-
-### Flow
-
-```text
-Load compiled_schema_json
-        ↓
-Parse JSON tree
-        ↓
-Create TemplateField rows
-        ↓
-Create TemplateMapping rows (from MASTER_DATA nodes)
-        ↓
-BEGIN TRANSACTION
-        ↓
-Save TemplateField + TemplateMapping
-        ↓
-Recompile
-        ↓
-Overwrite compiled_schema_json
-        ↓
-COMMIT
-```
-
-### Constraints
-
-* No Flyway data migration.
-* No SQL conversion script.
-* Parsing is application-layer only.
-* If parse or recompile fails, the transaction rolls back; the legacy JSON remains
-  unchanged until the next attempt.
-* After successful migration, `TemplateField` becomes the source of truth;
-  subsequent saves follow the Single Save Principle (ADR-002).
+Editable metadata (`TemplateField`, `TemplateMapping`) is the only source of
+truth. Templates without metadata rows must be updated through normal schema
+save APIs. Runtime read APIs must not backfill metadata from
+`compiled_schema_json`.

@@ -195,6 +195,9 @@ description
 `field_name` is the internal stable identifier used for form binding and
 `input_data_json` keys. It is never emitted in generated XML.
 
+In API requests and responses, hierarchy is expressed as `parentFieldName`
+referencing another field's `field_name`. Persistence stores `parent_id`.
+
 `xml_name` is the actual XML node or attribute name.
 
 `display_name` is the UI label for Dynamic Form Rendering.
@@ -442,15 +445,8 @@ TemplateMapping
 ```
 
 Deleting a `MasterDataField` must not be blocked by a mapping. The foreign key
-uses `ON DELETE SET NULL`. The Template Compiler detects invalid mappings at
-compile time; generation-time validation also reports `MASTER_DATA_NOT_FOUND`.
-
-### Lazy migration
-
-Legacy templates may store schema only in `compiled_schema_json`. When
-`TemplateField` rows are empty and `compiled_schema_json` exists, the service
-parses the JSON into `TemplateField` and `TemplateMapping` on first schema
-access, then recompiles. No Flyway data migration.
+uses `ON DELETE SET NULL`. Compile-time validation for invalid mappings is
+deferred to the dedicated compile-validation phase.
 
 ---
 

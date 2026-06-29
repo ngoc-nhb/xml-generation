@@ -73,7 +73,7 @@ Admin only.
 
 ## 23. GET /api/v1/templates/{id}
 
-Returns the complete editable template definition.
+Returns the complete editable template definition reconstructed from metadata.
 
 ### Request
 
@@ -90,37 +90,95 @@ GET /api/v1/templates/{id}
   "success": true,
   "data": {
     "id": 1,
-    "templateCode": "LIVE_GAME",
-    "templateName": "Live Game",
+    "code": "LIVE_GAME",
+    "name": "Live Game",
     "description": "J League Live Match XML",
-    "fileNamePattern": "live_game.xml",
-    "fields": [
-      {
-        "id": 1,
-        "parentId": null,
-        "name": "LiveGame",
-        "fieldType": "GROUP",
-        "displayOrder": 1
-      }
-    ],
-    "mappings": [],
-    "compiledSchema": {}
+    "status": "ACTIVE",
+    "createdAt": "2026-01-01T00:00:00Z",
+    "updatedAt": "2026-01-02T00:00:00Z",
+    "schema": {
+      "version": null,
+      "fields": [
+        {
+          "fieldName": "Game",
+          "parentFieldName": null,
+          "xmlName": "Game",
+          "displayName": "Game",
+          "nodeType": "GROUP",
+          "valueType": null,
+          "sourceType": null,
+          "occurrenceRule": null,
+          "emptyHandling": "REQUIRED",
+          "requiredWhenParentExists": false,
+          "triggerActivation": null,
+          "defaultValue": null,
+          "staticValue": null,
+          "xmlPath": null,
+          "namespace": null,
+          "displayOrder": 1,
+          "description": null
+        },
+        {
+          "fieldName": "GameKindId",
+          "parentFieldName": "Game",
+          "xmlName": "GameKindID",
+          "displayName": "Game Kind ID",
+          "nodeType": "ELEMENT",
+          "valueType": null,
+          "sourceType": "MASTER_DATA",
+          "occurrenceRule": null,
+          "emptyHandling": "REQUIRED",
+          "requiredWhenParentExists": false,
+          "triggerActivation": null,
+          "defaultValue": null,
+          "staticValue": null,
+          "xmlPath": null,
+          "namespace": null,
+          "displayOrder": 1,
+          "description": null
+        }
+      ],
+      "mappings": [
+        {
+          "fieldName": "GameKindId",
+          "masterDataFieldId": 99
+        }
+      ]
+    }
   }
+}
+```
+
+When the template has no `TemplateField` or `TemplateMapping` rows:
+
+```json
+{
+  "schema": null
 }
 ```
 
 ---
 
+### Processing
+
+The Backend shall:
+
+1. Load `Template`
+2. Load `TemplateField` rows ordered by `display_order`
+3. Load `TemplateMapping` rows
+4. Reconstruct `schema.fields` and `schema.mappings` from metadata
+5. Resolve `parentFieldName` from `parent_id`
+
+The Backend shall **not** read `compiled_schema_json` for this API.
+
+---
+
 ### Notes
 
-This API returns both:
-
-* Editable template definition (`fields`, `mappings`)
-* Runtime representation (`compiledSchema`)
-
-The editable definition is used by the Template Editor.
-
-The compiled schema is provided for inspection only and shall not be modified directly.
+* `parentFieldName` is part of the official schema contract (request and response).
+* `schema.version` is reserved for optimistic locking on schema save; it is `null`
+  until schema versioning is persisted on metadata.
+* `compiled_schema_json` is not returned by this API.
 
 ---
 
@@ -147,25 +205,33 @@ POST /api/v1/templates
 
 ```json
 {
-  "templateCode": "LIVE_GAME",
-  "templateName": "Live Game",
+  "code": "LIVE_GAME",
+  "name": "Live Game",
   "description": "J League Live Match XML",
-  "fileNamePattern": "live_game.xml"
+  "schema": null
 }
 ```
+
+Optional `schema` uses the same `fields` and `mappings` shape as
+`PUT /api/v1/templates/{id}/schema`.
 
 ---
 
 ### Processing
 
-The Backend shall:
+The Backend shall execute **one atomic transaction**:
 
 1. Validate request
-2. Create an empty Template
-3. Initialize an empty editable schema
-4. Persist the Template
+2. Create Template
+3. If `schema` is omitted: persist Template only
+4. If `schema` is provided:
+   * Validate metadata (structure and hierarchy only)
+   * Persist `TemplateField` and `TemplateMapping` rows
+   * Resolve `parentFieldName` → `parent_id`
+   * Invoke `TemplateCompilationOrchestrator` to generate `compiled_schema_json`
+5. Roll back the entire transaction if persistence or compilation fails
 
-Compilation is not performed during template creation.
+When no schema is provided, `compiled_schema_json` remains `NULL`.
 
 ---
 
@@ -190,9 +256,9 @@ Compilation is not performed during template creation.
 
 The API shall validate:
 
-* templateCode is unique
-* templateName is required
-* fileNamePattern is required
+* `code` is unique
+* `name` is required
+* Metadata validation when `schema` is provided
 
 ---
 
@@ -256,7 +322,8 @@ Admin only.
 
 Updates the editable Template Schema.
 
-The request contains the complete editable XML structure.
+The request contains the **complete** metadata definition. The Backend replaces
+all existing `TemplateField` and `TemplateMapping` rows for the template.
 
 ---
 
@@ -264,11 +331,24 @@ The request contains the complete editable XML structure.
 
 ```json
 {
-    "version": 12,
-    "fields": [],
-    "mappings": []
+  "version": null,
+  "fields": [
+    {
+      "fieldName": "Game",
+      "parentFieldName": null,
+      "xmlName": "Game",
+      "displayName": "Game",
+      "nodeType": "GROUP",
+      "emptyHandling": "REQUIRED",
+      "displayOrder": 1
+    }
+  ],
+  "mappings": []
 }
 ```
+
+`version` is reserved for future optimistic locking and is ignored in the current
+phase.
 
 ---
 
@@ -276,77 +356,61 @@ The request contains the complete editable XML structure.
 
 The Backend shall execute **one atomic transaction**:
 
-1. Validate payload structure (fields and mappings together)
-2. Verify the submitted version against the current Template version
-3. Replace all `TemplateField` rows for the template
-4. Replace all `TemplateMapping` rows for the template
-5. Compile editable metadata → `compiled_schema_json`
-6. Increment the Template version
-7. Commit (or roll back entirely on any failure)
+1. Validate metadata (structure and hierarchy only)
+2. Delete all existing `TemplateMapping` rows for the template
+3. Delete all existing `TemplateField` rows for the template
+4. Persist the submitted `fields` and `mappings`
+5. Resolve `parentFieldName` → `parent_id`
+6. Invoke `TemplateCompilationOrchestrator` to generate or clear
+   `compiled_schema_json`
+7. Return the schema reconstructed from persisted metadata
 
-`TemplateField` and `TemplateMapping` are edited together. There is no standalone
-Mapping CRUD API. Compilation runs immediately after persistence in the same
-transaction. `compiled_schema_json` is generated only and is never accepted as
-input on this endpoint.
-
-If compilation fails, no field or mapping changes are committed.
+If validation, persistence, or compilation fails, the entire transaction rolls
+back.
 
 ---
 
-### Optimistic Locking
+### Success Response
 
-The API shall use optimistic locking to prevent concurrent update conflicts.
+Returns the updated schema reconstructed from metadata (same shape as
+`GET /api/v1/templates/{id}` → `schema`).
 
-The submitted:
-
-```text
-version
-```
-
-must match the current version stored in the database.
-
-If the submitted version is outdated, the update shall be rejected.
-
-Example:
-
-```text
-Database Version = 13
-
-Request Version = 12
-
-↓
-
-409 Conflict
-```
-
----
-
-### Conflict Response
+When the submitted schema is empty:
 
 ```json
 {
-    "success": false,
-    "errors": [
-        {
-            "code": "TEMPLATE_VERSION_CONFLICT"
-        }
-    ]
+  "success": true,
+  "data": null
 }
 ```
 
-The client should reload the latest Template before attempting another update.
+---
+
+### Metadata Validation
+
+The API validates metadata only:
+
+| Rule | Error code |
+|------|------------|
+| Duplicate `fieldName` | `TEMPLATE_FIELD_NAME_DUPLICATE` |
+| Unknown `parentFieldName` | `TEMPLATE_PARENT_FIELD_NOT_FOUND` |
+| Field is its own parent | `TEMPLATE_INVALID_HIERARCHY` |
+| Cyclic parent chain | `TEMPLATE_PARENT_CYCLE` |
+| Mapping references unknown field | `TEMPLATE_FIELD_NOT_FOUND` |
+| Duplicate mapping per field | `TEMPLATE_MAPPING_DUPLICATE` |
+| Mappings without fields | `TEMPLATE_FIELD_NOT_FOUND` |
+
+XML validation, Mapping Engine validation, and compile-time mapping rules
+(`source_type = MASTER_DATA`, unexpected mappings) are deferred to the dedicated
+compile-validation phase.
 
 ---
 
 ### Notes
 
-This API follows the **Single Save Principle** (ADR-002):
-
-* `fields` and `mappings` form one metadata definition and must be submitted together.
-* Business validation and compilation occur in the same transaction as persistence.
-* A successful response means `compiled_schema_json` is already up to date.
-
-Optimistic locking applies as described below.
+* `fields` and `mappings` form one metadata definition (Single Save Principle).
+* `parentFieldName` is part of the official schema contract.
+* Optimistic locking via `version` is deferred to a later phase.
 
 ---
 
@@ -426,8 +490,8 @@ Regenerate:
 compiled_schema_json
 ```
 
-from existing `TemplateField` and `TemplateMapping` rows (e.g. after lazy
-migration or admin repair).
+from existing `TemplateField` and `TemplateMapping` rows (e.g. after admin
+repair).
 
 ---
 

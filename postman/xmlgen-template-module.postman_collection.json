@@ -1,0 +1,503 @@
+{
+  "info": {
+    "_postman_id": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "name": "XMLGen - Template Module",
+    "description": "Postman collection for XMLGen Template Module APIs (v0.4.0).\n\nPrerequisites:\n1. Import `xmlgen-local.postman_environment.json`\n2. Start the app with `./gradlew bootRun`\n3. Run **Authentication > Login** first\n4. For MASTER_DATA mapping flows, run **Setup > Master Data** requests before template schema requests\n\nProtected requests use `Authorization: Bearer {{accessToken}}`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "templateId",
+      "value": ""
+    },
+    {
+      "key": "templateCode",
+      "value": ""
+    },
+    {
+      "key": "masterDataTypeId",
+      "value": ""
+    },
+    {
+      "key": "masterDataFieldId",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('login succeeds', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('accessToken', body.data.accessToken);",
+                  "    pm.collectionVariables.set('accessToken', body.data.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Obtain JWT access token for protected Template APIs."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Setup",
+      "description": "Optional Master Data setup required before creating template mappings to MASTER_DATA fields.",
+      "item": [
+        {
+          "name": "Create Master Data Type",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('masterDataTypeCode', 'GAME_KIND_' + Date.now());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('master data type created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.id).to.be.a('number');",
+                  "    pm.environment.set('masterDataTypeId', String(body.data.id));",
+                  "    pm.collectionVariables.set('masterDataTypeId', String(body.data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{masterDataTypeCode}}\",\n  \"name\": \"Game Kind\",\n  \"description\": \"Sample master data type for template mapping\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/master-data/types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "master-data",
+                "types"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Master Data Field",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('master data field created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.id).to.be.a('number');",
+                  "    pm.environment.set('masterDataFieldId', String(body.data.id));",
+                  "    pm.collectionVariables.set('masterDataFieldId', String(body.data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeId\": {{masterDataTypeId}},\n  \"code\": \"game_kind_id\",\n  \"name\": \"Game Kind ID\",\n  \"dataType\": \"INTEGER\",\n  \"required\": true,\n  \"displayOrder\": 1,\n  \"description\": null,\n  \"defaultValue\": null,\n  \"unique\": true,\n  \"searchable\": true,\n  \"masterDataReferenceTypeId\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/master-data/fields",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "master-data",
+                "fields"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Templates",
+      "item": [
+        {
+          "name": "List Templates",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates?page=1&pageSize=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20"
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": true
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Template (metadata only)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = 'TEMPLATE_' + Date.now();",
+                  "pm.collectionVariables.set('templateCode', code);",
+                  "pm.environment.set('templateCode', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('template created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.id).to.be.a('number');",
+                  "    pm.environment.set('templateId', String(body.data.id));",
+                  "    pm.collectionVariables.set('templateId', String(body.data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{templateCode}}\",\n  \"name\": \"Sample Template\",\n  \"description\": \"Template without schema metadata\",\n  \"schema\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Template (with schema)",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = 'LIVE_GAME_' + Date.now();",
+                  "pm.collectionVariables.set('templateCode', code);",
+                  "pm.environment.set('templateCode', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('template with schema created', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.id).to.be.a('number');",
+                  "    pm.environment.set('templateId', String(body.data.id));",
+                  "    pm.collectionVariables.set('templateId', String(body.data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{templateCode}}\",\n  \"name\": \"Live Game Template\",\n  \"description\": \"Sample template with hierarchy and MASTER_DATA mapping\",\n  \"schema\": {\n    \"fields\": [\n      {\n        \"fieldName\": \"Game\",\n        \"parentFieldName\": null,\n        \"xmlName\": \"Game\",\n        \"displayName\": \"Game\",\n        \"nodeType\": \"GROUP\",\n        \"valueType\": null,\n        \"sourceType\": null,\n        \"occurrenceRule\": null,\n        \"emptyHandling\": \"REQUIRED\",\n        \"requiredWhenParentExists\": null,\n        \"triggerActivation\": null,\n        \"defaultValue\": null,\n        \"staticValue\": null,\n        \"xmlPath\": null,\n        \"namespace\": null,\n        \"displayOrder\": 1,\n        \"description\": null\n      },\n      {\n        \"fieldName\": \"GameKindId\",\n        \"parentFieldName\": \"Game\",\n        \"xmlName\": \"GameKindID\",\n        \"displayName\": \"Game Kind ID\",\n        \"nodeType\": \"ELEMENT\",\n        \"valueType\": null,\n        \"sourceType\": \"MASTER_DATA\",\n        \"occurrenceRule\": null,\n        \"emptyHandling\": \"REQUIRED\",\n        \"requiredWhenParentExists\": null,\n        \"triggerActivation\": null,\n        \"defaultValue\": null,\n        \"staticValue\": null,\n        \"xmlPath\": null,\n        \"namespace\": null,\n        \"displayOrder\": 1,\n        \"description\": null\n      }\n    ],\n    \"mappings\": [\n      {\n        \"fieldName\": \"GameKindId\",\n        \"masterDataFieldId\": {{masterDataFieldId}}\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates"
+              ]
+            },
+            "description": "Run Setup > Master Data requests first so `masterDataFieldId` is populated."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Template Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "Returns schema reconstructed from TemplateField and TemplateMapping metadata."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Template Metadata",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Live Game Template (Updated)\",\n  \"description\": \"Updated template metadata only\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "Updates template metadata only. Does not trigger compilation."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Template Schema",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": null,\n  \"fields\": [\n    {\n      \"fieldName\": \"Report\",\n      \"parentFieldName\": null,\n      \"xmlName\": \"Report\",\n      \"displayName\": \"Report\",\n      \"nodeType\": \"GROUP\",\n      \"valueType\": null,\n      \"sourceType\": null,\n      \"occurrenceRule\": null,\n      \"emptyHandling\": \"REQUIRED\",\n      \"requiredWhenParentExists\": null,\n      \"triggerActivation\": null,\n      \"defaultValue\": null,\n      \"staticValue\": null,\n      \"xmlPath\": null,\n      \"namespace\": null,\n      \"displayOrder\": 1,\n      \"description\": null\n    },\n    {\n      \"fieldName\": \"ReportId\",\n      \"parentFieldName\": \"Report\",\n      \"xmlName\": \"ReportID\",\n      \"displayName\": \"Report ID\",\n      \"nodeType\": \"ELEMENT\",\n      \"valueType\": null,\n      \"sourceType\": \"INPUT\",\n      \"occurrenceRule\": null,\n      \"emptyHandling\": \"REQUIRED\",\n      \"requiredWhenParentExists\": null,\n      \"triggerActivation\": null,\n      \"defaultValue\": null,\n      \"staticValue\": null,\n      \"xmlPath\": null,\n      \"namespace\": null,\n      \"displayOrder\": 1,\n      \"description\": null\n    }\n  ],\n  \"mappings\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}/schema",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}",
+                "schema"
+              ]
+            },
+            "description": "Replaces all schema metadata atomically and recompiles compiled_schema_json."
+          },
+          "response": []
+        },
+        {
+          "name": "Clear Template Schema",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": null,\n  \"fields\": [],\n  \"mappings\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}/schema",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}",
+                "schema"
+              ]
+            },
+            "description": "Clears TemplateField and TemplateMapping metadata and compiled_schema_json."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Template",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

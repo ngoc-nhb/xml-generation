@@ -463,3 +463,176 @@ This ADR records architectural decisions. Documentation updates are explicit fol
 | Documentation only | **Yes** |
 | Implementation tasks included | **No** |
 | Feature-specific decisions included | **No** |
+
+---
+## Persistence Layer Purity
+
+### Status
+
+Accepted
+
+---
+
+### Context
+
+XMLGen follows a layered architecture where each layer has a clear responsibility.
+
+As the project grows (Master Module, Template Metadata Engine, Mapping Engine, XML Generator), it becomes increasingly important to prevent business logic from leaking into the persistence layer.
+
+Mixing persistence and business logic leads to:
+
+* Fat entities
+* Hidden side effects
+* Difficult testing
+* Tight coupling between persistence and domain logic
+
+---
+
+### Decision
+
+Entities are persistence models only.
+
+Their responsibility is limited to representing the database schema.
+
+Entities must not contain:
+
+* business rules
+* validation logic
+* XML generation logic
+* mapping logic
+* helper methods with business meaning
+* cross-entity coordination
+
+Business behavior belongs to the Service / Application layer.
+
+---
+
+### Responsibilities
+
+#### Entity
+
+Responsible for:
+
+* database column mapping
+* persistence annotations
+* enum persistence
+* audit fields
+* foreign key identifiers
+
+Not responsible for:
+
+* validation
+* default value calculation
+* business decisions
+* XML tree construction
+* metadata compilation
+* runtime mapping
+
+---
+
+#### Repository
+
+Responsible for:
+
+* persistence
+* querying
+* pagination
+* filtering
+
+Repositories must not contain business decisions.
+
+---
+
+#### Service
+
+Responsible for:
+
+* business rules
+* validation orchestration
+* transaction boundaries
+* metadata compilation
+* XML generation workflow
+* Mapping Engine execution
+
+---
+
+### Design Principles
+
+1. Migration defines the database contract.
+
+2. Entity reflects the database contract.
+
+3. Repository provides persistence access.
+
+4. Service implements business behavior.
+
+5. Controllers orchestrate HTTP only.
+
+---
+
+### Examples
+
+Good
+
+```text
+TemplateFieldEntity
+
+↓
+
+stores
+
+field_name
+
+xml_name
+
+node_type
+
+value_type
+```
+
+Bad
+
+```text
+TemplateFieldEntity
+
+↓
+
+compileSchema()
+
+generateXml()
+
+resolveMasterData()
+
+validateOccurrenceRule()
+```
+
+Those operations belong to dedicated services.
+
+---
+
+### Benefits
+
+* Clear separation of concerns
+* Easier unit testing
+* Better maintainability
+* Simpler future refactoring
+* Consistent architecture across all modules
+* Alignment with ADR-001 and ADR-002
+
+---
+
+### Project-wide Rule
+
+Every new module must follow this principle.
+
+This applies to:
+
+* Master Module
+* Template Metadata Engine
+* Mapping Engine
+* Input Engine
+* XML Generator
+* Import / Export Engine
+
+No business logic should ever be implemented inside Entity classes.
+

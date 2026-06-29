@@ -155,8 +155,9 @@ TemplateFields and TemplateMappings shall be persisted through TemplateRepositor
 `TemplateField` describes XML only. `TemplateMapping` is stored separately.
 Schema saves persist fields and mappings atomically with compilation in
 `TemplateService` (Single Save Principle, ADR-002). Separate
-TemplateFieldRepository may be provided for efficient field queries;
-business validation remains in TemplateService / TemplateCompileService.
+TemplateFieldRepository and TemplateMappingRepository provide efficient metadata
+queries; business validation remains in TemplateService; compilation orchestration
+remains in TemplateCompilationOrchestrator.
 
 ---
 

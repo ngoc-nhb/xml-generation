@@ -24,9 +24,10 @@ Mapping Rules (from TemplateMapping)
 
 during runtime.
 
-Compiled from `Template` + `TemplateField` + `TemplateMapping`. `masterDataType` and
-`masterDataField` in the compiled output are resolved from `TemplateMapping` at
-compile time — they are not stored on `TemplateField` metadata.
+Compiled from `RuntimeTemplate` + `TemplateCompileContext`. `masterDataType` and
+`masterDataField` in the compiled output are supplied by `TemplateCompileMapping`
+business metadata at compile time — they are not stored on `TemplateField`
+metadata and are not resolved by the compiler from database identifiers.
 
 ---
 
@@ -34,65 +35,60 @@ compile time — they are not stored on `TemplateField` metadata.
 
 ```json
 {
-  "templateCode": "LIVE_GAME",
-
-  "root": {
-    "name": "LiveGame",
-
-    "fieldType": "GROUP",
-
-    "displayOrder": 1,
-
-    "children": [
-      {
-        "name": "GameID",
-
-        "fieldType": "ELEMENT",
-
-        "sourceType": "INPUT",
-
-        "emptyHandling": "REQUIRED",
-
-        "dataType": "INTEGER",
-
-        "displayOrder": 1
-      },
-
-      {
-        "name": "GameDate",
-
-        "fieldType": "ELEMENT",
-
-        "sourceType": "INPUT",
-
-        "emptyHandling": "REQUIRED",
-
-        "dataType": "DATE",
-
-        "format": "yyyyMMdd",
-
-        "displayOrder": 2
-      },
-
-      {
-        "name": "GameKindID",
-
-        "fieldType": "ELEMENT",
-
-        "sourceType": "MASTER_DATA",
-
-        "masterDataType": "GAME_KIND",
-
-        "masterDataField": "game_kind_id",
-
-        "emptyHandling": "REQUIRED",
-
-        "dataType": "INTEGER",
-
-        "displayOrder": 3
-      }
-    ]
-  }
+  "roots": [
+    {
+      "fieldName": "LiveGame",
+      "name": "LiveGame",
+      "fieldType": "GROUP",
+      "emptyHandling": "REQUIRED",
+      "requiredWhenParentExists": false,
+      "displayOrder": 1,
+      "children": [
+        {
+          "fieldName": "GameID",
+          "name": "GameID",
+          "fieldType": "ELEMENT",
+          "sourceType": "INPUT",
+          "emptyHandling": "REQUIRED",
+          "dataType": "INTEGER",
+          "requiredWhenParentExists": false,
+          "displayOrder": 1,
+          "children": []
+        },
+        {
+          "fieldName": "GameDate",
+          "name": "GameDate",
+          "fieldType": "ELEMENT",
+          "sourceType": "INPUT",
+          "emptyHandling": "REQUIRED",
+          "dataType": "DATE",
+          "requiredWhenParentExists": false,
+          "displayOrder": 2,
+          "children": []
+        },
+        {
+          "fieldName": "GameKindID",
+          "name": "GameKindID",
+          "fieldType": "ELEMENT",
+          "sourceType": "MASTER_DATA",
+          "masterDataType": "GAME_KIND",
+          "masterDataField": "game_kind_id",
+          "emptyHandling": "REQUIRED",
+          "dataType": "INTEGER",
+          "requiredWhenParentExists": false,
+          "displayOrder": 3,
+          "children": []
+        }
+      ]
+    }
+  ],
+  "mappings": [
+    {
+      "fieldName": "GameKindID",
+      "masterDataType": "GAME_KIND",
+      "masterDataField": "game_kind_id"
+    }
+  ]
 }
 ```
 
@@ -100,10 +96,12 @@ compile time — they are not stored on `TemplateField` metadata.
 
 ## 9. Schema Node Definition
 
-Every node inside compiled_schema_json shall follow the structure below.
+Every node inside `compiled_schema_json.roots[*]` and nested `children[*]` shall
+follow the structure below.
 
 | Property        | Description                                              |
 | --------------- | -------------------------------------------------------- |
+| fieldName       | Runtime field key (`field_name` from TemplateField)      |
 | name            | XML node name (`xml_name` from TemplateField)            |
 | fieldType       | GROUP / ELEMENT / ATTRIBUTE                              |
 | sourceType      | INPUT / MASTER_DATA / STATIC                             |
@@ -116,6 +114,18 @@ Every node inside compiled_schema_json shall follow the structure below.
 | masterDataType  | Master Data Type Code (from TemplateMapping at compile)  |
 | masterDataField | Master Data Field Name (from TemplateMapping at compile) |
 | children        | Child nodes                                              |
+
+Top-level `mappings` shall be ordered by:
+
+```text
+fieldName
+masterDataType
+masterDataField
+```
+
+The top-level mappings array is compile-time metadata for runtime loaders. Node
+objects also include `masterDataType` and `masterDataField` when a mapping exists
+for that field.
 
 ---
 

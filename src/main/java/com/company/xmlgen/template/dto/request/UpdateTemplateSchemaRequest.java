@@ -1,6 +1,6 @@
 package com.company.xmlgen.template.dto.request;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
@@ -10,7 +10,7 @@ import java.util.List;
  * @see docs/06-api-design/p3_template-api.md §25A
  */
 public record UpdateTemplateSchemaRequest(
-        @NotNull Long version,
-        @NotNull List<JsonNode> fields,
-        @NotNull List<JsonNode> mappings) {
+        Long version,
+        @NotNull List<@Valid CreateTemplateFieldRequest> fields,
+        @NotNull List<@Valid CreateTemplateMappingRequest> mappings) {
 }
