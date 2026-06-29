@@ -7,6 +7,7 @@ import com.company.xmlgen.masterdata.dto.request.UpdateMasterDataTypeRequest;
 import com.company.xmlgen.masterdata.dto.response.CreateMasterDataTypeResponse;
 import com.company.xmlgen.masterdata.dto.response.MasterDataTypeListResponse;
 import com.company.xmlgen.masterdata.dto.response.MasterDataTypeResponse;
+import com.company.xmlgen.masterdata.dto.response.MessageResponse;
 import com.company.xmlgen.masterdata.dto.response.UpdateMasterDataTypeResponse;
 import com.company.xmlgen.masterdata.service.MasterDataTypeService;
 import jakarta.validation.Valid;
@@ -67,8 +68,8 @@ public class MasterDataTypeController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public ApiResponse<Void> delete(@PathVariable Long id) {
+    public ApiResponse<MessageResponse> delete(@PathVariable Long id) {
         masterDataTypeService.delete(id);
-        return ApiResponse.success("Master data type deleted successfully.");
+        return ApiResponse.ok(new MessageResponse("Master data type deleted successfully."));
     }
 }

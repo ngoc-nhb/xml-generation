@@ -17,7 +17,6 @@ public interface MasterDataRecordRepository extends JpaRepository<MasterDataReco
                     """
                     SELECT r.* FROM master_data_records r
                     WHERE r.master_data_type_id = :typeId
-                      AND r.deleted_at IS NULL
                       AND (CAST(:keyword AS TEXT) IS NULL
                            OR LOWER(CAST(r.data_json AS TEXT)) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
                     """,
@@ -25,11 +24,31 @@ public interface MasterDataRecordRepository extends JpaRepository<MasterDataReco
                     """
                     SELECT COUNT(*) FROM master_data_records r
                     WHERE r.master_data_type_id = :typeId
-                      AND r.deleted_at IS NULL
                       AND (CAST(:keyword AS TEXT) IS NULL
                            OR LOWER(CAST(r.data_json AS TEXT)) LIKE LOWER(CONCAT('%', CAST(:keyword AS TEXT), '%')))
                     """,
             nativeQuery = true)
     Page<MasterDataRecordEntity> search(
             @Param("typeId") Long typeId, @Param("keyword") String keyword, Pageable pageable);
+
+    @Query(
+            value =
+                    """
+                    SELECT EXISTS (
+                        SELECT 1 FROM master_data_records r
+                        WHERE r.master_data_type_id = :typeId
+                          AND (CAST(:excludedRecordId AS BIGINT) IS NULL
+                               OR r.id <> CAST(:excludedRecordId AS BIGINT))
+                          AND jsonb_exists(r.data_json, :fieldName)
+                          AND r.data_json -> :fieldName = CAST(:valueJson AS JSONB)
+                    )
+                    """,
+            nativeQuery = true)
+    boolean existsDuplicateValue(
+            @Param("typeId") Long typeId,
+            @Param("fieldName") String fieldName,
+            @Param("valueJson") String valueJson,
+            @Param("excludedRecordId") Long excludedRecordId);
+
+    boolean existsByIdAndMasterDataTypeId(Long id, Long masterDataTypeId);
 }

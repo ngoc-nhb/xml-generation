@@ -3,12 +3,13 @@ package com.company.xmlgen.masterdata.service;
 import com.company.xmlgen.common.api.PageMeta;
 import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.ErrorCode;
+import com.company.xmlgen.exception.FieldViolation;
 import com.company.xmlgen.exception.NotFoundException;
+import com.company.xmlgen.exception.ValidationException;
 import com.company.xmlgen.masterdata.dto.request.CreateMasterDataRecordRequest;
 import com.company.xmlgen.masterdata.dto.request.UpdateMasterDataRecordRequest;
 import com.company.xmlgen.masterdata.dto.response.MasterDataRecordDetailResponse;
 import com.company.xmlgen.masterdata.dto.response.MasterDataRecordListResponse;
-import com.company.xmlgen.masterdata.dto.response.MasterDataRecordResponse;
 import com.company.xmlgen.masterdata.entity.MasterDataRecordEntity;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
@@ -16,7 +17,6 @@ import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import org.springframework.data.domain.Page;
@@ -38,14 +38,17 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
 
     private final MasterDataRecordRepository masterDataRecordRepository;
     private final MasterDataTypeRepository masterDataTypeRepository;
+    private final MasterDataValidationService masterDataValidationService;
     private final ObjectMapper objectMapper;
 
     public MasterDataRecordServiceImpl(
             MasterDataRecordRepository masterDataRecordRepository,
             MasterDataTypeRepository masterDataTypeRepository,
+            MasterDataValidationService masterDataValidationService,
             ObjectMapper objectMapper) {
         this.masterDataRecordRepository = masterDataRecordRepository;
         this.masterDataTypeRepository = masterDataTypeRepository;
+        this.masterDataValidationService = masterDataValidationService;
         this.objectMapper = objectMapper;
     }
 
@@ -78,15 +81,17 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
 
     @Override
     @Transactional
-    public MasterDataRecordResponse create(CreateMasterDataRecordRequest request) {
+    public MasterDataRecordDetailResponse create(CreateMasterDataRecordRequest request) {
         if (!masterDataTypeRepository.existsById(request.typeId())) {
             throw new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
         }
 
+        validate(ValidationContext.create(request.typeId(), request.data()));
+
         MasterDataRecordEntity entity = new MasterDataRecordEntity(request.typeId(), request.data());
         MasterDataRecordEntity saved = masterDataRecordRepository.save(entity);
 
-        return new MasterDataRecordResponse(saved.getId(), saved.getMasterDataTypeId(), saved.getDataJson());
+        return toDetailResponse(saved);
     }
 
     @Override
@@ -94,7 +99,6 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     public MasterDataRecordDetailResponse findById(Long id) {
         MasterDataRecordEntity entity = masterDataRecordRepository
                 .findById(id)
-                .filter(record -> record.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException(MASTER_DATA_RECORD_NOT_FOUND));
 
         return toDetailResponse(entity);
@@ -105,8 +109,9 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     public MasterDataRecordDetailResponse update(Long id, UpdateMasterDataRecordRequest request) {
         MasterDataRecordEntity entity = masterDataRecordRepository
                 .findById(id)
-                .filter(record -> record.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException(MASTER_DATA_RECORD_NOT_FOUND));
+
+        validate(ValidationContext.update(id, entity.getMasterDataTypeId(), request.data()));
 
         entity.setDataJson(request.data());
         MasterDataRecordEntity saved = masterDataRecordRepository.save(entity);
@@ -119,15 +124,22 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     public void delete(Long id) {
         MasterDataRecordEntity entity = masterDataRecordRepository
                 .findById(id)
-                .filter(record -> record.getDeletedAt() == null)
                 .orElseThrow(() -> new NotFoundException(MASTER_DATA_RECORD_NOT_FOUND));
 
-        entity.setDeletedAt(Instant.now());
-        masterDataRecordRepository.save(entity);
+        masterDataRecordRepository.delete(entity);
     }
 
     private Map<String, Object> toValues(JsonNode dataJson) {
         return objectMapper.convertValue(dataJson, new TypeReference<>() {});
+    }
+
+    private void validate(ValidationContext context) {
+        ValidationResult result = masterDataValidationService.validate(context);
+        if (!result.isValid()) {
+            throw new ValidationException(result.errors().stream()
+                    .map(error -> FieldViolation.of(error.field(), error.code(), error.message()))
+                    .toList());
+        }
     }
 
     private static MasterDataRecordDetailResponse toDetailResponse(MasterDataRecordEntity entity) {

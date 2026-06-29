@@ -6,7 +6,6 @@ import com.company.xmlgen.masterdata.dto.request.CreateMasterDataRecordRequest;
 import com.company.xmlgen.masterdata.dto.request.UpdateMasterDataRecordRequest;
 import com.company.xmlgen.masterdata.dto.response.MasterDataRecordDetailResponse;
 import com.company.xmlgen.masterdata.dto.response.MasterDataRecordListResponse;
-import com.company.xmlgen.masterdata.dto.response.MasterDataRecordResponse;
 import com.company.xmlgen.masterdata.dto.response.MessageResponse;
 import com.company.xmlgen.masterdata.service.MasterDataRecordService;
 import jakarta.validation.Valid;
@@ -49,7 +48,7 @@ public class MasterDataRecordController {
 
     @PostMapping("/records")
     @ResponseStatus(HttpStatus.CREATED)
-    public ApiResponse<MasterDataRecordResponse> create(
+    public ApiResponse<MasterDataRecordDetailResponse> create(
             @Valid @RequestBody CreateMasterDataRecordRequest request) {
         return ApiResponse.ok(masterDataRecordService.create(request));
     }

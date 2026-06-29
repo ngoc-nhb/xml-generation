@@ -97,3 +97,77 @@ Priority:
 6. Remaining design documents
 
 If documents conflict, stop and ask for clarification instead of making assumptions.
+
+---
+
+# Project Conventions
+
+These are architectural decisions that guide future implementation. They are not bugs.
+
+## Convention 1 — Optimize only with evidence
+
+Do NOT optimize for performance unless there is measurable evidence of a bottleneck.
+
+Example: Do NOT replace sequential JSONB search with complex indexed search during
+MVP. Optimization belongs to a dedicated performance phase.
+
+## Convention 2 — Do not redesign REST URLs without discussion
+
+The following API style is intentional:
+
+```text
+GET /master-data/fields?typeId=
+```
+
+instead of `/types/{id}/fields`.
+
+Reason: the roadmap requires browsing all fields before filtering by type. Do not
+redesign REST URLs without architectural discussion.
+
+## Convention 3 — Metadata may exist before being enforced
+
+Fields such as `searchable` and `defaultValue` are part of the metadata model.
+Their existence does NOT imply they must already be enforced. Do not remove them
+simply because they are not yet used. See [ADR-002](./docs/adr/ADR-002-metadata-driven-architecture.md).
+
+## Convention 4 — Do not prematurely normalize runtime data
+
+JSONB is the intended storage for `MasterDataRecord`. Do not introduce
+entity-per-type implementations.
+
+## Convention 5 — Business rules must be metadata-driven
+
+Never hardcode field names. Validation, Mapping, and XML Generation must always
+read metadata. See [ADR-002](./docs/adr/ADR-002-metadata-driven-architecture.md).
+
+## Convention 6 — Extend validation via new rules, not new conditionals
+
+Do not introduce new service-layer conditionals when extending validation. New
+validation rules are implemented by adding a new `ValidationRule` with its own
+priority. `MasterDataValidationServiceImpl` remains closed for modification.
+
+---
+
+# MVP-First Principle
+
+When reviewing or proposing improvements:
+
+1. Prioritize correctness over optimization.
+2. Do not recommend performance optimizations unless a measurable bottleneck exists.
+3. Do not propose architectural refactoring solely for theoretical scalability.
+4. Distinguish clearly between:
+   - Bug
+   - Architectural issue
+   - Technical debt
+   - Future enhancement
+5. A feature that exists in the metadata model but is intentionally not implemented
+   yet (e.g. `searchable`, `defaultValue`) must NOT be classified as dead code.
+6. Recommendations should align with the current roadmap. Avoid proposing work
+   scheduled for later phases unless it blocks the current milestone.
+
+---
+
+# Technical Debt
+
+Accepted and intentionally deferred. These do not block milestone completion.
+See [docs/technical-debt.md](./docs/technical-debt.md) for the tracked register.

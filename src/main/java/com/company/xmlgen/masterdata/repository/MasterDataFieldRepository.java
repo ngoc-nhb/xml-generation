@@ -1,6 +1,7 @@
 package com.company.xmlgen.masterdata.repository;
 
 import com.company.xmlgen.masterdata.entity.MasterDataFieldEntity;
+import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 public interface MasterDataFieldRepository extends JpaRepository<MasterDataFieldEntity, Long> {
 
     Page<MasterDataFieldEntity> findByMasterDataTypeId(Long masterDataTypeId, Pageable pageable);
+
+    List<MasterDataFieldEntity> findAllByMasterDataTypeId(Long masterDataTypeId);
 
     Page<MasterDataFieldEntity> findByMasterDataTypeIdAndNameContainingIgnoreCase(
             Long masterDataTypeId, String name, Pageable pageable);
