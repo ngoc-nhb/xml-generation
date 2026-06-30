@@ -715,6 +715,85 @@ See `docs/11-implementation-guide/xml-generation.md` §17.
 
 ---
 
+## Frontend Architecture Principle
+
+The frontend is a **REST client only**. It must not depend on Runtime Engine artifacts
+(`RuntimeTemplate`, `RuntimeExecutionTree`, `compiled_schema_json`) or backend
+implementation structure.
+
+UI behavior is metadata-driven: dynamic forms and validation display follow API
+responses. Business rules remain on the backend.
+
+Full frontend architecture: `docs/13-ui-design/`.
+
+Phase 6.0 produces design documentation only. Frontend architecture is frozen per
+`docs/13-ui-design/12-frontend-stable-architecture.md`. Implementation follows the same
+development lifecycle as backend features (architecture review before code).
+
+---
+
+## Feature Isolation Principle
+
+Each feature under `features/` owns its pages, hooks, API module, components, and types.
+Shared `components/` remain generic. Each feature must be independently removable.
+See `docs/13-ui-design/12-frontend-stable-architecture.md` §4.
+
+---
+
+## Feature Public API Principle
+
+Each feature exposes a **public surface** through `features/<name>/index.ts`.
+
+Cross-feature imports are allowed only through that public module — not through internal
+paths such as `api/`, `utils/`, or private components.
+
+```text
+✔  import { TemplateListPage } from '@/features/templates'
+✘  import { buildFieldTree } from '@/features/templates/utils/schemaTree'
+```
+
+Internal implementation details remain private to the feature. This prevents
+cross-feature coupling as modules grow.
+
+See `docs/13-ui-design/06-component-architecture.md` §12.
+
+---
+
+## Schema Editor Boundary Principle
+
+The Template Schema Editor is a **metadata editor only**. It must never:
+
+- execute preview or export
+- validate runtime input values
+- depend on `RuntimeExecutionTree` or `compiled_schema_json`
+
+It edits metadata (fields, hierarchy, mappings) and persists via
+`PUT /templates/{id}/schema`. Preview and export belong exclusively to the XML
+Generation feature.
+
+See `docs/13-ui-design/12-frontend-stable-architecture.md` §6.1.
+
+---
+
+## API Ownership Principle
+
+All HTTP calls flow through feature API modules → shared `api/client.ts` → REST.
+
+Forbidden: components, dialogs, or pages calling `fetch()` / axios directly.
+
+See `docs/13-ui-design/12-frontend-stable-architecture.md` §5.
+
+---
+
+## Editable vs Generated UI Principle
+
+Editable views (forms, schema editors) accept user input. Generated views (`XmlViewer`,
+preview/export panels) display `data.xml` read-only and must never become editable.
+
+See `docs/13-ui-design/12-frontend-stable-architecture.md` §6.
+
+---
+
 ## Runtime Validation Scope Principle
 
 Runtime Validation validates the **integrity of the runtime model** — not compile-time metadata invariants that are already guaranteed before `compiled_schema_json` is produced.
@@ -981,3 +1060,196 @@ when:
 - and does not represent a business use case itself.
 
 Such shared components must never be moved into the Runtime Engine.
+
+---
+# Feature Evolution Principle
+
+## Purpose
+
+Prevent premature abstraction and keep the frontend architecture aligned with real business evolution.
+
+Reusable components should emerge from proven usage patterns rather than speculation.
+
+---
+
+## Principle
+
+Feature-specific implementations should remain inside their owning feature until there is sufficient evidence that the abstraction is stable.
+
+Do **not** extract shared components simply because two implementations look similar.
+
+Instead, apply the **Rule of Three**.
+
+---
+
+## Rule of Three
+
+A reusable abstraction should normally be extracted only when **at least three independent use cases** exist.
+
+Example:
+
+❌ Too early
+
+```
+TemplateTable
+MasterDataTable
+```
+
+Although both display tables, they may evolve differently.
+
+Keep them inside their respective features.
+
+---
+
+✅ Appropriate extraction
+
+```
+TemplateTable
+MasterDataTable
+ExportHistoryTable
+```
+
+If all three require nearly identical behaviors:
+
+- pagination
+- sorting
+- loading
+- empty state
+- row actions
+
+then extract:
+
+```
+DataTable
+```
+
+as a shared presentation component.
+
+---
+
+## Extraction Criteria
+
+Before extracting a shared component, verify:
+
+- At least three concrete use cases exist, **or**
+- There is strong architectural evidence that the abstraction is stable.
+
+The extracted component should have:
+
+- clear responsibility
+- stable API
+- no business knowledge
+- no feature-specific naming
+- no direct REST/API access
+
+---
+
+## Ownership Rules
+
+Feature-specific components belong inside:
+
+```
+features/<feature-name>/
+    components/
+```
+
+Examples:
+
+```
+TemplateForm
+TemplateSchemaEditor
+TemplateToolbar
+
+MasterDataFieldEditor
+MasterDataRecordTable
+
+PreviewPanel
+ExportToolbar
+```
+
+These should **not** be moved to shared components prematurely.
+
+---
+
+## Shared Components
+
+Only generic presentation components belong under:
+
+```
+components/
+```
+
+Examples:
+
+```
+DataTable
+ConfirmDialog
+DeleteDialog
+FormDialog
+SearchBar
+Pagination
+StatusBadge
+EmptyState
+LoadingOverlay
+XmlViewer
+JsonEditor
+SplitPanel
+```
+
+These components must remain:
+
+- presentation-only
+- business-agnostic
+- reusable across features
+
+---
+
+## Architecture Review Requirement
+
+Whenever a potential reusable component is discovered, classify it through the Architecture Feedback Loop.
+
+Possible outcomes:
+
+- Critical Architecture Issue
+- Recommended Improvement
+- Documentation Update
+- Future Improvement
+- Rejected Alternative
+
+If extraction changes ownership boundaries or shared architecture, implementation must stop until the proposal is reviewed and approved.
+
+---
+
+## Rationale
+
+Over-abstraction increases coupling and makes future feature evolution more difficult.
+
+Waiting until an abstraction proves itself through real usage produces:
+
+- simpler code
+- clearer ownership
+- lower maintenance cost
+- more stable shared components
+
+This principle complements the existing:
+
+- Feature Isolation Principle
+- API Ownership Principle
+- Editable vs Generated UI Principle
+
+and ensures the frontend evolves from real product needs rather than speculative design.
+
+---
+
+## Frontend Implementation Status
+
+| Phase | Scope | Status |
+| ----- | ----- | ------ |
+| 6.0 | UI/UX architecture (docs) | ✅ Approved |
+| 6.1 | Frontend foundation (shell, auth, api client) | ✅ Approved |
+| 6.2 | Template module (CRUD, metadata, schema editor) | ✅ Approved |
+| 6.3+ | Master Data, XML Generation, Dashboard | Pending |
+
+Phase 6.2 validated the frozen frontend architecture in a real implementation. The
+Template feature boundary is: Metadata → Schema → Mappings → CRUD → REST. Nothing below
+REST is visible to the UI.
