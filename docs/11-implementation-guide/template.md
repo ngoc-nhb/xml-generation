@@ -30,7 +30,7 @@ Excluded
 * XML Generation
 * Master Data management
 * Saved Input
-* Standalone compile endpoint (superseded by schema save)
+* Standalone compile endpoint (rejected; compilation runs on schema save)
 
 ---
 
@@ -309,6 +309,6 @@ Deferred compile-validation tests:
 | Schema Save     | Atomic persist + compile (Single Save)        |
 | Mapping API     | No standalone CRUD; edited with schema        |
 | Lazy Migration  | Rejected                                      |
-| Compile Endpoint| Superseded by schema save; not implemented    |
+| Compile Endpoint| Rejected (inline via schema save)              |
 | Optimistic Lock | Deferred                                      |
 | Schema Version  | Deferred                                      |

@@ -112,8 +112,10 @@ Manage Template APIs.
 * POST /templates
 * PUT /templates/{id}
 * PUT /templates/{id}/schema
-* POST /templates/{id}/compile
 * DELETE /templates/{id}
+
+Compilation is triggered by `TemplateCompilationOrchestrator` during create-with-schema
+and update-schema flows. There is no standalone compile endpoint.
 
 ---
 
@@ -122,7 +124,7 @@ Manage Template APIs.
 ```text
 TemplateService
 
-CompileService
+TemplateCompilationOrchestrator
 ```
 
 ---
@@ -144,7 +146,9 @@ CompileService
 
 ## Notes
 
-Compile requests shall always be delegated to CompileService.
+Schema save and create-with-schema trigger compilation through
+`TemplateCompilationOrchestrator`. There is no standalone compile controller
+endpoint.
 
 ---
 

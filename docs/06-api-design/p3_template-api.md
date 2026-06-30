@@ -470,93 +470,7 @@ Admin only.
 
 ---
 
-## 27. POST /api/v1/templates/{id}/compile
-
-> **Superseded.** Normal template editing uses `PUT /api/v1/templates/{id}/schema`,
-> which persists fields, mappings, and compiles in one transaction (Single Save
-> Principle, ADR-002). This endpoint is retained only for backward compatibility
-> during migration and may be removed in a future release.
-
-Re-compiles the current `TemplateField` and `TemplateMapping` rows into
-`compiled_schema_json` without modifying editable metadata.
-
----
-
-### Purpose
-
-Regenerate:
-
-```text
-compiled_schema_json
-```
-
-from existing `TemplateField` and `TemplateMapping` rows (e.g. after admin
-repair).
-
----
-
-### Processing
-
-The Backend shall:
-
-1. Load Template
-2. Load Template Fields
-3. Load Template Mappings
-4. Validate Template (including `source_type = MASTER_DATA` ↔ mapping rules)
-5. Build Template Tree
-6. Generate `compiled_schema_json`
-7. Update Template
-
-All operations shall execute within a single database transaction.
-
-If compilation fails, `compiled_schema_json` remains unchanged.
-
-Editable `TemplateField` and `TemplateMapping` rows are not modified by this
-endpoint.
-
----
-
-### Success Response
-
-```json
-{
-    "success": true
-}
-```
-
----
-
-### Failure Response
-
-```json
-{
-    "success": false,
-    "errors": [
-        {
-            "code": "TEMPLATE_COMPILATION_FAILED"
-        }
-    ]
-}
-```
-
----
-
-### Notes
-
-Compilation is an explicit administrator action.
-
-Template editing and template compilation are intentionally separated to support draft editing and iterative development.
-
----
-
-### Authorization
-
-Admin only.
-
-
----
-
-## 28. Validation Rules
+## 27. Validation Rules
 
 Template Management APIs shall validate:
 
@@ -606,20 +520,23 @@ Compilation shall fail when:
 
 ---
 
-## 29. Authorization Matrix
+## 28. Authorization Matrix
 
-| API                 | Admin | User |
-| ------------------- | :---: | :--: |
-| GET Templates       |   ✅   |   ❌  |
-| GET Template Detail |   ✅   |   ❌  |
-| Create Template     |   ✅   |   ❌  |
-| Update Template     |   ✅   |   ❌  |
-| Delete Template     |   ✅   |   ❌  |
-| Compile Template    |   ✅   |   ❌  |
+| API                   | Admin | User |
+| --------------------- | :---: | :--: |
+| GET Templates         |   ✅   |   ❌  |
+| GET Template Detail   |   ✅   |   ❌  |
+| Create Template       |   ✅   |   ❌  |
+| Update Template       |   ✅   |   ❌  |
+| Update Template Schema|   ✅   |   ❌  |
+| Delete Template       |   ✅   |   ❌  |
+
+Compilation runs automatically during **Create Template** (when `schema` is
+provided) and **Update Template Schema**. There is no standalone compile API.
 
 ---
 
-## 30. Error Codes
+## 29. Error Codes
 
 | Error Code                   | Description                                                        |
 | ---------------------------- | ------------------------------------------------------------------ |
@@ -627,7 +544,6 @@ Compilation shall fail when:
 | TEMPLATE_CODE_ALREADY_EXISTS | Template code already exists.                                      |
 | TEMPLATE_IN_USE              | Template cannot be deleted because it is referenced by other data. |
 | INVALID_FILE_NAME_PATTERN    | File name pattern is invalid.                                      |
-| TEMPLATE_COMPILATION_FAILED  | Template compilation failed.                                       |
 | VALIDATION_FAILED            | Request validation failed.                                         |
 | FORBIDDEN                    | User does not have permission.                                     |
 | INTERNAL_SERVER_ERROR        | Unexpected server error.                                           |

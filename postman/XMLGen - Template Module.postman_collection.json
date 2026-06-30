@@ -1,0 +1,767 @@
+{
+  "info": {
+    "_postman_id": "d5e6f7a8-b9c0-4123-def0-234567890abc",
+    "name": "XMLGen - Template Module",
+    "description": "Official Postman collection for the XMLGen Template Module (v0.4.0).\n\nGenerated from the current Spring Boot implementation.\n\nRun **Authentication > Login** before Template requests.\n\nSchema save and create-with-schema trigger compilation through `TemplateCompilationOrchestrator` in the same transaction.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Authentication",
+      "description": "Authentication setup required for protected Template APIs.",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Login returns access token', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.accessToken).to.be.a('string').and.not.empty;",
+                  "    pm.environment.set('token', body.data.accessToken);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{username}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Obtain JWT bearer token for protected routes."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/auth/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"userId\": 1,\n    \"username\": \"admin\",\n    \"isAdmin\": true,\n    \"accessToken\": \"eyJhbGciOiJIUzI1NiJ9.example\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Template",
+      "description": "Template Module CRUD and schema APIs implemented by `TemplateController`.",
+      "item": [
+        {
+          "name": "Create Template",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const code = 'LIVE_GAME_' + Date.now();",
+                  "pm.environment.set('templateCode', code);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 201 Created', function () {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "",
+                  "pm.test('Template id is returned', function () {",
+                  "    const body = pm.response.json();",
+                  "    pm.expect(body.success).to.eql(true);",
+                  "    pm.expect(body.data.id).to.be.a('number');",
+                  "    pm.environment.set('templateId', String(body.data.id));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{templateCode}}\",\n  \"name\": \"Live Game Template\",\n  \"description\": \"J League Live Match XML\",\n  \"schema\": {\n    \"fields\": [\n      {\n        \"fieldName\": \"Game\",\n        \"parentFieldName\": null,\n        \"xmlName\": \"Game\",\n        \"displayName\": \"Game\",\n        \"nodeType\": \"GROUP\",\n        \"valueType\": null,\n        \"sourceType\": null,\n        \"occurrenceRule\": null,\n        \"emptyHandling\": \"REQUIRED\",\n        \"requiredWhenParentExists\": null,\n        \"triggerActivation\": null,\n        \"defaultValue\": null,\n        \"staticValue\": null,\n        \"xmlPath\": null,\n        \"namespace\": null,\n        \"displayOrder\": 1,\n        \"description\": null\n      },\n      {\n        \"fieldName\": \"Title\",\n        \"parentFieldName\": \"Game\",\n        \"xmlName\": \"Title\",\n        \"displayName\": \"Title\",\n        \"nodeType\": \"ELEMENT\",\n        \"valueType\": null,\n        \"sourceType\": \"INPUT\",\n        \"occurrenceRule\": null,\n        \"emptyHandling\": \"REQUIRED\",\n        \"requiredWhenParentExists\": null,\n        \"triggerActivation\": null,\n        \"defaultValue\": null,\n        \"staticValue\": null,\n        \"xmlPath\": null,\n        \"namespace\": null,\n        \"displayOrder\": 1,\n        \"description\": null\n      }\n    ],\n    \"mappings\": []\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates"
+              ]
+            },
+            "description": "Creates a template and, when `schema` is provided, persists `TemplateField` and `TemplateMapping` metadata then compiles `compiled_schema_json` in the same transaction.\n\nOmit `schema` or set it to `null` to create metadata-only templates."
+          },
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"LIVE_GAME_001\",\n  \"name\": \"Live Game Template\",\n  \"description\": \"J League Live Match XML\",\n  \"schema\": null\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates"
+                  ]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1\n  }\n}"
+            },
+            {
+              "name": "409 Conflict",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"LIVE_GAME_001\",\n  \"name\": \"Duplicate Code\",\n  \"description\": \"Duplicate template code\",\n  \"schema\": null\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates"
+                  ]
+                }
+              },
+              "status": "Conflict",
+              "code": 409,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": \"TEMPLATE_CODE_ALREADY_EXISTS\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "List Templates",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates?page=1&pageSize=20&keyword=&status=ACTIVE",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default 1)"
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Records per page (default 20, max 100)"
+                },
+                {
+                  "key": "keyword",
+                  "value": "",
+                  "description": "Optional search by template name"
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "description": "Optional filter: ACTIVE or INACTIVE"
+                }
+              ]
+            },
+            "description": "Returns a paginated list of templates."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates?page=1&pageSize=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates"
+                  ],
+                  "query": [
+                    {
+                      "key": "page",
+                      "value": "1"
+                    },
+                    {
+                      "key": "pageSize",
+                      "value": "20"
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"LIVE_GAME_001\",\n      \"name\": \"Live Game Template\",\n      \"description\": \"J League Live Match XML\",\n      \"status\": \"ACTIVE\",\n      \"createdAt\": \"2026-01-01T00:00:00Z\",\n      \"updatedAt\": \"2026-01-02T00:00:00Z\"\n    }\n  ],\n  \"meta\": {\n    \"page\": 1,\n    \"pageSize\": 20,\n    \"totalRecords\": 1,\n    \"totalPages\": 1\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Template Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "Returns template metadata and schema reconstructed from `TemplateField` and `TemplateMapping`. Does not read `compiled_schema_json`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"LIVE_GAME_001\",\n    \"name\": \"Live Game Template\",\n    \"description\": \"J League Live Match XML\",\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2026-01-01T00:00:00Z\",\n    \"updatedAt\": \"2026-01-02T00:00:00Z\",\n    \"schema\": {\n      \"version\": null,\n      \"fields\": [\n        {\n          \"fieldName\": \"Game\",\n          \"parentFieldName\": null,\n          \"xmlName\": \"Game\",\n          \"displayName\": \"Game\",\n          \"nodeType\": \"GROUP\",\n          \"valueType\": null,\n          \"sourceType\": null,\n          \"occurrenceRule\": null,\n          \"emptyHandling\": \"REQUIRED\",\n          \"requiredWhenParentExists\": false,\n          \"triggerActivation\": null,\n          \"defaultValue\": null,\n          \"staticValue\": null,\n          \"xmlPath\": null,\n          \"namespace\": null,\n          \"displayOrder\": 1,\n          \"description\": null\n        },\n        {\n          \"fieldName\": \"Title\",\n          \"parentFieldName\": \"Game\",\n          \"xmlName\": \"Title\",\n          \"displayName\": \"Title\",\n          \"nodeType\": \"ELEMENT\",\n          \"valueType\": null,\n          \"sourceType\": \"INPUT\",\n          \"occurrenceRule\": null,\n          \"emptyHandling\": \"REQUIRED\",\n          \"requiredWhenParentExists\": false,\n          \"triggerActivation\": null,\n          \"defaultValue\": null,\n          \"staticValue\": null,\n          \"xmlPath\": null,\n          \"namespace\": null,\n          \"displayOrder\": 1,\n          \"description\": null\n        }\n      ],\n      \"mappings\": []\n    }\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/999999",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": \"TEMPLATE_NOT_FOUND\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Template",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Live Game Template (Updated)\",\n  \"description\": \"Updated template metadata only\",\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "Updates template metadata only. Does not modify schema metadata or trigger compilation."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Live Game Template (Updated)\",\n  \"description\": \"Updated template metadata only\",\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 1,\n    \"code\": \"LIVE_GAME_001\",\n    \"name\": \"Live Game Template (Updated)\",\n    \"description\": \"Updated template metadata only\",\n    \"status\": \"ACTIVE\",\n    \"createdAt\": \"2026-01-01T00:00:00Z\",\n    \"updatedAt\": \"2026-01-03T00:00:00Z\"\n  }\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Missing Template\",\n  \"description\": null,\n  \"status\": \"ACTIVE\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/999999",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": \"TEMPLATE_NOT_FOUND\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Template Schema",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"version\": null,\n  \"fields\": [\n    {\n      \"fieldName\": \"Report\",\n      \"parentFieldName\": null,\n      \"xmlName\": \"Report\",\n      \"displayName\": \"Report\",\n      \"nodeType\": \"GROUP\",\n      \"valueType\": null,\n      \"sourceType\": null,\n      \"occurrenceRule\": null,\n      \"emptyHandling\": \"REQUIRED\",\n      \"requiredWhenParentExists\": null,\n      \"triggerActivation\": null,\n      \"defaultValue\": null,\n      \"staticValue\": null,\n      \"xmlPath\": null,\n      \"namespace\": null,\n      \"displayOrder\": 1,\n      \"description\": null\n    },\n    {\n      \"fieldName\": \"ReportId\",\n      \"parentFieldName\": \"Report\",\n      \"xmlName\": \"ReportID\",\n      \"displayName\": \"Report ID\",\n      \"nodeType\": \"ELEMENT\",\n      \"valueType\": null,\n      \"sourceType\": \"INPUT\",\n      \"occurrenceRule\": null,\n      \"emptyHandling\": \"REQUIRED\",\n      \"requiredWhenParentExists\": null,\n      \"triggerActivation\": null,\n      \"defaultValue\": null,\n      \"staticValue\": null,\n      \"xmlPath\": null,\n      \"namespace\": null,\n      \"displayOrder\": 1,\n      \"description\": null\n    }\n  ],\n  \"mappings\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}/schema",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}",
+                "schema"
+              ]
+            },
+            "description": "Replaces all schema metadata atomically and recompiles `compiled_schema_json` in the same transaction.\n\nSubmit empty `fields` and `mappings` arrays to clear schema metadata."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": null,\n  \"fields\": [\n    {\n      \"fieldName\": \"Report\",\n      \"parentFieldName\": null,\n      \"xmlName\": \"Report\",\n      \"displayName\": \"Report\",\n      \"nodeType\": \"GROUP\",\n      \"emptyHandling\": \"REQUIRED\",\n      \"displayOrder\": 1\n    }\n  ],\n  \"mappings\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1/schema",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1",
+                    "schema"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"version\": null,\n    \"fields\": [\n      {\n        \"fieldName\": \"Report\",\n        \"parentFieldName\": null,\n        \"xmlName\": \"Report\",\n        \"displayName\": \"Report\",\n        \"nodeType\": \"GROUP\",\n        \"valueType\": null,\n        \"sourceType\": null,\n        \"occurrenceRule\": null,\n        \"emptyHandling\": \"REQUIRED\",\n        \"requiredWhenParentExists\": false,\n        \"triggerActivation\": null,\n        \"defaultValue\": null,\n        \"staticValue\": null,\n        \"xmlPath\": null,\n        \"namespace\": null,\n        \"displayOrder\": 1,\n        \"description\": null\n      },\n      {\n        \"fieldName\": \"ReportId\",\n        \"parentFieldName\": \"Report\",\n        \"xmlName\": \"ReportID\",\n        \"displayName\": \"Report ID\",\n        \"nodeType\": \"ELEMENT\",\n        \"valueType\": null,\n        \"sourceType\": \"INPUT\",\n        \"occurrenceRule\": null,\n        \"emptyHandling\": \"REQUIRED\",\n        \"requiredWhenParentExists\": false,\n        \"triggerActivation\": null,\n        \"defaultValue\": null,\n        \"staticValue\": null,\n        \"xmlPath\": null,\n        \"namespace\": null,\n        \"displayOrder\": 1,\n        \"description\": null\n      }\n    ],\n    \"mappings\": []\n  }\n}"
+            },
+            {
+              "name": "400 Validation Failed",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"version\": null,\n  \"fields\": [\n    {\n      \"fieldName\": \"Game\",\n      \"parentFieldName\": null,\n      \"xmlName\": \"Game\",\n      \"displayName\": \"Game\",\n      \"nodeType\": \"GROUP\",\n      \"emptyHandling\": \"REQUIRED\",\n      \"displayOrder\": 1\n    },\n    {\n      \"fieldName\": \"Game\",\n      \"parentFieldName\": null,\n      \"xmlName\": \"GameDuplicate\",\n      \"displayName\": \"Duplicate\",\n      \"nodeType\": \"GROUP\",\n      \"emptyHandling\": \"REQUIRED\",\n      \"displayOrder\": 2\n    }\n  ],\n  \"mappings\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1/schema",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1",
+                    "schema"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"field\": \"schema.fields\",\n      \"code\": \"TEMPLATE_FIELD_NAME_DUPLICATE\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Template",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}"
+              ]
+            },
+            "description": "Deletes the template and cascades removal of `TemplateField` and `TemplateMapping` rows."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true\n}"
+            },
+            {
+              "name": "404 Not Found",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/999999",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "999999"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": \"TEMPLATE_NOT_FOUND\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

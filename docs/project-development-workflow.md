@@ -553,6 +553,7 @@ Examples
 
 - Do not inline Mapping into TemplateField.
 - Do not implement lazy migration of legacy `compiled_schema_json` into metadata tables.
+- Do not expose a standalone `POST /templates/{id}/compile` endpoint; compilation runs inline on schema save.
 
 ---
 
