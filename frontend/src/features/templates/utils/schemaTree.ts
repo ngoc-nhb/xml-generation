@@ -233,6 +233,8 @@ export function createEmptyField(
     parentFieldName: string | null,
     displayOrder: number,
 ): DraftTemplateField {
+    const isRootContainer = parentClientId === null;
+
     return {
         clientId: createClientId(),
         parentClientId,
@@ -240,10 +242,10 @@ export function createEmptyField(
         parentFieldName,
         xmlName: '',
         displayName: '',
-        nodeType: 'ELEMENT',
-        valueType: null,
-        sourceType: null,
-        occurrenceRule: null,
+        nodeType: isRootContainer ? 'GROUP' : 'ELEMENT',
+        valueType: isRootContainer ? null : 'STRING',
+        sourceType: isRootContainer ? null : 'INPUT',
+        occurrenceRule: isRootContainer ? 'ONE_OR_MORE' : null,
         emptyHandling: 'REQUIRED',
         requiredWhenParentExists: false,
         triggerActivation: null,
@@ -254,6 +256,63 @@ export function createEmptyField(
         displayOrder,
         description: null,
     };
+}
+
+export function normalizeDraftFieldMetadata(field: DraftTemplateField): DraftTemplateField {
+    const withNames: DraftTemplateField = {
+        ...field,
+        xmlName: field.fieldName,
+        displayName: field.fieldName,
+    };
+
+    if (withNames.nodeType === 'GROUP') {
+        return {
+            ...withNames,
+            sourceType: null,
+            valueType: null,
+            staticValue: null,
+            occurrenceRule: withNames.occurrenceRule ?? 'ONE_OR_MORE',
+        };
+    }
+
+    return withNames;
+}
+
+/** Apply INPUT defaults when a field becomes a value node (e.g. GROUP → ELEMENT). */
+export function applyValueNodeDefaults(field: DraftTemplateField): DraftTemplateField {
+    if (field.nodeType === 'GROUP') {
+        return normalizeDraftFieldMetadata(field);
+    }
+
+    return normalizeDraftFieldMetadata({
+        ...field,
+        sourceType: field.sourceType ?? 'INPUT',
+        valueType: field.valueType ?? 'STRING',
+    });
+}
+
+export function normalizeAllDraftFieldMetadata(fields: DraftTemplateField[]): DraftTemplateField[] {
+    const parentClientIdsWithChildren = new Set(
+        fields.map((field) => field.parentClientId).filter((clientId): clientId is string => clientId != null),
+    );
+
+    return fields.map((field) => {
+        const hasChildren = parentClientIdsWithChildren.has(field.clientId);
+
+        if (hasChildren && field.nodeType !== 'GROUP') {
+            return normalizeDraftFieldMetadata({ ...field, nodeType: 'GROUP' });
+        }
+
+        if (field.nodeType === 'GROUP') {
+            return normalizeDraftFieldMetadata(field);
+        }
+
+        if (field.sourceType == null) {
+            return applyValueNodeDefaults(field);
+        }
+
+        return normalizeDraftFieldMetadata(field);
+    });
 }
 
 export function normalizeSchemaFields(fields: TemplateField[]): TemplateField[] {

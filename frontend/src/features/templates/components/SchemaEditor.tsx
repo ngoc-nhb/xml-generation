@@ -9,9 +9,12 @@ import { SchemaMappingEditor } from '@/features/templates/components/SchemaMappi
 import { useUnsavedChangesBlocker } from '@/features/templates/hooks/useUnsavedChangesBlocker';
 import type { DraftTemplateField, TemplateMapping, TemplateSchema } from '@/features/templates/types/template.types';
 import {
+    applyValueNodeDefaults,
     buildDraftFieldTree,
     createEmptyField,
     findDuplicateFieldNames,
+    normalizeAllDraftFieldMetadata,
+    normalizeDraftFieldMetadata,
     normalizeDraftSchemaFields,
     removeDraftFieldAndDescendants,
     reorderDraftSibling,
@@ -35,8 +38,11 @@ interface SchemaEditorProps {
 }
 
 function cloneSchema(schema: TemplateSchema | null): { fields: DraftTemplateField[]; mappings: TemplateMapping[] } {
+    const fields = normalizeDraftSchemaFields(
+        normalizeAllDraftFieldMetadata(toDraftFields(schema?.fields ?? [])),
+    );
     return {
-        fields: normalizeDraftSchemaFields(toDraftFields(schema?.fields ?? [])),
+        fields,
         mappings: schema?.mappings.map((mapping) => ({ ...mapping })) ?? [],
     };
 }
@@ -65,9 +71,13 @@ export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel 
     }
 
     function handleAddRoot() {
-        const nextField = createEmptyField(null, null, draft.fields.filter((field) => !field.parentClientId).length + 1);
         const fieldName = `Field${draft.fields.length + 1}`;
-        const created = { ...nextField, fieldName, xmlName: fieldName, displayName: fieldName };
+        const created = normalizeDraftFieldMetadata({
+            ...createEmptyField(null, null, draft.fields.filter((field) => !field.parentClientId).length + 1),
+            fieldName,
+            xmlName: fieldName,
+            displayName: fieldName,
+        });
         updateFields([...draft.fields, created]);
         setSelectedClientId(created.clientId);
     }
@@ -80,12 +90,12 @@ export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel 
 
         const siblings = draft.fields.filter((field) => field.parentClientId === parentClientId);
         const fieldName = `${parent.fieldName}Child${siblings.length + 1}`;
-        const created = {
+        const created = applyValueNodeDefaults({
             ...createEmptyField(parentClientId, parent.fieldName, siblings.length + 1),
             fieldName,
             xmlName: fieldName,
             displayName: fieldName,
-        };
+        });
         updateFields([...draft.fields, created]);
         setSelectedClientId(created.clientId);
     }
@@ -117,7 +127,7 @@ export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel 
 
         let nextFields = draft.fields.map((item) => {
             if (item.clientId === previous.clientId) {
-                return field;
+                return normalizeDraftFieldMetadata(field);
             }
             if (item.parentClientId === previous.clientId) {
                 return { ...item, parentFieldName: field.fieldName };
@@ -140,7 +150,7 @@ export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel 
     }
 
     async function handleSave() {
-        const normalizedFields = normalizeDraftSchemaFields(draft.fields);
+        const normalizedFields = normalizeDraftSchemaFields(normalizeAllDraftFieldMetadata(draft.fields));
         const duplicates = findDuplicateFieldNames(normalizedFields);
         if (duplicates.length > 0) {
             toast.error(`Duplicate field names: ${duplicates.join(', ')}`);

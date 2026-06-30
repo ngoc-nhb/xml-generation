@@ -3,6 +3,7 @@ import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/select';
 import type { DraftTemplateField } from '@/features/templates/types/template.types';
+import { normalizeDraftFieldMetadata, applyValueNodeDefaults } from '@/features/templates/utils/schemaTree';
 
 interface SchemaFieldEditorProps {
     field: DraftTemplateField | null;
@@ -37,7 +38,20 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
     return (
         <div className="space-y-4 rounded-md border border-border p-4">
             <h2 className="text-sm font-semibold text-foreground">Field details</h2>
-            <FieldInput label="Field name" value={currentField.fieldName} onChange={(value) => update('fieldName', value)} />
+            <FieldInput
+                label="Field name"
+                value={currentField.fieldName}
+                onChange={(value) =>
+                    onChange(
+                        normalizeDraftFieldMetadata({
+                            ...currentField,
+                            fieldName: value,
+                            xmlName: value,
+                            displayName: value,
+                        }),
+                    )
+                }
+            />
             <div className="space-y-2">
                 <Label htmlFor="parentFieldName">Parent field</Label>
                 <Select id="parentFieldName" value={currentField.parentClientId ?? ''} onChange={(event) => handleParentChange(event.target.value)}>
@@ -55,7 +69,23 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
             <FieldInput label="Display name" value={currentField.displayName ?? ''} onChange={(value) => update('displayName', value)} />
             <div className="space-y-2">
                 <Label htmlFor="nodeType">Node type</Label>
-                <Select id="nodeType" value={currentField.nodeType} onChange={(event) => update('nodeType', event.target.value as DraftTemplateField['nodeType'])}>
+                <Select
+                    id="nodeType"
+                    value={currentField.nodeType}
+                    onChange={(event) => {
+                        const nextNodeType = event.target.value as DraftTemplateField['nodeType'];
+                        const nextField = { ...currentField, nodeType: nextNodeType };
+                        if (nextNodeType === 'GROUP') {
+                            onChange(normalizeDraftFieldMetadata(nextField));
+                            return;
+                        }
+                        if (currentField.nodeType === 'GROUP') {
+                            onChange(applyValueNodeDefaults(nextField));
+                            return;
+                        }
+                        onChange(normalizeDraftFieldMetadata(nextField));
+                    }}
+                >
                     <option value="GROUP">GROUP</option>
                     <option value="ELEMENT">ELEMENT</option>
                     <option value="ATTRIBUTE">ATTRIBUTE</option>
@@ -78,10 +108,23 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 <Label htmlFor="sourceType">Source type</Label>
                 <Select
                     id="sourceType"
-                    value={currentField.sourceType ?? ''}
-                    onChange={(event) => update('sourceType', (event.target.value || null) as DraftTemplateField['sourceType'])}
+                    value={currentField.nodeType === 'GROUP' ? '' : (currentField.sourceType ?? '')}
+                    disabled={currentField.nodeType === 'GROUP'}
+                    onChange={(event) => {
+                        const nextSourceType = (event.target.value || null) as DraftTemplateField['sourceType'];
+                        if (!nextSourceType && currentField.nodeType !== 'GROUP') {
+                            onChange(normalizeDraftFieldMetadata({ ...currentField, nodeType: 'GROUP' }));
+                            return;
+                        }
+                        onChange(
+                            normalizeDraftFieldMetadata({
+                                ...currentField,
+                                sourceType: nextSourceType,
+                            }),
+                        );
+                    }}
                 >
-                    <option value="">None</option>
+                    {currentField.nodeType !== 'GROUP' ? <option value="">None (container)</option> : null}
                     <option value="INPUT">INPUT</option>
                     <option value="MASTER_DATA">MASTER_DATA</option>
                     <option value="STATIC">STATIC</option>
@@ -91,7 +134,8 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 <Label htmlFor="valueType">Value type</Label>
                 <Select
                     id="valueType"
-                    value={currentField.valueType ?? ''}
+                    value={currentField.nodeType === 'GROUP' ? '' : (currentField.valueType ?? '')}
+                    disabled={currentField.nodeType === 'GROUP'}
                     onChange={(event) => update('valueType', (event.target.value || null) as DraftTemplateField['valueType'])}
                 >
                     <option value="">None</option>

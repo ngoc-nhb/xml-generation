@@ -9,6 +9,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     MASTER_DATA_RECORD_IN_USE: 'Master data record cannot be deleted.',
     MASTER_DATA_SCHEMA_CONFLICT: 'Schema change conflicts with existing records.',
     MASTER_DATA_VERSION_CONFLICT: 'Schema version conflict. Refresh and try again.',
+    MASTER_DATA_NOT_FOUND: 'Selected master data record was not found.',
+    MASTER_DATA_TYPE_MISMATCH: 'Selected master data does not match the required type.',
     TEMPLATE_NOT_FOUND: 'Template not found.',
     TEMPLATE_NOT_COMPILED: 'Template is not compiled. Save the schema before preview or export.',
     TEMPLATE_CODE_ALREADY_EXISTS: 'Template code already exists.',

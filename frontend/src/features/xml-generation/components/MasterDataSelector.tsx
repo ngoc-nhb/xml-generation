@@ -9,16 +9,37 @@ import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xm
 interface MasterDataSelectorProps {
     selections: SelectedMasterDataEntry[];
     onChange: (selections: SelectedMasterDataEntry[]) => void;
+    allowedTypeIds?: number[];
+    hideAddControl?: boolean;
+    hideRemoveControl?: boolean;
+    hideHeader?: boolean;
 }
 
-export function MasterDataSelector({ selections, onChange }: MasterDataSelectorProps) {
+export function MasterDataSelector({
+    selections,
+    onChange,
+    allowedTypeIds,
+    hideAddControl = false,
+    hideRemoveControl = false,
+    hideHeader = false,
+}: MasterDataSelectorProps) {
     const { data: typesData, isLoading: typesLoading } = useMasterDataTypeList({
         page: 1,
         pageSize: 100,
     });
 
     const types = useMemo(() => typesData?.items ?? [], [typesData?.items]);
-    const availableTypes = types.filter((type) => !selections.some((entry) => entry.typeId === type.id));
+    const visibleSelections = useMemo(() => {
+        if (!allowedTypeIds || allowedTypeIds.length === 0) {
+            return selections;
+        }
+        return selections.filter((entry) => allowedTypeIds.includes(entry.typeId));
+    }, [allowedTypeIds, selections]);
+    const availableTypes = types.filter(
+        (type) =>
+            (!allowedTypeIds || allowedTypeIds.includes(type.id)) &&
+            !visibleSelections.some((entry) => entry.typeId === type.id),
+    );
 
     function addType(typeId: number) {
         const type = types.find((item) => item.id === typeId);
@@ -52,8 +73,8 @@ export function MasterDataSelector({ selections, onChange }: MasterDataSelectorP
     return (
         <div className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-medium text-foreground">Master data selection</p>
-                {availableTypes.length > 0 ? (
+                {hideHeader ? null : <p className="text-sm font-medium text-foreground">Master data selection</p>}
+                {!hideAddControl && availableTypes.length > 0 ? (
                     <Select
                         value=""
                         disabled={typesLoading}
@@ -73,13 +94,15 @@ export function MasterDataSelector({ selections, onChange }: MasterDataSelectorP
                     </Select>
                 ) : null}
             </div>
-            {selections.length === 0 ? (
+            {visibleSelections.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                    Optionally add master data types used by template mappings.
+                    {hideAddControl
+                        ? 'No master data types are required for this template.'
+                        : 'Optionally add master data types used by template mappings.'}
                 </p>
             ) : (
                 <ul className="space-y-3">
-                    {selections.map((entry) => (
+                    {visibleSelections.map((entry) => (
                         <li key={entry.typeId} className="rounded-md border border-border p-3">
                             <div className="mb-2 flex items-start justify-between gap-2">
                                 <div>
@@ -87,9 +110,11 @@ export function MasterDataSelector({ selections, onChange }: MasterDataSelectorP
                                         {entry.typeCode} — {entry.typeName}
                                     </p>
                                 </div>
-                                <Button type="button" variant="ghost" size="sm" onClick={() => removeType(entry.typeId)}>
-                                    <X className="h-4 w-4" />
-                                </Button>
+                                {!hideRemoveControl ? (
+                                    <Button type="button" variant="ghost" size="sm" onClick={() => removeType(entry.typeId)}>
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                ) : null}
                             </div>
                             <MasterDataRecordPicker
                                 typeId={entry.typeId}
