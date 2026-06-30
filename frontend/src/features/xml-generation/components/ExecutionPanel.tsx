@@ -22,6 +22,10 @@ import {
     serializeFlatFormState,
     type FormScalar,
 } from '@/features/xml-generation/utils/inputFormSchema';
+import {
+    downloadXml,
+    resolveXmlDownloadFilename,
+} from '@/features/xml-generation/utils/downloadXml';
 import { EMPTY_JSON } from '@/features/xml-generation/utils/jsonEditor';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
@@ -152,7 +156,8 @@ export function ExecutionPanel() {
                 setOutputXml(result.xml);
                 setOutputSource('export');
                 setValidationErrors([]);
-                toast.success('Export completed');
+                downloadXml(result.xml, resolveXmlDownloadFilename(selectedTemplate?.name));
+                toast.success('XML downloaded');
             } else {
                 setValidationErrors(result.errors);
                 setOutputSource('export');
