@@ -653,6 +653,68 @@ This is conceptually similar to `compiled_schema_json`: a generated artifact pro
 
 ---
 
+## API Boundary Principle
+
+Application APIs expose business contracts only.
+
+Runtime Engine models are implementation details and must never become part of public API
+contracts unless explicitly approved as debug artifacts.
+
+This applies to every runtime-facing entry point:
+
+- Preview
+- Export
+- Batch Export
+- CLI
+- Scheduler
+
+Default public responses shall expose stable business outputs only (for example, generated
+XML, export metadata, validation errors). Generated artifacts such as
+`compiled_schema_json` and `RuntimeExecutionTree` remain internal.
+
+Debug visibility of runtime artifacts, if ever required, must be opt-in (for example, a
+debug flag or admin-only endpoint) and must not become part of the default contract.
+
+`PreviewService`, `ExportService`, and their REST endpoints are the reference
+implementation of this principle.
+
+The Runtime REST API contract (`xml` on success, validation `errors` on failure) is
+frozen as of Phase 5.5. Do not modify it unless a future ADR explicitly approves the
+change. See `docs/11-implementation-guide/xml-generation.md` §15–§16.
+
+---
+
+## XML Engine Complete (v1.0)
+
+Phase 5.5 marks completion of the XML Engine:
+
+```text
+Metadata → Compile Engine → Runtime Engine → Application Layer → Preview API → Export API
+```
+
+Suggested git tag: `v1.0.0` — **XML Engine Complete**.
+
+Work after this milestone is business capability and infrastructure, not core engine
+architecture.
+
+---
+
+## Engine vs Business Features
+
+**Core Engine (complete):** Metadata, Compile Engine, Runtime Engine, Application Layer,
+Preview/Export REST APIs.
+
+**Business Features (remaining):** Saved Inputs, Export History, Storage, file download,
+Import XML, Template versioning, Batch Export.
+
+Business features extend higher application layers. They must not bypass
+`RuntimeExecutionOrchestrator`, modify the Runtime Engine pipeline, or change the frozen
+Runtime REST contract without ADR approval.
+
+See `docs/11-implementation-guide/xml-generation.md` §17.
+
+---
+
 ## Runtime Validation Scope Principle
 
 Runtime Validation validates the **integrity of the runtime model** — not compile-time metadata invariants that are already guaranteed before `compiled_schema_json` is produced.
@@ -830,6 +892,45 @@ Application Services must never:
 - implement compile logic
 
 Whenever new behavior is needed, it should first be evaluated as a responsibility of an existing runtime component before adding logic to an application service.
+
+## Reference implementation
+
+Runtime-facing application services follow this pattern:
+
+```text
+                TemplateCompileMappingResolver
+                           ▲
+                           │
+     ┌─────────────────────┼─────────────────────┐
+     │                     │                     │
+     ▼                     ▼                     ▼
+TemplateCompilation   PreviewService     ExportService
+   Orchestrator              │                     │
+     │                       └──────────┬──────────┘
+     │                                  ▼
+     │                    RuntimeExecutionOrchestrator
+     │                                  │
+     └──────────────────────────────────┼──────────► Runtime Engine
+                                        ▼
+                              (Loader → Validation →
+                               ValueResolution → XMLGeneration)
+```
+
+`TemplateCompileMappingResolver` is Application Layer only. It is repository-aware,
+shared by compile orchestration and runtime services, and independent from the Runtime
+Engine. No Runtime Engine component depends on it.
+
+`PreviewService` and `ExportService` load application data, resolve mappings via the
+resolver, build `RuntimeExecutionRequest`, invoke `RuntimeExecutionOrchestrator`, and
+map `RuntimeExecutionResult` to application responses. Preview, Export, and compile
+orchestration must not duplicate mapping lookup logic.
+
+Request construction (load template + build `RuntimeExecutionRequest`) is currently
+duplicated between Preview and Export. This is acceptable while they remain separate
+business use cases. If a future consumer appears (CLI, Batch Export, Scheduler), consider
+extracting `RuntimeExecutionRequestFactory` or `RuntimeExecutionRequestBuilder`
+(Application Layer only). Do not extract prematurely.
+
 ---
 
 # Canonical Runtime Model Review (Mandatory)
@@ -867,3 +968,16 @@ Instead provide:
 Wait for approval before proceeding.
 
 Only implement a new runtime model after confirming that it adds real architectural value rather than becoming another structural mirror of `RuntimeTemplate`.
+
+---
+Application Layer may contain reusable shared components
+(e.g. TemplateCompileMappingResolver)
+
+when:
+
+- the logic is repository-aware,
+- reused by multiple Application Services,
+- independent from Runtime Engine,
+- and does not represent a business use case itself.
+
+Such shared components must never be moved into the Runtime Engine.

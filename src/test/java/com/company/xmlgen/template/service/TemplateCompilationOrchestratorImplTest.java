@@ -68,12 +68,16 @@ class TemplateCompilationOrchestratorImplTest {
 
     @BeforeEach
     void setUp() {
+        TemplateCompileMappingResolver mappingResolver = new TemplateCompileMappingResolverImpl(
+                templateFieldRepository,
+                templateMappingRepository,
+                masterDataFieldRepository,
+                masterDataTypeRepository);
         orchestrator = new TemplateCompilationOrchestratorImpl(
                 templateRepository,
                 templateFieldRepository,
                 templateMappingRepository,
-                masterDataFieldRepository,
-                masterDataTypeRepository,
+                mappingResolver,
                 templateSchemaParser,
                 templateSchemaCompiler);
     }

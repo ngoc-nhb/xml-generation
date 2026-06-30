@@ -67,6 +67,11 @@ No physical XML file shall be created.
 
 No Export History shall be created.
 
+> **MVP implementation note:** Phase 5.3 exposes preview via
+> `POST /api/v1/templates/{id}/preview` with `templateId` in the path instead of the
+> request body. See `docs/06-api-design/p3_template-api.md` §26A. Template version
+> validation is deferred.
+
 ---
 
 ### Request
@@ -136,6 +141,12 @@ Unlike Preview, Export shall:
 * Generate XML
 * Persist XML file
 * Create Export History
+
+> **MVP implementation note:** Phase 5.5 exposes export via
+> `POST /api/v1/templates/{id}/export` with `templateId` in the path. The response
+> returns generated XML in the JSON body only. File persistence, export history, and
+> `POST /api/v1/xml/export` are deferred. See `docs/06-api-design/p3_template-api.md`
+> §26B.
 
 ---
 

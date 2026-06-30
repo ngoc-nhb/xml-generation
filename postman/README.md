@@ -1,6 +1,6 @@
 # XMLGen Postman Collection
 
-Official Postman assets for the **Template Module** (`v0.4.0`).
+Official Postman assets for the **Template Module** and **XML Generation APIs** (`v0.5.0`).
 
 ## Required Postman version
 
@@ -57,6 +57,8 @@ Accept: application/json
 5. **Template > Update Template**
 6. **Template > Update Template Schema**
 7. **Template > Delete Template**
+8. **XML Generation > Preview Template**
+9. **XML Generation > Export Template**
 
 Each request includes saved examples for common success and error responses.
 
@@ -85,6 +87,11 @@ To clear schema metadata, send empty `fields` and `mappings` arrays to **Update 
 | PUT | `/api/v1/templates/{id}` |
 | PUT | `/api/v1/templates/{id}/schema` |
 | DELETE | `/api/v1/templates/{id}` |
+| POST | `/api/v1/templates/{id}/preview` |
+| POST | `/api/v1/templates/{id}/export` |
+
+Phase 5.5 export returns generated XML in the JSON response only. File download and
+export history are not yet implemented.
 
 ## Not included
 
@@ -119,5 +126,7 @@ After import, verify:
 2. **Get Template Detail** returns `schema.fields` reconstructed from metadata.
 3. **Update Template Schema** returns updated schema metadata and regenerates `compiled_schema_json`.
 4. **Delete Template** returns `200`, and related field/mapping rows are removed.
+5. **Preview Template** returns `200` with `data.xml` when input satisfies validation.
+6. **Export Template** returns `200` with `data.xml` using the same request shape as Preview.
 
 Use saved examples on each request to compare expected response shapes.

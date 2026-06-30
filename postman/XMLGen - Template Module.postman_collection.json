@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "d5e6f7a8-b9c0-4123-def0-234567890abc",
     "name": "XMLGen - Template Module",
-    "description": "Official Postman collection for the XMLGen Template Module (v0.4.0).\n\nGenerated from the current Spring Boot implementation.\n\nRun **Authentication > Login** before Template requests.\n\nSchema save and create-with-schema trigger compilation through `TemplateCompilationOrchestrator` in the same transaction.",
+    "description": "Official Postman collection for the XMLGen Template Module and XML Generation APIs (v0.5.0).\n\nGenerated from the current Spring Boot implementation.\n\nRun **Authentication > Login** before protected requests.\n\nSchema save and create-with-schema trigger compilation through `TemplateCompilationOrchestrator` in the same transaction.\n\nPreview and Export require a compiled template. Run **Template > Create Template** before **XML Generation** requests.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "auth": {
@@ -758,6 +758,290 @@
                 }
               ],
               "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": \"TEMPLATE_NOT_FOUND\"\n    }\n  ]\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "XML Generation",
+      "description": "Preview and Export REST APIs implemented by `PreviewController` and `ExportController`. Run **Template > Create Template** first so `{{templateId}}` references a compiled template.",
+      "item": [
+        {
+          "name": "Preview Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Preview returns xml on success', function () {",
+                  "    const body = pm.response.json();",
+                  "    if (body.success) {",
+                  "        pm.expect(body.data.xml).to.be.a('string').and.not.empty;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inputData\": {\n    \"Title\": \"Sample Match\"\n  },\n  \"selectedMasterData\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}",
+                "preview"
+              ]
+            },
+            "description": "Generates XML for preview. Returns `data.xml` on success or field-level validation errors in the standard envelope."
+          },
+          "response": [
+            {
+              "name": "200 OK Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inputData\": {\n    \"Title\": \"Sample Match\"\n  },\n  \"selectedMasterData\": {}\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1/preview",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1",
+                    "preview"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"xml\": \"<Game><Title>Sample Match</Title></Game>\"\n  }\n}"
+            },
+            {
+              "name": "200 OK Validation Failure",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inputData\": {},\n  \"selectedMasterData\": {}\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1/preview",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1",
+                    "preview"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"field\": \"Title\",\n      \"code\": \"REQUIRED_FIELD_MISSING\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Export Template",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Export returns xml on success', function () {",
+                  "    const body = pm.response.json();",
+                  "    if (body.success) {",
+                  "        pm.expect(body.data.xml).to.be.a('string').and.not.empty;",
+                  "    }",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inputData\": {\n    \"Title\": \"Sample Match\"\n  },\n  \"selectedMasterData\": {}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/templates/{{templateId}}/export",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "templates",
+                "{{templateId}}",
+                "export"
+              ]
+            },
+            "description": "Generates XML for export. Phase 5.5 returns `data.xml` in the JSON response only. File download and export history are deferred."
+          },
+          "response": [
+            {
+              "name": "200 OK Success",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inputData\": {\n    \"Title\": \"Sample Match\"\n  },\n  \"selectedMasterData\": {}\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1/export",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1",
+                    "export"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"xml\": \"<Game><Title>Sample Match</Title></Game>\"\n  }\n}"
+            },
+            {
+              "name": "400 Template Not Compiled",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inputData\": {},\n  \"selectedMasterData\": {}\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/templates/1/export",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "templates",
+                    "1",
+                    "export"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": false,\n  \"errors\": [\n    {\n      \"code\": \"TEMPLATE_NOT_COMPILED\"\n    }\n  ]\n}"
             }
           ]
         }

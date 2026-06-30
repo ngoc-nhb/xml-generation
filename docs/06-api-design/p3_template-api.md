@@ -414,6 +414,143 @@ compile-validation phase.
 
 ---
 
+## 26A. POST /api/v1/templates/{id}/preview
+
+Generates XML for preview purposes without creating an export file or export history.
+
+### Request
+
+```http
+POST /api/v1/templates/{id}/preview
+```
+
+### Request Body
+
+```json
+{
+  "inputData": {},
+  "selectedMasterData": {}
+}
+```
+
+Both properties are optional. An empty body is treated as empty input and empty master
+data selection.
+
+### Success Response
+
+```http
+200 OK
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "xml": "<Game>...</Game>"
+  }
+}
+```
+
+### Validation Failure
+
+Runtime validation errors are returned in the standard error envelope. The HTTP status
+remains `200 OK` because the request was valid and the engine completed validation.
+
+```json
+{
+  "success": false,
+  "errors": [
+    {
+      "field": "GameId",
+      "code": "SOURCE_TYPE_REQUIRED"
+    }
+  ]
+}
+```
+
+### Processing Errors
+
+| Condition | HTTP Status | Error Code |
+| --------- | ----------- | ---------- |
+| Template not found | 404 | `TEMPLATE_NOT_FOUND` |
+| Template not compiled | 400 | `TEMPLATE_NOT_COMPILED` |
+| Invalid JSON body | 400 | `VALIDATION_FAILED` |
+
+The controller delegates orchestration to `PreviewService`, which invokes
+`RuntimeExecutionOrchestrator`. The response does not expose runtime engine internal
+models such as `RuntimeExecutionTree`.
+
+---
+
+## 26B. POST /api/v1/templates/{id}/export
+
+Generates XML for export purposes. Phase 5.5 returns generated XML in the response
+body only. File download, export history, and storage are deferred.
+
+### Request
+
+```http
+POST /api/v1/templates/{id}/export
+```
+
+### Request Body
+
+```json
+{
+  "inputData": {},
+  "selectedMasterData": {}
+}
+```
+
+Both properties are optional. An empty body is treated as empty input and empty master
+data selection.
+
+### Success Response
+
+```http
+200 OK
+```
+
+```json
+{
+  "success": true,
+  "data": {
+    "xml": "<Game>...</Game>"
+  }
+}
+```
+
+### Validation Failure
+
+Runtime validation errors use the same envelope as Preview. HTTP status remains
+`200 OK`.
+
+```json
+{
+  "success": false,
+  "errors": [
+    {
+      "field": "GameId",
+      "code": "SOURCE_TYPE_REQUIRED"
+    }
+  ]
+}
+```
+
+### Processing Errors
+
+| Condition | HTTP Status | Error Code |
+| --------- | ----------- | ---------- |
+| Template not found | 404 | `TEMPLATE_NOT_FOUND` |
+| Template not compiled | 400 | `TEMPLATE_NOT_COMPILED` |
+| Invalid JSON body | 400 | `VALIDATION_FAILED` |
+
+The controller delegates orchestration to `ExportService`, which invokes
+`RuntimeExecutionOrchestrator`. The response exposes `xml` only and does not expose
+runtime engine internal models.
+
+---
+
 ## 26. DELETE /api/v1/templates/{id}
 
 Deletes a template.
