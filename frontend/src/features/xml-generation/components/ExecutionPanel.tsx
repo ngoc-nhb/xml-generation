@@ -16,11 +16,11 @@ import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useR
 import { useExportXml, usePreviewXml } from '@/features/xml-generation/hooks/useXmlGeneration';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
 import {
-    buildDefaultFlatFormData,
+    buildDefaultFormData,
     countInputFields,
-    flatFormDataToInputData,
-    serializeFlatFormState,
-    type FormScalar,
+    formDataToInputData,
+    serializeFormState,
+    type FormObject,
 } from '@/features/xml-generation/utils/inputFormSchema';
 import {
     downloadXml,
@@ -37,7 +37,7 @@ export function ExecutionPanel() {
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateListItem | null>(null);
     const [inputMode, setInputMode] = useState<InputMode>('form');
-    const [formDataOverride, setFormDataOverride] = useState<Record<string, FormScalar> | null>(null);
+    const [formDataOverride, setFormDataOverride] = useState<FormObject | null>(null);
     const [masterDataOverride, setMasterDataOverride] = useState<SelectedMasterDataEntry[] | null>(null);
     const [inputJsonOverride, setInputJsonOverride] = useState<string | null>(null);
     const [jsonError, setJsonError] = useState<string | null>(null);
@@ -57,18 +57,18 @@ export function ExecutionPanel() {
     const { emptySelections, isLoading: masterTypesLoading } = useResolvedMasterDataTypes(schemaMappings);
 
     const defaultFormData = useMemo(
-        () => (schemaFields.length > 0 ? buildDefaultFlatFormData(schemaFields) : {}),
+        () => (schemaFields.length > 0 ? buildDefaultFormData(schemaFields) : {}),
         [schemaFields],
     );
     const defaultInputJson = useMemo(
         () =>
             schemaFields.length > 0
-                ? JSON.stringify(flatFormDataToInputData(schemaFields, defaultFormData), null, 2)
+                ? JSON.stringify(formDataToInputData(schemaFields, defaultFormData), null, 2)
                 : EMPTY_JSON,
         [schemaFields, defaultFormData],
     );
     const formBaseline = useMemo(
-        () => (schemaFields.length > 0 ? serializeFlatFormState(schemaFields, defaultFormData) : ''),
+        () => (schemaFields.length > 0 ? serializeFormState(schemaFields, defaultFormData) : ''),
         [schemaFields, defaultFormData],
     );
     const masterDataBaseline = useMemo(() => JSON.stringify(emptySelections), [emptySelections]);
@@ -81,7 +81,7 @@ export function ExecutionPanel() {
     const exportMutation = useExportXml();
 
     const isFormDirty =
-        schemaFields.length > 0 && serializeFlatFormState(schemaFields, formData) !== formBaseline;
+        schemaFields.length > 0 && serializeFormState(schemaFields, formData) !== formBaseline;
     const isMasterDirty = JSON.stringify(masterDataSelections) !== masterDataBaseline;
     const isDirty = isFormDirty || isMasterDirty;
 
@@ -99,7 +99,7 @@ export function ExecutionPanel() {
 
         if (inputMode === 'form') {
             return {
-                inputData: flatFormDataToInputData(templateDetail.schema.fields, formData),
+                inputData: formDataToInputData(templateDetail.schema.fields, formData),
                 selectedMasterData: toSelectedMasterDataPayload(masterDataSelections),
             };
         }
@@ -195,7 +195,7 @@ export function ExecutionPanel() {
 
     function handleInputModeChange(mode: InputMode) {
         if (mode === 'json' && schemaFields.length > 0) {
-            setInputJsonOverride(JSON.stringify(flatFormDataToInputData(schemaFields, formData), null, 2));
+            setInputJsonOverride(JSON.stringify(formDataToInputData(schemaFields, formData), null, 2));
             setJsonError(null);
         }
         setInputMode(mode);

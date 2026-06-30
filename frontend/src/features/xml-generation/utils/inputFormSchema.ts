@@ -12,6 +12,31 @@ function isRepeatable(rule: TemplateFieldOccurrenceRule | null | undefined): boo
     return rule === 'ZERO_OR_MORE' || rule === 'ONE_OR_MORE';
 }
 
+export function isRepeatableOccurrence(rule: TemplateFieldOccurrenceRule | null | undefined): boolean {
+    return isRepeatable(rule);
+}
+
+export function formatOccurrenceHint(rule: TemplateFieldOccurrenceRule | null | undefined): string | null {
+    if (rule === 'ZERO_OR_MORE') {
+        return '(0..*)';
+    }
+    if (rule === 'ONE_OR_MORE') {
+        return '(1..*)';
+    }
+    return null;
+}
+
+export function normalizeRepeatableItems(
+    node: FieldTreeNode,
+    raw: FormValue | undefined,
+): FormObject[] {
+    const items = Array.isArray(raw) ? raw.filter((item) => typeof item === 'object' && item !== null && !Array.isArray(item)) : [];
+    if (node.field.occurrenceRule === 'ONE_OR_MORE' && items.length === 0) {
+        return [createRepeatableItemDefault(node)];
+    }
+    return items as FormObject[];
+}
+
 function coerceDefaultValue(raw: string, valueType: TemplateField['valueType']): FormScalar {
     switch (valueType) {
         case 'INTEGER':
@@ -68,6 +93,10 @@ function isInputField(field: TemplateField): boolean {
     return (field.nodeType === 'ELEMENT' || field.nodeType === 'ATTRIBUTE') && field.sourceType === 'INPUT';
 }
 
+export function isFormInputField(field: TemplateField): boolean {
+    return isInputField(field);
+}
+
 function fieldHasChildren(field: TemplateField, fields: TemplateField[]): boolean {
     return fields.some((item) => item.parentFieldName === field.fieldName);
 }
@@ -86,6 +115,9 @@ export function buildNodeDefault(node: FieldTreeNode): FormValue | undefined {
 
     if (isContainerNode(node)) {
         if (isRepeatable(field.occurrenceRule)) {
+            if (field.occurrenceRule === 'ONE_OR_MORE') {
+                return [createRepeatableItemDefault(node)];
+            }
             return [];
         }
         const object: FormObject = {};
