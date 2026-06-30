@@ -52,6 +52,14 @@ export function useMasterDataFieldPickerOptions(params: MasterDataFieldListParam
     return { ...query, options };
 }
 
+/** Loads all master data fields for the schema mapping dropdown. */
+export function useAllMasterDataFieldPickerOptions() {
+    return useMasterDataFieldPickerOptions({
+        page: 1,
+        pageSize: 500,
+    });
+}
+
 export function useCreateMasterDataField() {
     const queryClient = useQueryClient();
     return useMutation({

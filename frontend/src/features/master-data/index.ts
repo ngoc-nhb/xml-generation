@@ -15,6 +15,7 @@ export { MasterDataTypeEditPage } from '@/features/master-data/pages/MasterDataT
 export { MasterDataTypeListPage } from '@/features/master-data/pages/MasterDataTypeListPage';
 
 export {
+    useAllMasterDataFieldPickerOptions,
     useMasterDataFieldDetail,
     useMasterDataFieldList,
     useMasterDataFieldPickerOptions,

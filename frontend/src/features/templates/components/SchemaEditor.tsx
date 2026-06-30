@@ -12,12 +12,13 @@ import {
     applyValueNodeDefaults,
     buildDraftFieldTree,
     createEmptyField,
+    duplicateDraftFieldSubtree,
     findDuplicateFieldNames,
     normalizeAllDraftFieldMetadata,
     normalizeDraftFieldMetadata,
     normalizeDraftSchemaFields,
     removeDraftFieldAndDescendants,
-    reorderDraftSibling,
+    reorderDraftSiblingToIndex,
     serializeSchemaState,
     toApiFields,
     toDraftFields,
@@ -98,6 +99,22 @@ export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel 
         });
         updateFields([...draft.fields, created]);
         setSelectedClientId(created.clientId);
+    }
+
+    function handleDuplicateField(clientId: string) {
+        const { fields: nextFields, mappings: nextMappings, duplicatedRootClientId } = duplicateDraftFieldSubtree(
+            draft.fields,
+            clientId,
+            draft.mappings,
+        );
+        setDraft({ fields: nextFields, mappings: nextMappings });
+        if (duplicatedRootClientId) {
+            setSelectedClientId(duplicatedRootClientId);
+        }
+    }
+
+    function handleReorder(clientId: string, newIndex: number) {
+        updateFields(reorderDraftSiblingToIndex(draft.fields, clientId, newIndex));
     }
 
     function handleDeleteField(clientId: string) {
@@ -191,7 +208,8 @@ export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel 
                     onSelect={setSelectedClientId}
                     onAddRoot={handleAddRoot}
                     onAddChild={handleAddChild}
-                    onMove={(clientId, direction) => updateFields(reorderDraftSibling(draft.fields, clientId, direction))}
+                    onReorder={(clientId, newIndex) => handleReorder(clientId, newIndex)}
+                    onDuplicate={handleDuplicateField}
                     onDelete={setDeleteTargetClientId}
                 />
                 <SchemaFieldEditor field={selectedField} parentOptions={draft.fields} onChange={handleFieldChange} />

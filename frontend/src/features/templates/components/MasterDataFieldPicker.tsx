@@ -1,15 +1,13 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
-import { Input } from '@/components/ui/input';
-import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
+import { Select } from '@/components/ui/select';
 import {
+    useAllMasterDataFieldPickerOptions,
     useMasterDataFieldDetail,
-    useMasterDataFieldPickerOptions,
     useMasterDataTypeDetail,
     type MasterDataFieldOption,
 } from '@/features/master-data';
-import { useDebouncedValue } from '@/features/templates/hooks/useDebouncedValue';
 
 interface MasterDataFieldPickerProps {
     value: number | null;
@@ -21,14 +19,7 @@ function buildOptionLabel(typeCode: string, fieldCode: string, fieldName: string
 }
 
 export function MasterDataFieldPicker({ value, onChange }: MasterDataFieldPickerProps) {
-    const [keyword, setKeyword] = useState('');
-    const debouncedKeyword = useDebouncedValue(keyword, 300);
-
-    const { options, isLoading, isFetching } = useMasterDataFieldPickerOptions({
-        keyword: debouncedKeyword,
-        page: 1,
-        pageSize: 50,
-    });
+    const { options, isLoading } = useAllMasterDataFieldPickerOptions();
 
     const { data: selectedField } = useMasterDataFieldDetail(value ?? undefined);
     const { data: selectedType } = useMasterDataTypeDetail(selectedField?.typeId);
@@ -52,12 +43,7 @@ export function MasterDataFieldPicker({ value, onChange }: MasterDataFieldPicker
     }, [options, value, selectedField, selectedType]);
 
     return (
-        <div className="min-w-[280px] space-y-2">
-            <Input
-                placeholder="Search master data fields…"
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-            />
+        <div className="min-w-[280px]">
             <div className="flex gap-2">
                 <Select
                     className="flex-1"
@@ -68,7 +54,7 @@ export function MasterDataFieldPicker({ value, onChange }: MasterDataFieldPicker
                         onChange(nextValue ? Number(nextValue) : null);
                     }}
                 >
-                    <option value="">No mapping</option>
+                    <option value="">{isLoading ? 'Loading fields…' : 'No mapping'}</option>
                     {displayOptions.map((option) => (
                         <option key={option.id} value={option.id}>
                             {option.label}
@@ -81,7 +67,6 @@ export function MasterDataFieldPicker({ value, onChange }: MasterDataFieldPicker
                     </Button>
                 ) : null}
             </div>
-            {isFetching ? <p className="text-xs text-muted-foreground">Searching…</p> : null}
         </div>
     );
 }

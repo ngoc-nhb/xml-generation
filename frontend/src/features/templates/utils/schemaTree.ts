@@ -185,15 +185,145 @@ export function reorderDraftSibling(
         return fields;
     }
 
+    return reorderDraftSiblingToIndex(fields, clientId, swapIndex);
+}
+
+export function reorderDraftSiblingToIndex(
+    fields: DraftTemplateField[],
+    clientId: string,
+    newIndex: number,
+): DraftTemplateField[] {
+    const target = fields.find((field) => field.clientId === clientId);
+    if (!target) {
+        return fields;
+    }
+
+    const siblings = getDraftSiblingFields(fields, target);
+    const oldIndex = siblings.findIndex((field) => field.clientId === clientId);
+    if (oldIndex < 0 || oldIndex === newIndex || newIndex < 0 || newIndex >= siblings.length) {
+        return fields;
+    }
+
     const reordered = [...siblings];
-    [reordered[index], reordered[swapIndex]] = [reordered[swapIndex], reordered[index]];
+    const [moved] = reordered.splice(oldIndex, 1);
+    reordered.splice(newIndex, 0, moved);
 
     const orderMap = new Map(reordered.map((field, orderIndex) => [field.clientId, orderIndex + 1]));
 
-    return fields.map((field) => {
-        const nextOrder = orderMap.get(field.clientId);
-        return nextOrder ? { ...field, displayOrder: nextOrder } : field;
+    return normalizeDraftSchemaFields(
+        fields.map((field) => {
+            const nextOrder = orderMap.get(field.clientId);
+            return nextOrder ? { ...field, displayOrder: nextOrder } : field;
+        }),
+    );
+}
+
+function generateUniqueFieldName(baseName: string, existingNames: Set<string>): string {
+    const normalizedBase = baseName.trim() || 'Field';
+    let candidate = `${normalizedBase}_copy`;
+    let counter = 2;
+    while (existingNames.has(candidate)) {
+        candidate = `${normalizedBase}_copy${counter}`;
+        counter += 1;
+    }
+    return candidate;
+}
+
+function collectDraftSubtree(fields: DraftTemplateField[], rootClientId: string): DraftTemplateField[] {
+    const collected: DraftTemplateField[] = [];
+
+    function walk(clientId: string) {
+        const node = fields.find((field) => field.clientId === clientId);
+        if (!node) {
+            return;
+        }
+        collected.push(node);
+        const children = fields
+            .filter((field) => field.parentClientId === clientId)
+            .sort((a, b) => a.displayOrder - b.displayOrder);
+        for (const child of children) {
+            walk(child.clientId);
+        }
+    }
+
+    walk(rootClientId);
+    return collected;
+}
+
+export function duplicateDraftFieldSubtree(
+    fields: DraftTemplateField[],
+    clientId: string,
+    mappings: TemplateMapping[],
+): { fields: DraftTemplateField[]; mappings: TemplateMapping[]; duplicatedRootClientId: string | null } {
+    const target = fields.find((field) => field.clientId === clientId);
+    if (!target) {
+        return { fields, mappings, duplicatedRootClientId: null };
+    }
+
+    const subtree = collectDraftSubtree(fields, clientId);
+    const existingNames = new Set(fields.map((field) => field.fieldName));
+    const clientIdMap = new Map<string, string>();
+    const fieldNameMap = new Map<string, string>();
+
+    for (const field of subtree) {
+        clientIdMap.set(field.clientId, createClientId());
+        const nextName = generateUniqueFieldName(field.fieldName, existingNames);
+        fieldNameMap.set(field.fieldName, nextName);
+        existingNames.add(nextName);
+    }
+
+    const clonedFields = subtree.map((field) => {
+        const originalParent = field.parentClientId
+            ? fields.find((item) => item.clientId === field.parentClientId)
+            : null;
+
+        return normalizeDraftFieldMetadata({
+            ...field,
+            clientId: clientIdMap.get(field.clientId)!,
+            fieldName: fieldNameMap.get(field.fieldName)!,
+            xmlName: fieldNameMap.get(field.fieldName)!,
+            displayName: fieldNameMap.get(field.fieldName)!,
+            parentClientId: field.clientId === clientId ? target.parentClientId : clientIdMap.get(field.parentClientId!) ?? null,
+            parentFieldName:
+                field.clientId === clientId
+                    ? target.parentFieldName
+                    : originalParent
+                      ? fieldNameMap.get(originalParent.fieldName) ?? null
+                      : null,
+        });
     });
+
+    const shiftedFields = fields.map((field) => {
+        if (
+            field.parentClientId === target.parentClientId &&
+            field.displayOrder > target.displayOrder &&
+            !subtree.some((item) => item.clientId === field.clientId)
+        ) {
+            return { ...field, displayOrder: field.displayOrder + 1 };
+        }
+        return field;
+    });
+
+    const rootCloneClientId = clientIdMap.get(clientId)!;
+    const nextFields = normalizeDraftSchemaFields([
+        ...shiftedFields,
+        ...clonedFields.map((field) =>
+            field.clientId === rootCloneClientId ? { ...field, displayOrder: target.displayOrder + 1 } : field,
+        ),
+    ]);
+
+    const nextMappings = [...mappings];
+    for (const field of subtree) {
+        const mapping = mappings.find((item) => item.fieldName === field.fieldName);
+        if (mapping) {
+            nextMappings.push({
+                ...mapping,
+                fieldName: fieldNameMap.get(field.fieldName)!,
+            });
+        }
+    }
+
+    return { fields: nextFields, mappings: nextMappings, duplicatedRootClientId: rootCloneClientId };
 }
 
 export function removeFieldAndDescendants(fields: TemplateField[], fieldName: string): TemplateField[] {

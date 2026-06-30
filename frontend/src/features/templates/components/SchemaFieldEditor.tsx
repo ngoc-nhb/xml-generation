@@ -2,6 +2,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/select';
+import { SchemaHelpTooltip } from '@/features/templates/components/SchemaHelpTooltip';
 import type { DraftTemplateField } from '@/features/templates/types/template.types';
 import { normalizeDraftFieldMetadata, applyValueNodeDefaults } from '@/features/templates/utils/schemaTree';
 
@@ -68,7 +69,21 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
             <FieldInput label="XML name" value={currentField.xmlName} onChange={(value) => update('xmlName', value)} />
             <FieldInput label="Display name" value={currentField.displayName ?? ''} onChange={(value) => update('displayName', value)} />
             <div className="space-y-2">
-                <Label htmlFor="nodeType">Node type</Label>
+                <Label htmlFor="nodeType">
+                    <SchemaHelpTooltip label="Node type">
+                        <div className="space-y-2">
+                            <p>
+                                <strong>GROUP</strong> — Container for child nodes. Does not generate a value itself.
+                            </p>
+                            <p>
+                                <strong>ELEMENT</strong> — Generates an XML element containing a value.
+                            </p>
+                            <p>
+                                <strong>ATTRIBUTE</strong> — Generates an XML attribute on its parent element.
+                            </p>
+                        </div>
+                    </SchemaHelpTooltip>
+                </Label>
                 <Select
                     id="nodeType"
                     value={currentField.nodeType}
@@ -92,7 +107,24 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 </Select>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="emptyHandling">Empty handling</Label>
+                <Label htmlFor="emptyHandling">
+                    <SchemaHelpTooltip label="Empty handling">
+                        <div className="space-y-2">
+                            <p>
+                                <strong>REQUIRED</strong> — Missing value causes a validation error.
+                            </p>
+                            <p>
+                                <strong>ZERO_IF_EMPTY</strong> — Missing value becomes <code>0</code>.
+                            </p>
+                            <p>
+                                <strong>EMPTY_TAG_IF_EMPTY</strong> — Generates an empty XML tag.
+                            </p>
+                            <p>
+                                <strong>OMIT_IF_EMPTY</strong> — Omits the XML element when empty.
+                            </p>
+                        </div>
+                    </SchemaHelpTooltip>
+                </Label>
                 <Select
                     id="emptyHandling"
                     value={currentField.emptyHandling}
@@ -149,7 +181,24 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 </Select>
             </div>
             <div className="space-y-2">
-                <Label htmlFor="occurrenceRule">Occurrence rule</Label>
+                <Label htmlFor="occurrenceRule">
+                    <SchemaHelpTooltip label="Occurrence rule">
+                        <div className="space-y-2">
+                            <p>
+                                <strong>ONE_OR_MORE</strong> — Must appear at least once.
+                            </p>
+                            <p>
+                                <strong>ZERO_OR_MORE</strong> — May repeat any number of times.
+                            </p>
+                            <p>
+                                <strong>ZERO_OR_ONE</strong> — May appear once or not at all.
+                            </p>
+                            <p>
+                                <strong>None</strong> — Used for value nodes that do not repeat.
+                            </p>
+                        </div>
+                    </SchemaHelpTooltip>
+                </Label>
                 <Select
                     id="occurrenceRule"
                     value={currentField.occurrenceRule ?? ''}
