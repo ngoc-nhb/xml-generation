@@ -1,6 +1,6 @@
 # XMLGen Frontend
 
-Phase 6.1 foundation — application shell and development infrastructure only.
+MVP frontend — foundation plus Template, Master Data, and XML Generation modules.
 
 ## Stack
 
@@ -33,13 +33,22 @@ See `docs/13-ui-design/12-frontend-stable-architecture.md`.
 - **Shared** `api/client.ts` — Axios instance, JWT injection, envelope parsing
 - Components never call Axios directly
 - Cross-feature imports use `@/features/<name>` only, not internal paths
+- Cross-feature integration uses public hooks/types from the target feature index (Cross-Feature Integration Principle)
+- Integration pickers (e.g. `MasterDataFieldPicker`) stay in the consumer feature — not shared until Rule of Three
 
 ## Dev login
 
 Default credentials (when backend is running): `admin` / `admin123`
 
-## Scope (Phase 6.1)
+## Scope (MVP)
 
-Implemented: routing skeleton, AppShell, auth skeleton, providers, design system primitives, error/loading/empty UI.
+| Feature | Route | Status |
+| ------- | ----- | ------ |
+| Auth | `/login` | ✅ |
+| Templates | `/templates`, schema editor | ✅ |
+| Master Data | `/master-data` | ✅ |
+| XML Generation | `/xml-generation` | ✅ |
 
-Not implemented: Template, Master Data, XML Generation, or other business screens.
+Pending: Export History, Saved Inputs, Dashboard, Settings expansion.
+
+Execution state stays local to `features/xml-generation/` (Execution Session + Execution Screen principles). Preview and export call backend only — no runtime logic on the client.

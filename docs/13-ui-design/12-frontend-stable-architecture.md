@@ -96,6 +96,21 @@ Internal modules (`api/`, `utils/`, private components, internal hooks) must not
 imported across feature boundaries.
 
 Example: `features/templates/index.ts` — validated in Phase 6.2.
+Example: `features/master-data/index.ts` — validated in Phase 6.3.
+Example: `features/xml-generation/index.ts` — validated in Phase 6.4.
+
+### 4.1 Cross-Feature Integration Principle
+
+Features communicate only through each other's **`index.ts` public API** — never through
+internal `api/`, `utils/`, or private components.
+
+| Allowed | Forbidden |
+| ------- | --------- |
+| `import { useMasterDataFieldPickerOptions } from '@/features/master-data'` | `import … from '@/features/master-data/api/…'` |
+| Public hooks → feature API → REST | Internal utils, components, or internal hooks |
+
+Validated Phase 6.3.5: `features/templates/components/MasterDataFieldPicker` uses Master
+Data public hooks only.
 
 ---
 
@@ -179,6 +194,45 @@ across features.
 
 See `06-component-architecture.md` §12.
 
+### 6.2 Dynamic Record Model (frozen)
+
+`DynamicRecordForm` in `features/master-data/` edits **Master Data Records** from field
+metadata. It must never:
+
+- execute preview or export
+- participate in XML generation or runtime execution
+- edit template schema or mappings
+
+Its only responsibility is editing master data record payloads via Master Data REST APIs.
+
+Do not move `DynamicRecordForm` outside `features/master-data/` until Rule of Three
+applies across features.
+
+See `06-component-architecture.md` §15.
+
+### 6.3 Execution Session (frozen)
+
+During one execution session on the XML Generation screen, preserve:
+
+- Selected template, master data selections, input JSON
+- Latest XML output and validation errors
+
+Do not auto-reset after Preview or Export. Reset on template change or explicit user Reset.
+
+Implemented in `features/xml-generation/components/ExecutionPanel`.
+
+### 6.4 Execution Screen Ownership (frozen)
+
+Execution state lives in the execution feature (`ExecutionPanel` local state + mutations).
+It must not move to global context. Future execution UIs follow the same pattern within
+their owning feature.
+
+### 6.5 Backend Single Source of Truth (frozen)
+
+Frontend orchestrates REST only. Runtime validation, value resolution, mapping resolution,
+and XML serialization remain on the backend. Frontend may validate JSON syntax and present
+errors from `errors[]` — nothing more.
+
 ---
 
 ## 7. State Ownership (Summary)
@@ -188,6 +242,7 @@ See `06-component-architecture.md` §12.
 | Server state | TanStack Query via feature hooks |
 | Auth state | Auth provider |
 | Form state | Feature hooks / React Hook Form |
+| Execution session state | Owning execution feature (e.g. `ExecutionPanel` local state) |
 | UI chrome | Local component state |
 
 Do not mix categories. See `08-state-management.md`.
@@ -195,6 +250,15 @@ Do not mix categories. See `08-state-management.md`.
 ---
 
 ## 8. Runtime API Contract (Frontend View)
+
+Preview and Export share the same request shape and validation envelope. Only downstream
+business output differs (MVP: both return `{ xml }` on success).
+
+| | Preview | Export |
+| --- | --- | --- |
+| Endpoint | `POST /templates/{id}/preview` | `POST /templates/{id}/export` |
+| Request | `{ inputData, selectedMasterData }` | Same |
+| Failure | `success: false`, `errors[]` | Same |
 
 Preview and Export REST responses expose only:
 
@@ -217,7 +281,24 @@ Business modules may be feature-flagged until backend endpoints exist.
 
 ---
 
-## 10. Transition to Implementation
+## 10. Stable Feature Matrix
+
+| Feature | Public API | MVP scope | Status |
+| ------- | ---------- | --------- | ------ |
+| Auth | Session via providers | Login, logout | ✅ Approved |
+| Templates | `features/templates/index.ts` | CRUD, schema editor | ✅ Approved |
+| Master Data | `features/master-data/index.ts` | Types, fields, records | ✅ Approved |
+| XML Generation | `features/xml-generation/index.ts` | Preview, export orchestration | ✅ Approved |
+| Export History | — | Not started | Pending |
+| Settings | — | Placeholder | Pending |
+| Dashboard | — | Placeholder | Pending |
+
+MVP business flow (admin + user): configure templates and master data → generate XML via
+`/xml-generation`.
+
+---
+
+## 11. Transition to Implementation
 
 | Phase | Status |
 | ----- | ------ |
@@ -225,14 +306,16 @@ Business modules may be feature-flagged until backend endpoints exist.
 | Frontend architecture | ✅ Frozen (Phase 6.0) |
 | Frontend foundation (6.1) | ✅ Approved |
 | Template module (6.2) | ✅ Approved |
-| Master Data, XML Generation | Pending |
+| Master Data module (6.3) | ✅ Approved |
+| Template ↔ Master Data (6.3.5) | ✅ Approved |
+| XML Generation (6.4) | ✅ Approved |
 
 Implementation follows `docs/project-development-workflow.md` — architecture review
 before code, build + test, implementation review.
 
 ---
 
-## 11. Related Documents
+## 12. Related Documents
 
 - `01-ui-architecture.md`
 - `06-component-architecture.md`

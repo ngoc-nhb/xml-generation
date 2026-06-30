@@ -755,7 +755,85 @@ paths such as `api/`, `utils/`, or private components.
 Internal implementation details remain private to the feature. This prevents
 cross-feature coupling as modules grow.
 
-See `docs/13-ui-design/06-component-architecture.md` §12.
+See `docs/13-ui-design/06-component-architecture.md` §11.
+
+---
+
+## Cross-Feature Integration Principle
+
+Features may collaborate **only** through another feature's public API
+(`features/<name>/index.ts`). Features communicate through public hooks and types — never
+through internal implementation.
+
+```text
+✔  Template → @/features/master-data → useMasterDataFieldPickerOptions() → REST
+✘  Template → @/features/master-data/api/fields.api.ts
+✘  Template → @/features/master-data/utils/fieldPicker.ts
+✘  Template → @/features/master-data/components/…
+```
+
+This preserves feature isolation while allowing business integration.
+
+Validated in Phase 6.3.5: Template schema mapping editor uses Master Data public hooks;
+no master-data internals imported.
+
+See `docs/13-ui-design/06-component-architecture.md` §15 and
+`12-frontend-stable-architecture.md` §4.1.
+
+---
+
+## Consumer-Owned Integration Components Principle
+
+UI that integrates data from another feature belongs in the **consumer** feature, not the
+provider.
+
+Example: `MasterDataFieldPicker` lives in `features/templates/` because its responsibility
+is *select a mapping for Template schema* — not *manage Master Data*.
+
+It uses `@/features/master-data` public hooks only. Do **not** move it into the Master Data
+feature.
+
+Future consumers (XML Generation, Saved Inputs, etc.) implement their own integration
+components using the same public API pattern.
+
+See `docs/13-ui-design/06-component-architecture.md` §15.
+
+---
+
+## No Premature Reference Picker Abstraction
+
+Do not create shared pickers such as `SharedEntityPicker`, `LookupPicker`, or
+`GenericReferencePicker` until Rule of Three is satisfied across independent business
+features.
+
+Phase 6.3.5 proves the Master Data public API is sufficient without a generic abstraction.
+
+---
+
+## Dynamic Form Ownership Principle
+
+Metadata-driven form rendering belongs to the feature that owns the metadata. Do not
+extract a generic `DynamicForm` to shared `components/` until Rule of Three is satisfied
+across features.
+
+Phase 6.3: `DynamicRecordForm` in `features/master-data/` renders record fields from
+master data field definitions. It must remain inside that feature until another business
+module genuinely requires the same abstraction.
+
+See `docs/13-ui-design/06-component-architecture.md` §15.
+
+---
+
+## Dynamic Record Model Principle
+
+`DynamicRecordForm` edits **Master Data Records** only. It must never become responsible
+for preview, XML generation, runtime execution, or template schema editing.
+
+```text
+Master Data (records) → Template (schema) → Runtime → XML
+```
+
+Each layer owns its editable surface. See `12-frontend-stable-architecture.md` §6.2.
 
 ---
 
@@ -772,6 +850,104 @@ It edits metadata (fields, hierarchy, mappings) and persists via
 Generation feature.
 
 See `docs/13-ui-design/12-frontend-stable-architecture.md` §6.1.
+
+---
+
+## Execution Session Principle
+
+During one XML Generation **execution session**, preserve user inputs and context:
+
+- Selected template
+- Selected master data
+- Input JSON
+- Latest preview/export XML result
+- Latest validation errors
+
+Do **not** reset these automatically after Preview or Export.
+
+Reset only when:
+
+- The user presses **Reset** (input JSON) or removes master data selections explicitly
+- The user **changes template** (full session reset for that workflow)
+
+This minimizes repeated work during iterative preview/export cycles.
+
+Validated in Phase 6.4: `ExecutionPanel` in `features/xml-generation/`.
+
+See `12-frontend-stable-architecture.md` §6.3.
+
+---
+
+## Execution Screen Principle
+
+Execution-oriented state (template selection, input payload, master data selections,
+preview/export results) belongs inside the **execution feature** — never in global
+context.
+
+```text
+✔  ExecutionPanel → local state → Preview / Export mutations
+✘  Global Context → execution state shared across routes
+```
+
+`features/xml-generation/` owns XML Generation execution state. Future execution features
+(e.g. batch export) follow the same ownership model within their feature module.
+
+See `12-frontend-stable-architecture.md` §6.4.
+
+---
+
+## Backend Single Source of Truth Principle
+
+The frontend must never duplicate Runtime Engine behavior.
+
+| Forbidden on frontend | Allowed on frontend |
+| --------------------- | ------------------- |
+| Runtime validation | JSON syntax validation |
+| XML escaping / serialization | UX formatting (pretty-print JSON) |
+| Occurrence expansion | Loading and empty states |
+| Value or mapping resolution | Error presentation from `errors[]` |
+| XML formatting rules | Read-only display of `data.xml` |
+
+Business logic always belongs to the backend. The frontend orchestrates public REST APIs only.
+
+See `12-frontend-stable-architecture.md` §3 and §8.
+
+---
+
+## Execution API Symmetry Principle
+
+Preview and Export remain symmetrical at the REST boundary:
+
+| | Preview | Export |
+| --- | --- | --- |
+| Endpoint | `POST /templates/{id}/preview` | `POST /templates/{id}/export` |
+| Request body | `{ inputData, selectedMasterData }` | Same |
+| Validation failures | `success: false`, `errors[]` | Same |
+| Success payload | `{ xml }` | `{ xml }` |
+
+Both share the runtime pipeline on the backend; only downstream business output differs
+(MVP: both return XML in JSON). Preserve this symmetry in future API evolution.
+
+See `docs/11-implementation-guide/xml-generation.md` and `docs/06-api-design/p3_template-api.md` §26A–§26B.
+
+---
+
+## Feature Completeness Principle
+
+A frontend feature is **complete** only when it owns:
+
+- `pages/`, `components/`, `hooks/`, `api/`, `types/`
+- `index.ts` public API
+- Architecture documentation alignment
+
+Not merely when UI screens exist.
+
+| Feature | Complete |
+| ------- | -------- |
+| Auth | ✅ |
+| Templates | ✅ |
+| Master Data | ✅ |
+| XML Generation | ✅ |
 
 ---
 
@@ -1234,6 +1410,14 @@ Waiting until an abstraction proves itself through real usage produces:
 This principle complements the existing:
 
 - Feature Isolation Principle
+- Feature Public API Principle
+- Cross-Feature Integration Principle
+- Consumer-Owned Integration Components Principle
+- Execution Session Principle
+- Execution Screen Principle
+- Backend Single Source of Truth Principle
+- Dynamic Form Ownership Principle
+- Feature Completeness Principle
 - API Ownership Principle
 - Editable vs Generated UI Principle
 
@@ -1248,8 +1432,18 @@ and ensures the frontend evolves from real product needs rather than speculative
 | 6.0 | UI/UX architecture (docs) | ✅ Approved |
 | 6.1 | Frontend foundation (shell, auth, api client) | ✅ Approved |
 | 6.2 | Template module (CRUD, metadata, schema editor) | ✅ Approved |
-| 6.3+ | Master Data, XML Generation, Dashboard | Pending |
+| 6.3 | Master Data module (types, fields, records) | ✅ Approved |
+| 6.3.5 | Template ↔ Master Data integration (mapping picker) | ✅ Approved |
+| 6.4 | XML Generation (preview/export orchestration) | ✅ Approved |
+| 6.5+ | Export History, Saved Inputs, Dashboard, Settings | Pending |
 
-Phase 6.2 validated the frozen frontend architecture in a real implementation. The
-Template feature boundary is: Metadata → Schema → Mappings → CRUD → REST. Nothing below
+Phase 6.2–6.4 validated the frozen frontend architecture across independent business modules
+and cross-feature integration. Phase 6.4 completes the **MVP end-to-end business flow**:
+Template → Master Data → XML Generation over public REST APIs only.
+
+Remaining work is primarily infrastructure: Export History, Saved Inputs, Batch Export,
+Versioning, Dashboard, Settings expansion.
+
+Feature boundaries: Template (Metadata → Schema → CRUD → REST); Master Data (Types → Fields
+→ Records → REST); XML Generation (orchestration → Preview/Export → REST). Nothing below
 REST is visible to the UI.

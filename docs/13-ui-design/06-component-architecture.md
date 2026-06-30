@@ -139,6 +139,8 @@ features/
 | **R7** | Each feature owns its API module — no HTTP in shared components |
 | **R8** | Generated views (`XmlViewer`) are read-only — never editable |
 | **R9** | Cross-feature imports use `features/<name>/index.ts` only — not internal paths |
+| **R10** | Cross-feature integration uses public hooks/types from target feature `index.ts` only |
+| **R11** | Integration UI components belong in the consumer feature, not the provider |
 
 ---
 
@@ -146,7 +148,7 @@ features/
 
 | Type | Components | Behavior |
 | ---- | ---------- | -------- |
-| **Editable** | `DynamicForm`, template `SchemaEditor` family, `FormField` | User input; dirty tracking; save to REST |
+| **Editable** | Template `SchemaEditor` family; master-data `DynamicRecordForm`; static `FormField` wrappers | User input; dirty tracking; save to REST |
 | **Generated** | `XmlViewer`, `PreviewPanel`, export result panel | Display `data.xml` only; copy/download OK; no edit |
 
 Mirrors backend: Metadata → editable; compile/execution artifacts → invisible; XML output → generated view.
@@ -271,7 +273,99 @@ Nothing below REST is visible to the UI.
 
 ---
 
-## 14. Related Documents
+## 14. Dynamic Form Boundary (Master Data Feature)
+
+Master Data is the first feature that renders forms **dynamically from metadata** (field
+definitions loaded via REST).
+
+| Component | Owner | Responsibility |
+| --------- | ----- | -------------- |
+| `DynamicRecordForm` | `features/master-data/` | Edit master data record JSON from type field schema |
+| `RecordFormDialog` | `features/master-data/` | Dialog wrapper for record create/edit |
+
+### Rules
+
+- Metadata-driven forms belong to the feature that owns the metadata.
+- Do **not** move `DynamicRecordForm` to shared `components/` until Rule of Three is
+  satisfied by a second business feature.
+- Future XML Generation may introduce its own input form (`DynamicForm` in
+  `features/xml-generation/`) driven by **template** schema — that is a separate concern
+  from master data record editing.
+
+### Forbidden (DynamicRecordForm)
+
+- Preview or export execution
+- XML generation or runtime validation
+- Template schema editing
+
+Preserves separation: **Master Data → Template → Runtime → XML**.
+
+---
+
+## 15. Cross-Feature Integration (Template ↔ Master Data)
+
+When Template needs master data field metadata (e.g. mapping picker), integration follows:
+
+```text
+features/templates/  (SchemaMappingEditor → MasterDataFieldPicker)
+        │
+        ▼
+@/features/master-data  (public API only)
+        │
+        ▼
+useMasterDataFieldPickerOptions()  →  REST
+```
+
+**Status:** Implemented Phase 6.3.5. Numeric `masterDataFieldId` input replaced with
+searchable picker; display format `TYPE_CODE / field_code — Display Name`.
+
+### Consumer-owned integration component
+
+`MasterDataFieldPicker` belongs in `features/templates/`. It renders Master Data
+information but its responsibility is *select mapping for Template* — not *manage Master
+Data*. Do not move it to `features/master-data/`.
+
+Future features (XML Generation, Saved Inputs) implement their own integration components
+via the same public API. Do not extract `SharedEntityPicker` / `LookupPicker` until Rule
+of Three applies.
+
+### Allowed
+
+```typescript
+import {
+    useMasterDataFieldDetail,
+    useMasterDataFieldPickerOptions,
+    useMasterDataTypeDetail,
+    type MasterDataFieldOption,
+} from '@/features/master-data';
+```
+
+### Forbidden
+
+```typescript
+import { toMasterDataFieldOption } from '@/features/master-data/utils/fieldPicker';
+import * as fieldsApi from '@/features/master-data/api/fields.api';
+import { DynamicRecordForm } from '@/features/master-data/components/DynamicRecordForm';
+```
+
+---
+
+## 16. Stable Feature Boundary — Master Data
+
+```text
+Master Data Feature
+  Types
+  Fields
+  Records
+        ↓
+      REST
+```
+
+Nothing below REST is visible to the UI.
+
+---
+
+## 17. Related Documents
 
 - `03-design-system.md`
 - `05-screen-specification.md`

@@ -14,6 +14,14 @@ import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
+import { XmlGenerationPage } from '@/features/xml-generation';
+import {
+    MasterDataFieldListPage,
+    MasterDataRecordListPage,
+    MasterDataTypeDetailPage,
+    MasterDataTypeEditPage,
+    MasterDataTypeListPage,
+} from '@/features/master-data';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 
 export const router = createBrowserRouter([
@@ -46,25 +54,16 @@ export const router = createBrowserRouter([
                         path: 'master-data',
                         element: <ProtectedRoute requireAdmin />,
                         children: [
-                            {
-                                index: true,
-                                element: (
-                                    <PlaceholderPage
-                                        title="Master Data"
-                                        description="Master data management UI will be implemented in a later phase."
-                                    />
-                                ),
-                            },
+                            { index: true, element: <MasterDataTypeListPage /> },
+                            { path: 'types/:typeId', element: <MasterDataTypeDetailPage /> },
+                            { path: 'types/:typeId/edit', element: <MasterDataTypeEditPage /> },
+                            { path: 'types/:typeId/fields', element: <MasterDataFieldListPage /> },
+                            { path: 'types/:typeId/records', element: <MasterDataRecordListPage /> },
                         ],
                     },
                     {
                         path: 'xml-generation',
-                        element: (
-                            <PlaceholderPage
-                                title="XML Generation"
-                                description="Preview and export workspace will be implemented in a later phase."
-                            />
-                        ),
+                        element: <XmlGenerationPage />,
                     },
                     {
                         path: 'export-history',

@@ -1,9 +1,9 @@
 import { Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { MasterDataFieldPicker } from '@/features/templates/components/MasterDataFieldPicker';
 import type { TemplateField, TemplateMapping } from '@/features/templates/types/template.types';
 
 interface SchemaMappingEditorProps {
@@ -47,8 +47,8 @@ export function SchemaMappingEditor({ fields, mappings, onChange }: SchemaMappin
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>Field</TableHead>
-                            <TableHead>Master data field ID</TableHead>
+                            <TableHead>Template field</TableHead>
+                            <TableHead>Master data field</TableHead>
                             <TableHead className="w-16" />
                         </TableRow>
                     </TableHeader>
@@ -62,7 +62,7 @@ export function SchemaMappingEditor({ fields, mappings, onChange }: SchemaMappin
                         ) : (
                             mappings.map((mapping, index) => (
                                 <TableRow key={`${mapping.fieldName}-${index}`}>
-                                    <TableCell>
+                                    <TableCell className="align-top">
                                         <Select
                                             value={mapping.fieldName}
                                             onChange={(event) =>
@@ -76,21 +76,15 @@ export function SchemaMappingEditor({ fields, mappings, onChange }: SchemaMappin
                                             ))}
                                         </Select>
                                     </TableCell>
-                                    <TableCell>
-                                        <Input
-                                            type="number"
-                                            value={mapping.masterDataFieldId ?? ''}
-                                            onChange={(event) =>
-                                                updateMapping(index, {
-                                                    ...mapping,
-                                                    masterDataFieldId: event.target.value
-                                                        ? Number(event.target.value)
-                                                        : null,
-                                                })
+                                    <TableCell className="align-top">
+                                        <MasterDataFieldPicker
+                                            value={mapping.masterDataFieldId}
+                                            onChange={(masterDataFieldId) =>
+                                                updateMapping(index, { ...mapping, masterDataFieldId })
                                             }
                                         />
                                     </TableCell>
-                                    <TableCell>
+                                    <TableCell className="align-top">
                                         <Button type="button" variant="ghost" size="sm" onClick={() => removeMapping(index)}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
