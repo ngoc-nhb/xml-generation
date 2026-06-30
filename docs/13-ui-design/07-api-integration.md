@@ -80,18 +80,26 @@ Schema save triggers compilation server-side.
 
 ## 5. Master Data (Admin)
 
+Canonical v1.0 paths (see `docs/release/API-CONTRACT.md`):
+
 | Screen | Method | Endpoint |
 | ------ | ------ | -------- |
-| Type List | GET | `/master-data-types` |
-| Type Detail | GET | `/master-data-types/{id}` |
-| Create Type | POST | `/master-data-types` |
-| Update Type | PUT | `/master-data-types/{id}` |
-| Type Schema | PUT | `/master-data-types/{id}/schema` |
-| Delete Type | DELETE | `/master-data-types/{id}` |
-| Record List | GET | `/master-data-types/{id}/records` |
-| Create Record | POST | `/master-data-records` |
-| Update Record | PUT | `/master-data-records/{id}` |
-| Delete Record | DELETE | `/master-data-records/{id}` |
+| Type List | GET | `/master-data/types` |
+| Type Detail | GET | `/master-data/types/{id}` |
+| Create Type | POST | `/master-data/types` |
+| Update Type | PUT | `/master-data/types/{id}` |
+| Delete Type | DELETE | `/master-data/types/{id}` |
+| Field List | GET | `/master-data/fields?typeId=` |
+| Create Field | POST | `/master-data/fields` |
+| Update Field | PUT | `/master-data/fields/{id}` |
+| Delete Field | DELETE | `/master-data/fields/{id}` |
+| Record List | GET | `/master-data/records?typeId=` (**typeId required**) |
+| Create Record | POST | `/master-data/records` |
+| Record Detail | GET | `/master-data/records/{id}` |
+| Update Record | PUT | `/master-data/records/{id}` |
+| Delete Record | DELETE | `/master-data/records/{id}` |
+
+Legacy paths in `docs/06-api-design/p4_master-data-api.md` body are **not implemented**.
 
 ---
 
@@ -127,7 +135,7 @@ UI maps `field` to dynamic form paths. UI never expects `executionTree`.
 | ---- | ------ | -------- |
 | Template picker | GET | `/templates?status=ACTIVE` |
 | Form schema | GET | `/templates/{id}` → `schema` |
-| Master data options | GET | `/master-data-types/{id}/records` |
+| Master data options | GET | `/master-data/records?typeId=` |
 
 ---
 
@@ -183,7 +191,7 @@ MVP Export (v1.0) returns XML in JSON — client may offer browser download from
 | Preview result | No cache | each preview |
 | Export result | No cache | each export |
 
-Use TanStack Query keys per resource: `['templates', id]`, `['master-data-types', typeId, 'records']`.
+Use TanStack Query keys per resource: `['templates', id]`, `['master-data', 'types']`, `['master-data', 'records', typeId]`.
 
 ---
 

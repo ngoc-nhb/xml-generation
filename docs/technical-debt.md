@@ -18,6 +18,19 @@ governing prioritization.
 
 ---
 
+## Frontend (v1.0.0)
+
+| ID | Item | Deferred to | Notes |
+|----|------|-------------|-------|
+| TD-F001 | Frontend test suite (Vitest) | Quality phase | Documented in UI folder structure; no `npm test` script yet. |
+| TD-F002 | JS bundle size (~654 KB) | Performance phase | Vite chunk warning; no code splitting until measured need. |
+| TD-F003 | Native `<select>` in pickers | UX polish | Acceptable for MVP. |
+| TD-F004 | `/generate` vs `/xml-generation` route in legacy UI docs | Documentation | App route is `/xml-generation`. |
+| TD-F005 | Duplicate preview/export envelope handling | Client refactor | Extract shared helper when Rule of Three satisfied. |
+| TD-F006 | Duplicate `docs/12-ui-design/` tree | Documentation cleanup | Canonical UI docs: `docs/13-ui-design/`. |
+
+---
+
 ## TD-001 — Remove `deletedAt` fields from entities
 
 The project migrated to hard delete. `MasterDataTypeEntity` and

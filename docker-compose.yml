@@ -1,0 +1,57 @@
+# XMLGen MVP — one-command local stack (development profile)
+#
+# Usage:
+#   docker compose up --build
+#
+# Access:
+#   Frontend:  http://localhost:8081
+#   Backend:   http://localhost:8080
+#   Postgres:  localhost:5433
+#
+# Login: admin / admin123
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: xmlgen
+      POSTGRES_USER: xmlgen
+      POSTGRES_PASSWORD: xmlgen
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xmlgen -d xmlgen"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/xmlgen
+      SPRING_DATASOURCE_USERNAME: xmlgen
+      SPRING_DATASOURCE_PASSWORD: xmlgen
+      JWT_SECRET: dev-only-jwt-secret-minimum-32-characters-long
+      SPRINGDOC_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

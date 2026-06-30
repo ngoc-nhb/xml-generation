@@ -13,7 +13,7 @@ todos:
     status: pending
   - id: verify
     content: Run compile/tests and manually verify delete-recreate flows.
-    status: pending
+    status: completed
 isProject: false
 ---
 

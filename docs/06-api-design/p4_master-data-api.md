@@ -2,6 +2,27 @@
 
 ---
 
+## v1.0.0 Implementation Note (Phase 7)
+
+**Canonical REST paths** (implemented in backend, frontend, and Postman):
+
+| Resource | Base path |
+| -------- | --------- |
+| Types | `/api/v1/master-data/types` |
+| Fields | `/api/v1/master-data/fields` |
+| Records | `/api/v1/master-data/records` |
+
+Authoritative contract: `docs/release/API-CONTRACT.md`.
+
+Sections below retain the **original design draft** using legacy path names
+(`/master-data-types`, `/master-data-records`, nested type schema). Those paths were
+**not implemented**. Do not build clients against legacy paths.
+
+Field management uses a **separate Fields resource** (`GET/POST/PUT/DELETE /master-data/fields`)
+rather than `PUT /master-data-types/{id}/schema`.
+
+---
+
 ## 31. Overview
 
 Master Data Management APIs allow administrators to manage reusable reference data used during XML generation.

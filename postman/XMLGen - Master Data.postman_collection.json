@@ -1,0 +1,228 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "XMLGen - Master Data",
+    "description": "Master Data APIs for XMLGen MVP v1.0.0.\n\nRun **Authentication > Login** from the Template/MVP collection first, or include Login here.\n\nCanonical paths: `/api/v1/master-data/types`, `/fields`, `/records`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Master Data Types",
+      "item": [
+        {
+          "name": "List Types",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/types?page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Create Type",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.success && body.data && body.data.id) {",
+                "  pm.environment.set('masterDataTypeId', String(body.data.id));",
+                "  pm.environment.set('masterDataTypeCode', body.data.code || 'GAME_KIND');",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"GAME_KIND_{{$timestamp}}\",\n  \"name\": \"Game Kind\",\n  \"description\": \"Sample master data type\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/master-data/types"
+          }
+        },
+        {
+          "name": "Get Type",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/types/{{masterDataTypeId}}"
+          }
+        },
+        {
+          "name": "Update Type",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Game Kind Updated\",\n  \"description\": \"Updated\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/master-data/types/{{masterDataTypeId}}"
+          }
+        },
+        {
+          "name": "Delete Type",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/types/{{masterDataTypeId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Master Data Fields",
+      "item": [
+        {
+          "name": "List Fields",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/fields?typeId={{masterDataTypeId}}&page=1&pageSize=50"
+          }
+        },
+        {
+          "name": "Create Field",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.success && body.data && body.data.id) {",
+                "  pm.environment.set('masterDataFieldId', String(body.data.id));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeId\": {{masterDataTypeId}},\n  \"code\": \"game_kind_id\",\n  \"name\": \"Game Kind ID\",\n  \"dataType\": \"INTEGER\",\n  \"required\": true,\n  \"displayOrder\": 1,\n  \"unique\": true,\n  \"searchable\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/master-data/fields"
+          }
+        },
+        {
+          "name": "Get Field",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/fields/{{masterDataFieldId}}"
+          }
+        },
+        {
+          "name": "Update Field",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Game Kind ID\",\n  \"dataType\": \"INTEGER\",\n  \"required\": true,\n  \"displayOrder\": 1,\n  \"unique\": true,\n  \"searchable\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/master-data/fields/{{masterDataFieldId}}"
+          }
+        },
+        {
+          "name": "Delete Field",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/fields/{{masterDataFieldId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Master Data Records",
+      "item": [
+        {
+          "name": "List Records",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/records?typeId={{masterDataTypeId}}&page=1&pageSize=20"
+          }
+        },
+        {
+          "name": "Create Record",
+          "event": [{
+            "listen": "test",
+            "script": {
+              "exec": [
+                "const body = pm.response.json();",
+                "if (body.success && body.data && body.data.id) {",
+                "  pm.environment.set('masterDataRecordId', String(body.data.id));",
+                "}"
+              ],
+              "type": "text/javascript"
+            }
+          }],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"typeId\": {{masterDataTypeId}},\n  \"data\": {\n    \"game_kind_id\": 1,\n    \"game_kind_name\": \"J1 League\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/master-data/records"
+          }
+        },
+        {
+          "name": "Get Record",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/records/{{masterDataRecordId}}"
+          }
+        },
+        {
+          "name": "Update Record",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"data\": {\n    \"game_kind_id\": 1,\n    \"game_kind_name\": \"J1 League Updated\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/master-data/records/{{masterDataRecordId}}"
+          }
+        },
+        {
+          "name": "Delete Record",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{baseUrl}}/api/v1/master-data/records/{{masterDataRecordId}}"
+          }
+        }
+      ]
+    }
+  ]
+}

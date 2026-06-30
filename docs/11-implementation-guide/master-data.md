@@ -39,12 +39,17 @@ Excluded
 | Component                  | Responsibility                 |
 | -------------------------- | ------------------------------ |
 | MasterDataTypeController   | Expose Master Data Type APIs   |
+| MasterDataFieldController  | Expose Master Data Field APIs  |
 | MasterDataRecordController | Expose Master Data Record APIs |
 | MasterDataTypeService      | Manage Master Data Types       |
+| MasterDataFieldService     | Manage Master Data Fields      |
 | MasterDataRecordService    | Manage Master Data Records     |
 | MasterDataTypeRepository   | Persist Master Data Types      |
+| MasterDataFieldRepository  | Persist Master Data Fields     |
 | MasterDataRecordRepository | Persist Master Data Records    |
 | MasterDataMapper           | DTO conversion                 |
+
+**Status (v1.0.0):** All components implemented. REST paths: `/api/v1/master-data/types`, `/fields`, `/records`. See `docs/release/API-CONTRACT.md`.
 
 ---
 
@@ -237,16 +242,13 @@ MasterDataRecordService
 
 # 14. Implementation Checklist
 
-* Create MasterDataTypeController
-* Create MasterDataRecordController
-* Create MasterDataTypeService
-* Create MasterDataRecordService
-* Create MasterDataTypeRepository
-* Create MasterDataRecordRepository
-* Create DTOs
-* Create Mapper
-* Implement CRUD operations
-* Implement dynamic validation
-* Implement pagination
-* Write unit tests
-* Verify integration
+**v1.0.0 — complete**
+
+* [x] Create MasterDataTypeController
+* [x] Create MasterDataFieldController
+* [x] Create MasterDataRecordController
+* [x] Create MasterDataTypeService / MasterDataFieldService / MasterDataRecordService
+* [x] Create repositories and DTOs
+* [x] Implement CRUD operations and dynamic validation
+* [x] Implement pagination
+* [x] Unit and integration tests

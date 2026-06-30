@@ -1447,3 +1447,24 @@ Versioning, Dashboard, Settings expansion.
 Feature boundaries: Template (Metadata → Schema → CRUD → REST); Master Data (Types → Fields
 → Records → REST); XML Generation (orchestration → Preview/Export → REST). Nothing below
 REST is visible to the UI.
+
+---
+
+## Phase 7 — Stabilization & Release (v1.0.0)
+
+| Phase | Scope | Status |
+| ----- | ----- | ------ |
+| 7.0 | Release preparation mandate | ✅ In progress |
+| 7.1 | Architecture cleanup review | ✅ Complete — no unnecessary refactors |
+| 7.2 | Documentation freeze | ✅ Complete — see `docs/release/API-CONTRACT.md` |
+| 7.3 | API contract verification | ✅ Postman + OpenAPI (dev) |
+| 7.4 | Performance review | ✅ Documented — no optimization |
+| 7.5 | Security review | ✅ Architecture review only |
+| 7.6 | Docker deployment | ✅ `docker compose up --build` |
+| 7.7 | CI/CD | ✅ `.github/workflows/ci.yml` |
+| 7.8 | Release candidate | ✅ `docs/release/RELEASE-NOTES-v1.0.0-rc1.md` |
+| 7.9 | Final release | Pending verification → tag `v1.0.0` |
+
+Release artifacts: `docs/release/` (deployment guide, architecture summary, known limitations, technical debt summary).
+
+Task execution details belong in `docs/release/phase-7.*.md`, not in this workflow document (Documentation Separation Principle).

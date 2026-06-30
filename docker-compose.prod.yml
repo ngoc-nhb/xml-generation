@@ -1,0 +1,26 @@
+# Production overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build -d
+#
+# Required environment variables (set in .env or shell):
+#   JWT_SECRET              — min 32 characters
+#   POSTGRES_PASSWORD       — database password
+#   SPRING_DATASOURCE_PASSWORD — same as POSTGRES_PASSWORD
+
+services:
+  postgres:
+    ports: []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+
+  backend:
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/xmlgen
+      SPRING_DATASOURCE_USERNAME: xmlgen
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required}
+      SPRINGDOC_ENABLED: "false"
+    restart: unless-stopped
+
+  frontend:
+    restart: unless-stopped
