@@ -14,6 +14,7 @@ governing prioritization.
 | TD-006 | Investigate JSONB search optimization | After performance measurement | Only act on a demonstrated, measured bottleneck. |
 | TD-007 | Database-backed uniqueness for high concurrency | CSV Import / Batch Import / Multi-user editing | App-level uniqueness is sufficient for MVP; re-evaluate under concurrency. |
 | TD-008 | Template compile-time mapping validation | Compile-validation phase | `source_type = MASTER_DATA` mapping rules and unexpected-mapping checks are not yet enforced during compilation. |
+| TD-011 | Runtime DATE/DATETIME `format` validation | Value Resolution / Runtime Validation phase | `format` is not yet on `RuntimeField`; runtime validation for DATE/DATETIME formatting applies once it becomes part of the runtime model. |
 
 ---
 
@@ -62,3 +63,10 @@ The orchestrator resolves mappings and compiles schema but does not yet enforce
 compile-time rules such as `source_type = MASTER_DATA` requiring a valid mapping,
 or rejecting mappings on non-`MASTER_DATA` fields. Implement in the dedicated
 compile-validation phase.
+
+## TD-011 — Runtime DATE/DATETIME format validation
+
+`format` is required by the template schema for DATE and DATETIME value types but
+is not yet carried on `RuntimeField`. Once `format` is part of the runtime model,
+runtime validation for DATE/DATETIME formatting belongs in the Runtime Validation
+layer (after loading, before value resolution).

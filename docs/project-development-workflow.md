@@ -615,6 +615,64 @@ Runtime Models should remain stable even if the persistence layer changes.
 
 ---
 
+## Canonical Runtime Model Principle
+
+`RuntimeTemplate` is the canonical runtime model.
+
+Additional execution models may be introduced only when they provide behavior beyond simple structural transformation.
+
+Examples of behavior that would justify a separate execution model:
+
+- optimization
+- dependency analysis
+- conditional execution
+- parallelism
+- execution scheduling
+
+Until such behavior exists, internal abstractions that mirror `RuntimeTemplate` structure remain implementation details. They must not be promoted to core architectural layers in the runtime pipeline.
+
+If a future phase introduces meaningful execution semantics, promoting such an abstraction to a first-class architectural concept requires architecture review and explicit approval.
+
+---
+
+## Runtime Execution Artifact Principle
+
+`RuntimeTemplate` is the only canonical runtime model.
+
+Value Resolution may produce a runtime execution artifact (for example, `RuntimeExecutionTree`) that materializes runtime occurrences and resolved values for downstream execution.
+
+Execution artifacts:
+
+- are generated
+- are immutable
+- are not editable
+- are not canonical runtime models
+- exist only to simplify downstream execution
+
+This is conceptually similar to `compiled_schema_json`: a generated artifact produced from canonical inputs, not a new source of truth.
+
+---
+
+## Runtime Validation Scope Principle
+
+Runtime Validation validates the **integrity of the runtime model** — not compile-time metadata invariants that are already guaranteed before `compiled_schema_json` is produced.
+
+Runtime Validation should focus on:
+
+- corrupted runtime artifacts
+- impossible runtime states
+- illegal runtime structures
+
+Use this guideline:
+
+> Runtime Validation should validate executable runtime integrity. Compile-time guarantees should not be duplicated unless runtime artifacts may originate from external or untrusted sources.
+
+Some overlap with compile-time rules is acceptable when loaded runtime artifacts may bypass the normal compile path (for example, imported or externally modified compiled schemas). Do not treat that overlap as a reason to expand Runtime Validation into compile-time or mapping concerns.
+
+`RuntimeTemplate` intentionally excludes mapping metadata. Mapping validation belongs to compile or orchestration phases where mapping metadata is still available.
+
+---
+
 ## Context Object Principle
 
 When a component is expected to require additional inputs in future phases, group
@@ -748,3 +806,64 @@ Use the classification rules in **Architecture Feedback Loop** when deciding how
 Project-wide rules belong in this document. Technical debt belongs in the technical debt register.
 
 ---
+# Application Orchestration Principle
+
+Application Services own orchestration only.
+
+They coordinate existing runtime components but must never duplicate business logic already implemented by the Runtime Engine.
+
+Application Services may:
+
+- load data
+- invoke runtime pipeline
+- persist results
+- coordinate transactions
+- map API DTOs
+
+Application Services must never:
+
+- resolve values
+- perform runtime validation
+- generate XML directly
+- traverse runtime trees
+- implement serialization
+- implement compile logic
+
+Whenever new behavior is needed, it should first be evaluated as a responsibility of an existing runtime component before adding logic to an application service.
+---
+
+# Canonical Runtime Model Review (Mandatory)
+
+Before implementing any new runtime model, perform an architecture review against the **Canonical Runtime Model Principle** defined in `docs/project-development-workflow.md`.
+
+Specifically review whether introducing a new structure (for example, `RuntimeExecutionTree`) provides genuine execution value, or merely duplicates the existing `RuntimeTemplate` without representing a distinct execution stage.
+
+Execution artifacts that materialize runtime occurrences and resolved values are permitted when they remain non-canonical generated outputs, similar to `compiled_schema_json`.
+
+A new **canonical** runtime model should only be introduced if it adds new behavior or represents a distinct definition-stage responsibility, such as:
+
+- immutable resolved values
+- execution optimization
+- scheduling
+- dependency analysis
+- execution state
+- another clearly different runtime responsibility
+
+Creating a new **canonical** model solely to copy `RuntimeTemplate` and append one or more fields is **not sufficient justification**.
+
+If you determine that the proposed structure should become a second **canonical** runtime model and does **not** satisfy the Canonical Runtime Model Principle:
+
+STOP.
+
+Do not implement it.
+
+Instead provide:
+
+1. Why the new model is unnecessary.
+2. The recommended alternative architecture.
+3. The impact on the current phase.
+4. The files that would change under the revised architecture.
+
+Wait for approval before proceeding.
+
+Only implement a new runtime model after confirming that it adds real architectural value rather than becoming another structural mirror of `RuntimeTemplate`.
