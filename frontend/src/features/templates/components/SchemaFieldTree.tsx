@@ -1,22 +1,22 @@
 import { ChevronDown, ChevronRight, ChevronUp, Plus, Trash2 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import type { FieldTreeNode } from '@/features/templates/types/template.types';
+import type { DraftFieldTreeNode } from '@/features/templates/types/template.types';
 import { cn } from '@/utils/cn';
 
 interface SchemaFieldTreeProps {
-    nodes: FieldTreeNode[];
-    selectedFieldName: string | null;
-    onSelect: (fieldName: string) => void;
+    nodes: DraftFieldTreeNode[];
+    selectedClientId: string | null;
+    onSelect: (clientId: string) => void;
     onAddRoot: () => void;
-    onAddChild: (parentFieldName: string) => void;
-    onMove: (fieldName: string, direction: 'up' | 'down') => void;
-    onDelete: (fieldName: string) => void;
+    onAddChild: (parentClientId: string) => void;
+    onMove: (clientId: string, direction: 'up' | 'down') => void;
+    onDelete: (clientId: string) => void;
 }
 
 export function SchemaFieldTree({
     nodes,
-    selectedFieldName,
+    selectedClientId,
     onSelect,
     onAddRoot,
     onAddChild,
@@ -40,10 +40,10 @@ export function SchemaFieldTree({
                 <ul className="space-y-1">
                     {nodes.map((node) => (
                         <TreeNode
-                            key={node.field.fieldName}
+                            key={node.field.clientId}
                             node={node}
                             depth={0}
-                            selectedFieldName={selectedFieldName}
+                            selectedClientId={selectedClientId}
                             onSelect={onSelect}
                             onAddChild={onAddChild}
                             onMove={onMove}
@@ -59,21 +59,21 @@ export function SchemaFieldTree({
 function TreeNode({
     node,
     depth,
-    selectedFieldName,
+    selectedClientId,
     onSelect,
     onAddChild,
     onMove,
     onDelete,
 }: {
-    node: FieldTreeNode;
+    node: DraftFieldTreeNode;
     depth: number;
-    selectedFieldName: string | null;
-    onSelect: (fieldName: string) => void;
-    onAddChild: (parentFieldName: string) => void;
-    onMove: (fieldName: string, direction: 'up' | 'down') => void;
-    onDelete: (fieldName: string) => void;
+    selectedClientId: string | null;
+    onSelect: (clientId: string) => void;
+    onAddChild: (parentClientId: string) => void;
+    onMove: (clientId: string, direction: 'up' | 'down') => void;
+    onDelete: (clientId: string) => void;
 }) {
-    const isSelected = selectedFieldName === node.field.fieldName;
+    const isSelected = selectedClientId === node.field.clientId;
 
     return (
         <li>
@@ -84,22 +84,26 @@ function TreeNode({
                 )}
                 style={{ marginLeft: `${depth * 12}px` }}
             >
-                <button type="button" className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm" onClick={() => onSelect(node.field.fieldName)}>
+                <button
+                    type="button"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left text-sm"
+                    onClick={() => onSelect(node.field.clientId)}
+                >
                     <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <span className="truncate font-medium">{node.field.fieldName || '(unnamed)'}</span>
                     <span className="truncate text-xs text-muted-foreground">{node.field.nodeType}</span>
                 </button>
                 <div className="flex shrink-0 gap-1">
-                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onMove(node.field.fieldName, 'up')}>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onMove(node.field.clientId, 'up')}>
                         <ChevronUp className="h-4 w-4" />
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onMove(node.field.fieldName, 'down')}>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onMove(node.field.clientId, 'down')}>
                         <ChevronDown className="h-4 w-4" />
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onAddChild(node.field.fieldName)}>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onAddChild(node.field.clientId)}>
                         <Plus className="h-4 w-4" />
                     </Button>
-                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onDelete(node.field.fieldName)}>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => onDelete(node.field.clientId)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                 </div>
@@ -108,10 +112,10 @@ function TreeNode({
                 <ul className="mt-1 space-y-1">
                     {node.children.map((child) => (
                         <TreeNode
-                            key={child.field.fieldName}
+                            key={child.field.clientId}
                             node={child}
                             depth={depth + 1}
-                            selectedFieldName={selectedFieldName}
+                            selectedClientId={selectedClientId}
                             onSelect={onSelect}
                             onAddChild={onAddChild}
                             onMove={onMove}

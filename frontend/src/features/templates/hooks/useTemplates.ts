@@ -56,8 +56,19 @@ export function useUpdateTemplateSchema(id: number) {
 
     return useMutation({
         mutationFn: (request: UpdateTemplateSchemaRequest) => templatesApi.updateTemplateSchema(id, request),
-        onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: templateQueryKeys.detail(id) });
+        onSuccess: (schema) => {
+            queryClient.setQueryData(
+                templateQueryKeys.detail(id),
+                (current: Awaited<ReturnType<typeof templatesApi.fetchTemplate>> | undefined) => {
+                    if (!current) {
+                        return current;
+                    }
+                    return {
+                        ...current,
+                        schema,
+                    };
+                },
+            );
         },
     });
 }

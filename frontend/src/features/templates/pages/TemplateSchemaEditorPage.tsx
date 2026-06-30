@@ -25,11 +25,11 @@ export function TemplateSchemaEditorPage() {
                 mappings: schema.mappings,
             });
             toast.success('Schema saved');
-            navigate(`/templates/${templateId}`);
         } catch (saveError) {
             const message =
                 saveError instanceof ApiClientError ? getPrimaryErrorMessage(saveError.errors) : 'Failed to save schema';
             toast.error(message);
+            throw saveError;
         }
     }
 
@@ -62,7 +62,8 @@ export function TemplateSchemaEditorPage() {
             <SchemaEditor
                 initialSchema={data.schema}
                 saving={updateSchemaMutation.isPending}
-                onSave={(schema) => void handleSave(schema)}
+                onSave={(schema) => handleSave(schema)}
+                onSaved={() => navigate(`/templates/${templateId}`)}
                 onCancel={() => navigate(`/templates/${templateId}`)}
             />
         </div>

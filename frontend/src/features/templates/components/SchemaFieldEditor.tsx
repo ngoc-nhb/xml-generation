@@ -2,12 +2,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/select';
-import type { TemplateField } from '@/features/templates/types/template.types';
+import type { DraftTemplateField } from '@/features/templates/types/template.types';
 
 interface SchemaFieldEditorProps {
-    field: TemplateField | null;
-    parentOptions: TemplateField[];
-    onChange: (field: TemplateField) => void;
+    field: DraftTemplateField | null;
+    parentOptions: DraftTemplateField[];
+    onChange: (field: DraftTemplateField) => void;
 }
 
 export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFieldEditorProps) {
@@ -19,36 +19,43 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
         );
     }
 
-    function update<K extends keyof TemplateField>(key: K, value: TemplateField[K]) {
-        onChange({ ...field, [key]: value } as TemplateField);
+    const currentField = field;
+
+    function update<K extends keyof DraftTemplateField>(key: K, value: DraftTemplateField[K]) {
+        onChange({ ...currentField, [key]: value });
+    }
+
+    function handleParentChange(parentClientId: string) {
+        const parent = parentOptions.find((option) => option.clientId === parentClientId);
+        onChange({
+            ...currentField,
+            parentClientId: parentClientId || null,
+            parentFieldName: parent?.fieldName ?? null,
+        });
     }
 
     return (
         <div className="space-y-4 rounded-md border border-border p-4">
             <h2 className="text-sm font-semibold text-foreground">Field details</h2>
-            <FieldInput label="Field name" value={field.fieldName} onChange={(value) => update('fieldName', value)} />
+            <FieldInput label="Field name" value={currentField.fieldName} onChange={(value) => update('fieldName', value)} />
             <div className="space-y-2">
                 <Label htmlFor="parentFieldName">Parent field</Label>
-                <Select
-                    id="parentFieldName"
-                    value={field.parentFieldName ?? ''}
-                    onChange={(event) => update('parentFieldName', event.target.value || null)}
-                >
+                <Select id="parentFieldName" value={currentField.parentClientId ?? ''} onChange={(event) => handleParentChange(event.target.value)}>
                     <option value="">None (root)</option>
                     {parentOptions
-                        .filter((option) => option.fieldName !== field.fieldName)
+                        .filter((option) => option.clientId !== currentField.clientId)
                         .map((option) => (
-                            <option key={option.fieldName} value={option.fieldName}>
+                            <option key={option.clientId} value={option.clientId}>
                                 {option.fieldName}
                             </option>
                         ))}
                 </Select>
             </div>
-            <FieldInput label="XML name" value={field.xmlName} onChange={(value) => update('xmlName', value)} />
-            <FieldInput label="Display name" value={field.displayName ?? ''} onChange={(value) => update('displayName', value)} />
+            <FieldInput label="XML name" value={currentField.xmlName} onChange={(value) => update('xmlName', value)} />
+            <FieldInput label="Display name" value={currentField.displayName ?? ''} onChange={(value) => update('displayName', value)} />
             <div className="space-y-2">
                 <Label htmlFor="nodeType">Node type</Label>
-                <Select id="nodeType" value={field.nodeType} onChange={(event) => update('nodeType', event.target.value as TemplateField['nodeType'])}>
+                <Select id="nodeType" value={currentField.nodeType} onChange={(event) => update('nodeType', event.target.value as DraftTemplateField['nodeType'])}>
                     <option value="GROUP">GROUP</option>
                     <option value="ELEMENT">ELEMENT</option>
                     <option value="ATTRIBUTE">ATTRIBUTE</option>
@@ -58,8 +65,8 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 <Label htmlFor="emptyHandling">Empty handling</Label>
                 <Select
                     id="emptyHandling"
-                    value={field.emptyHandling}
-                    onChange={(event) => update('emptyHandling', event.target.value as TemplateField['emptyHandling'])}
+                    value={currentField.emptyHandling}
+                    onChange={(event) => update('emptyHandling', event.target.value as DraftTemplateField['emptyHandling'])}
                 >
                     <option value="REQUIRED">REQUIRED</option>
                     <option value="OMIT_IF_EMPTY">OMIT_IF_EMPTY</option>
@@ -71,8 +78,8 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 <Label htmlFor="sourceType">Source type</Label>
                 <Select
                     id="sourceType"
-                    value={field.sourceType ?? ''}
-                    onChange={(event) => update('sourceType', (event.target.value || null) as TemplateField['sourceType'])}
+                    value={currentField.sourceType ?? ''}
+                    onChange={(event) => update('sourceType', (event.target.value || null) as DraftTemplateField['sourceType'])}
                 >
                     <option value="">None</option>
                     <option value="INPUT">INPUT</option>
@@ -84,8 +91,8 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 <Label htmlFor="valueType">Value type</Label>
                 <Select
                     id="valueType"
-                    value={field.valueType ?? ''}
-                    onChange={(event) => update('valueType', (event.target.value || null) as TemplateField['valueType'])}
+                    value={currentField.valueType ?? ''}
+                    onChange={(event) => update('valueType', (event.target.value || null) as DraftTemplateField['valueType'])}
                 >
                     <option value="">None</option>
                     <option value="STRING">STRING</option>
@@ -101,8 +108,8 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                 <Label htmlFor="occurrenceRule">Occurrence rule</Label>
                 <Select
                     id="occurrenceRule"
-                    value={field.occurrenceRule ?? ''}
-                    onChange={(event) => update('occurrenceRule', (event.target.value || null) as TemplateField['occurrenceRule'])}
+                    value={currentField.occurrenceRule ?? ''}
+                    onChange={(event) => update('occurrenceRule', (event.target.value || null) as DraftTemplateField['occurrenceRule'])}
                 >
                     <option value="">None</option>
                     <option value="ONE_OR_MORE">ONE_OR_MORE</option>
@@ -110,11 +117,11 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                     <option value="ZERO_OR_ONE">ZERO_OR_ONE</option>
                 </Select>
             </div>
-            <FieldInput label="Static value" value={field.staticValue ?? ''} onChange={(value) => update('staticValue', value || null)} />
-            <FieldInput label="Default value" value={field.defaultValue ?? ''} onChange={(value) => update('defaultValue', value || null)} />
+            <FieldInput label="Static value" value={currentField.staticValue ?? ''} onChange={(value) => update('staticValue', value || null)} />
+            <FieldInput label="Default value" value={currentField.defaultValue ?? ''} onChange={(value) => update('defaultValue', value || null)} />
             <div className="space-y-2">
                 <Label htmlFor="description">Description</Label>
-                <Textarea id="description" value={field.description ?? ''} onChange={(event) => update('description', event.target.value || null)} />
+                <Textarea id="description" value={currentField.description ?? ''} onChange={(event) => update('description', event.target.value || null)} />
             </div>
         </div>
     );

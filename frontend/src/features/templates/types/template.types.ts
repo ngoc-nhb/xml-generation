@@ -47,6 +47,12 @@ export interface TemplateField {
     description: string | null;
 }
 
+/** Editor-only stable identity; stripped before API save. */
+export interface DraftTemplateField extends TemplateField {
+    clientId: string;
+    parentClientId: string | null;
+}
+
 export interface TemplateMapping {
     fieldName: string;
     masterDataFieldId: number | null;
@@ -102,4 +108,9 @@ export interface CreateTemplateResponse {
 export interface FieldTreeNode {
     field: TemplateField;
     children: FieldTreeNode[];
+}
+
+export interface DraftFieldTreeNode {
+    field: DraftTemplateField;
+    children: DraftFieldTreeNode[];
 }
