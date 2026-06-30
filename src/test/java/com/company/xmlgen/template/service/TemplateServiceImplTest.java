@@ -177,14 +177,12 @@ class TemplateServiceImplTest {
                     }
                     return savedChild;
                 });
-        when(templateFieldRepository.findById(101L)).thenReturn(Optional.of(savedChild));
 
         CreateTemplateResponse response = templateService.create(request);
 
         assertThat(response.id()).isEqualTo(10L);
-        verify(templateFieldRepository, org.mockito.Mockito.times(3)).save(any(TemplateFieldEntity.class));
+        verify(templateFieldRepository, org.mockito.Mockito.times(2)).save(any(TemplateFieldEntity.class));
         verify(templateMappingRepository, never()).save(any(TemplateMappingEntity.class));
-        verify(savedChild).setParentId(100L);
         verify(templateRepository).save(any(TemplateEntity.class));
         verify(templateCompilationOrchestrator).compileAndPersist(10L);
     }
@@ -595,7 +593,6 @@ class TemplateServiceImplTest {
                     }
                     return savedScore;
                 });
-        when(templateFieldRepository.findById(302L)).thenReturn(Optional.of(savedScore));
         when(templateFieldRepository.countByTemplateId(10L)).thenReturn(2L);
         when(templateFieldRepository.findAllByTemplateIdOrderByDisplayOrderAsc(10L))
                 .thenReturn(List.of(savedTitle, savedScore));
@@ -607,8 +604,81 @@ class TemplateServiceImplTest {
         assertThat(response.fields().get(1).parentFieldName()).isEqualTo("title");
         verify(templateMappingRepository).deleteByTemplateId(10L);
         verify(templateFieldRepository).deleteByTemplateId(10L);
-        verify(savedScore).setParentId(301L);
         verify(templateCompilationOrchestrator).compileAndPersist(10L);
+    }
+
+    @Test
+    void updateSchema_duplicateDisplayOrderUnderSameParent_throwsValidationException() {
+        when(templateRepository.findById(10L)).thenReturn(Optional.of(new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID)));
+
+        CreateTemplateFieldRequest first = new CreateTemplateFieldRequest(
+                "Game",
+                null,
+                "Game",
+                "Game",
+                TemplateFieldNodeType.GROUP,
+                null,
+                null,
+                null,
+                TemplateFieldEmptyHandling.REQUIRED,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+                null);
+        CreateTemplateFieldRequest duplicateOrder = new CreateTemplateFieldRequest(
+                "GameId",
+                "Game",
+                "GameID",
+                "Game ID",
+                TemplateFieldNodeType.ELEMENT,
+                null,
+                TemplateFieldSourceType.INPUT,
+                null,
+                TemplateFieldEmptyHandling.REQUIRED,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+                null);
+        CreateTemplateFieldRequest duplicateOrderSibling = new CreateTemplateFieldRequest(
+                "GameDate",
+                "Game",
+                "GameDate",
+                "Game Date",
+                TemplateFieldNodeType.ELEMENT,
+                null,
+                TemplateFieldSourceType.INPUT,
+                null,
+                TemplateFieldEmptyHandling.REQUIRED,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                1,
+                null);
+        UpdateTemplateSchemaRequest request = new UpdateTemplateSchemaRequest(
+                null, List.of(first, duplicateOrder, duplicateOrderSibling), List.of());
+
+        assertThatThrownBy(() -> templateService.updateSchema(10L, request))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> {
+                    ValidationException validationException = (ValidationException) ex;
+                    assertThat(validationException.getViolations())
+                            .anyMatch(v -> TemplateErrorCode.TEMPLATE_DISPLAY_ORDER_DUPLICATE
+                                    .code()
+                                    .equals(v.code()));
+                });
+
+        verify(templateFieldRepository, never()).save(any(TemplateFieldEntity.class));
     }
 
     @Test

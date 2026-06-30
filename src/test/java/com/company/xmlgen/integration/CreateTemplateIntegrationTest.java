@@ -163,8 +163,10 @@ class CreateTemplateIntegrationTest {
 
         var template = templateRepository.findById(templateId).orElseThrow();
         assertThat(template.getCompiledSchemaJson()).isNotNull();
-        assertThat(template.getCompiledSchemaJson().get("roots")).hasSize(2);
+        assertThat(template.getCompiledSchemaJson().get("roots")).hasSize(1);
         assertThat(template.getCompiledSchemaJson().at("/roots/0/fieldName").asText()).isEqualTo("Game");
+        assertThat(template.getCompiledSchemaJson().at("/roots/0/children/0/fieldName").asText())
+                .isEqualTo("GameKindId");
         assertThat(template.getCompiledSchemaJson().at("/mappings/0/fieldName").asText()).isEqualTo("GameKindId");
         assertThat(templateFieldRepository.countByTemplateId(templateId)).isEqualTo(2);
         assertThat(templateMappingRepository.countByTemplateId(templateId)).isEqualTo(1);

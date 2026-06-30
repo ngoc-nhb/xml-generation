@@ -36,9 +36,9 @@ class RuntimeExecutionOrchestratorImplTest {
                 new RuntimeValidationServiceImpl(List.of(
                         new HierarchyValidationRule(),
                         new NodeTypeValidationRule(),
-                        new OccurrenceValidationRule(),
-                        new EmptyHandlingValidationRule())),
+                        new OccurrenceValidationRule())),
                 new ValueResolutionServiceImpl(),
+                new ResolvedValueValidationServiceImpl(),
                 new XMLGenerationServiceImpl());
     }
 
@@ -70,9 +70,9 @@ class RuntimeExecutionOrchestratorImplTest {
                 new RuntimeValidationServiceImpl(List.of(
                         new HierarchyValidationRule(),
                         new NodeTypeValidationRule(),
-                        new OccurrenceValidationRule(),
-                        new EmptyHandlingValidationRule())),
+                        new OccurrenceValidationRule())),
                 valueResolutionService,
+                new ResolvedValueValidationServiceImpl(),
                 xmlGenerationService);
 
         RuntimeExecutionResult result = failingOrchestrator.execute(request(
@@ -102,9 +102,9 @@ class RuntimeExecutionOrchestratorImplTest {
                 new RuntimeValidationServiceImpl(List.of(
                         new HierarchyValidationRule(),
                         new NodeTypeValidationRule(),
-                        new OccurrenceValidationRule(),
-                        new EmptyHandlingValidationRule())),
+                        new OccurrenceValidationRule())),
                 valueResolutionService,
+                new ResolvedValueValidationServiceImpl(),
                 new XMLGenerationServiceImpl());
 
         assertThatThrownBy(() -> failingOrchestrator.execute(request(
@@ -201,6 +201,47 @@ class RuntimeExecutionOrchestratorImplTest {
     }
 
     @Test
+    void execute_blankOptionalFields_appliesEmptyHandlingWithoutValidationErrors() throws Exception {
+        RuntimeExecutionResult result = orchestrator.execute(request(
+                compiledSchemaWithEmptyHandlingFields(),
+                "{}",
+                "{}",
+                List.of()));
+
+        assertThat(result.isSuccessful()).isTrue();
+        assertThat(result.xml()).doesNotContain("OmitField");
+        assertThat(result.xml()).contains("<EmptyTagField></EmptyTagField>");
+        assertThat(result.xml()).contains("<ZeroField>0</ZeroField>");
+    }
+
+    @Test
+    void execute_blankRequiredField_reportsRequiredFieldMissing() throws Exception {
+        RuntimeExecutionResult result = orchestrator.execute(request(
+                compiledSchemaWithRequiredField(),
+                "{}",
+                "{}",
+                List.of()));
+
+        assertThat(result.isSuccessful()).isFalse();
+        assertThat(result.validationResult().errors())
+                .extracting(RuntimeValidationError::code)
+                .containsExactly(ResolvedValueValidationServiceImpl.REQUIRED_FIELD_MISSING);
+        assertThat(result.validationResult().errors().getFirst().fieldName()).isEqualTo("RequiredField");
+    }
+
+    @Test
+    void execute_stringFieldWithZeroIfEmpty_succeedsWithoutInvalidEmptyHandling() throws Exception {
+        RuntimeExecutionResult result = orchestrator.execute(request(
+                compiledSchemaWithStringZeroIfEmptyField(),
+                "{}",
+                "{}",
+                List.of()));
+
+        assertThat(result.isSuccessful()).isTrue();
+        assertThat(result.xml()).contains("<PlayHistoryNo>0</PlayHistoryNo>");
+    }
+
+    @Test
     void execute_masterDataMapping_resolvesThroughPipeline() throws Exception {
         RuntimeExecutionResult result = orchestrator.execute(request(
                 validCompiledSchemaWithMasterDataField(),
@@ -215,6 +256,127 @@ class RuntimeExecutionOrchestratorImplTest {
         assertThat(result.isSuccessful()).isTrue();
         assertThat(result.xml()).contains("<GameKindID>2</GameKindID>");
         assertThat(result.xml()).contains("<Title>Match</Title>");
+    }
+
+    private static JsonNode compiledSchemaWithEmptyHandlingFields() throws Exception {
+        return OBJECT_MAPPER.readTree(
+                """
+                {
+                  "roots": [
+                    {
+                      "fieldName": "Game",
+                      "name": "Game",
+                      "fieldType": "GROUP",
+                      "occurrenceRule": "ONE_OR_MORE",
+                      "emptyHandling": "REQUIRED",
+                      "requiredWhenParentExists": false,
+                      "displayOrder": 1,
+                      "children": [
+                        {
+                          "fieldName": "OmitField",
+                          "name": "OmitField",
+                          "fieldType": "ELEMENT",
+                          "sourceType": "INPUT",
+                          "dataType": "STRING",
+                          "emptyHandling": "OMIT_IF_EMPTY",
+                          "requiredWhenParentExists": false,
+                          "displayOrder": 1,
+                          "children": []
+                        },
+                        {
+                          "fieldName": "EmptyTagField",
+                          "name": "EmptyTagField",
+                          "fieldType": "ELEMENT",
+                          "sourceType": "INPUT",
+                          "dataType": "STRING",
+                          "emptyHandling": "EMPTY_TAG_IF_EMPTY",
+                          "requiredWhenParentExists": false,
+                          "displayOrder": 2,
+                          "children": []
+                        },
+                        {
+                          "fieldName": "ZeroField",
+                          "name": "ZeroField",
+                          "fieldType": "ELEMENT",
+                          "sourceType": "INPUT",
+                          "dataType": "INTEGER",
+                          "emptyHandling": "ZERO_IF_EMPTY",
+                          "requiredWhenParentExists": false,
+                          "displayOrder": 3,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "mappings": []
+                }
+                """);
+    }
+
+    private static JsonNode compiledSchemaWithRequiredField() throws Exception {
+        return OBJECT_MAPPER.readTree(
+                """
+                {
+                  "roots": [
+                    {
+                      "fieldName": "Game",
+                      "name": "Game",
+                      "fieldType": "GROUP",
+                      "occurrenceRule": "ONE_OR_MORE",
+                      "emptyHandling": "REQUIRED",
+                      "requiredWhenParentExists": false,
+                      "displayOrder": 1,
+                      "children": [
+                        {
+                          "fieldName": "RequiredField",
+                          "name": "RequiredField",
+                          "fieldType": "ELEMENT",
+                          "sourceType": "INPUT",
+                          "dataType": "STRING",
+                          "emptyHandling": "REQUIRED",
+                          "requiredWhenParentExists": false,
+                          "displayOrder": 1,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "mappings": []
+                }
+                """);
+    }
+
+    private static JsonNode compiledSchemaWithStringZeroIfEmptyField() throws Exception {
+        return OBJECT_MAPPER.readTree(
+                """
+                {
+                  "roots": [
+                    {
+                      "fieldName": "Game",
+                      "name": "Game",
+                      "fieldType": "GROUP",
+                      "occurrenceRule": "ONE_OR_MORE",
+                      "emptyHandling": "REQUIRED",
+                      "requiredWhenParentExists": false,
+                      "displayOrder": 1,
+                      "children": [
+                        {
+                          "fieldName": "PlayHistoryNo",
+                          "name": "PlayHistoryNo",
+                          "fieldType": "ELEMENT",
+                          "sourceType": "INPUT",
+                          "dataType": "STRING",
+                          "emptyHandling": "ZERO_IF_EMPTY",
+                          "requiredWhenParentExists": false,
+                          "displayOrder": 1,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "mappings": []
+                }
+                """);
     }
 
     private static RuntimeExecutionRequest request(

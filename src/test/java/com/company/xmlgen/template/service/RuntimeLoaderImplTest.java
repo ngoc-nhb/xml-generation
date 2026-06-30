@@ -230,6 +230,45 @@ class RuntimeLoaderImplTest {
     }
 
     @Test
+    void load_containerSavedAsElementWithoutSourceType_normalizesToGroup() {
+        JsonNode compiled = compiledJson(
+                """
+                {
+                  "roots": [
+                    {
+                      "fieldName": "Football",
+                      "name": "Football",
+                      "fieldType": "ELEMENT",
+                      "emptyHandling": "REQUIRED",
+                      "requiredWhenParentExists": false,
+                      "displayOrder": 1,
+                      "children": [
+                        {
+                          "fieldName": "GameID",
+                          "name": "GameID",
+                          "fieldType": "ELEMENT",
+                          "sourceType": "INPUT",
+                          "dataType": "STRING",
+                          "emptyHandling": "REQUIRED",
+                          "requiredWhenParentExists": false,
+                          "displayOrder": 1,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ],
+                  "mappings": []
+                }
+                """);
+
+        RuntimeTemplate runtime = loader.load(compiled);
+
+        assertThat(runtime.roots().getFirst().fieldName()).isEqualTo("Football");
+        assertThat(runtime.roots().getFirst().nodeType()).isEqualTo(TemplateFieldNodeType.GROUP);
+        assertThat(runtime.roots().getFirst().sourceType()).isNull();
+    }
+
+    @Test
     void load_nullCompiledSchema_throwsLoaderException() {
         assertThatThrownBy(() -> loader.load(null))
                 .isInstanceOfSatisfying(RuntimeLoaderException.class, ex -> assertThat(ex.getLoaderErrorCode())

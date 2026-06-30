@@ -1,6 +1,7 @@
 package com.company.xmlgen.template.service;
 
 import com.company.xmlgen.template.domain.RuntimeField;
+import com.company.xmlgen.template.domain.RuntimeFieldNormalizer;
 import com.company.xmlgen.template.domain.RuntimeTemplate;
 import com.company.xmlgen.template.entity.TemplateFieldEmptyHandling;
 import com.company.xmlgen.template.entity.TemplateFieldNodeType;
@@ -62,7 +63,7 @@ public class RuntimeLoaderImpl implements RuntimeLoader {
         TemplateFieldEmptyHandling emptyHandling = requiredEnum(node, "emptyHandling", TemplateFieldEmptyHandling.class);
         int displayOrder = requiredInt(node, "displayOrder");
 
-        return new RuntimeField(
+        RuntimeField runtimeField = new RuntimeField(
                 fieldName,
                 xmlName,
                 optionalText(node, "displayName"),
@@ -80,6 +81,7 @@ public class RuntimeLoaderImpl implements RuntimeLoader {
                 displayOrder,
                 optionalText(node, "description"),
                 loadChildren(node.get("children")));
+        return RuntimeFieldNormalizer.normalizeContainer(runtimeField);
     }
 
     private List<RuntimeField> loadChildren(JsonNode childrenNode) {

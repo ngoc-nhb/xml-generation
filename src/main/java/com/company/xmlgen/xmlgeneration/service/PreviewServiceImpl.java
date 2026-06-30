@@ -28,14 +28,17 @@ public class PreviewServiceImpl implements PreviewService {
 
     private final TemplateRepository templateRepository;
     private final TemplateCompileMappingResolver templateCompileMappingResolver;
+    private final SelectedMasterDataLoader selectedMasterDataLoader;
     private final RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
 
     public PreviewServiceImpl(
             TemplateRepository templateRepository,
             TemplateCompileMappingResolver templateCompileMappingResolver,
+            SelectedMasterDataLoader selectedMasterDataLoader,
             RuntimeExecutionOrchestrator runtimeExecutionOrchestrator) {
         this.templateRepository = templateRepository;
         this.templateCompileMappingResolver = templateCompileMappingResolver;
+        this.selectedMasterDataLoader = selectedMasterDataLoader;
         this.runtimeExecutionOrchestrator = runtimeExecutionOrchestrator;
     }
 
@@ -62,7 +65,7 @@ public class PreviewServiceImpl implements PreviewService {
         RuntimeExecutionRequest executionRequest = new RuntimeExecutionRequest(
                 compiledSchemaJson,
                 nullSafeInputData(request.inputData()),
-                nullSafeJson(request.selectedMasterData()),
+                selectedMasterDataLoader.load(nullSafeJson(request.selectedMasterData())),
                 mappings);
 
         RuntimeExecutionResult executionResult = runtimeExecutionOrchestrator.execute(executionRequest);

@@ -1,6 +1,7 @@
 package com.company.xmlgen.template.service;
 
 import com.company.xmlgen.template.domain.RuntimeField;
+import com.company.xmlgen.template.domain.RuntimeFieldNormalizer;
 import com.company.xmlgen.template.domain.RuntimeTemplate;
 import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateFieldEntity;
@@ -144,7 +145,7 @@ public class TemplateSchemaParserImpl implements TemplateSchemaParser {
                 .map(child -> toRuntimeField(child, childrenByParentId))
                 .toList();
 
-        return new RuntimeField(
+        RuntimeField runtimeField = new RuntimeField(
                 field.getFieldName(),
                 field.getXmlName(),
                 field.getDisplayName(),
@@ -162,6 +163,7 @@ public class TemplateSchemaParserImpl implements TemplateSchemaParser {
                 field.getDisplayOrder(),
                 field.getDescription(),
                 children);
+        return RuntimeFieldNormalizer.normalizeContainer(runtimeField);
     }
 
     private static List<TemplateFieldEntity> sorted(List<TemplateFieldEntity> fields) {

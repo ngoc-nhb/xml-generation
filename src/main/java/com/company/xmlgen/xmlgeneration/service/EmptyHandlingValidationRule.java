@@ -8,12 +8,12 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import org.springframework.stereotype.Component;
-
 /**
- * Validates runtime empty handling configuration against supported value types.
+ * Validates empty-handling configuration against supported value types.
+ *
+ * <p>This check belongs at template compile time. It is not registered as a runtime
+ * validation rule because empty-handling is a serialization policy, not an input rule.
  */
-@Component
 public class EmptyHandlingValidationRule implements RuntimeValidationRule {
 
     static final String INVALID_EMPTY_HANDLING = "INVALID_EMPTY_HANDLING";

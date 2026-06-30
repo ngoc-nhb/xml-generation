@@ -14,16 +14,19 @@ public class RuntimeExecutionOrchestratorImpl implements RuntimeExecutionOrchest
     private final RuntimeLoader runtimeLoader;
     private final RuntimeValidationService runtimeValidationService;
     private final ValueResolutionService valueResolutionService;
+    private final ResolvedValueValidationService resolvedValueValidationService;
     private final XMLGenerationService xmlGenerationService;
 
     public RuntimeExecutionOrchestratorImpl(
             RuntimeLoader runtimeLoader,
             RuntimeValidationService runtimeValidationService,
             ValueResolutionService valueResolutionService,
+            ResolvedValueValidationService resolvedValueValidationService,
             XMLGenerationService xmlGenerationService) {
         this.runtimeLoader = runtimeLoader;
         this.runtimeValidationService = runtimeValidationService;
         this.valueResolutionService = valueResolutionService;
+        this.resolvedValueValidationService = resolvedValueValidationService;
         this.xmlGenerationService = xmlGenerationService;
     }
 
@@ -43,6 +46,11 @@ public class RuntimeExecutionOrchestratorImpl implements RuntimeExecutionOrchest
         ValueResolutionContext resolutionContext = new ValueResolutionContext(
                 request.inputData(), request.selectedMasterData(), request.mappings());
         RuntimeExecutionTree executionTree = valueResolutionService.resolve(runtimeTemplate, resolutionContext);
+
+        RuntimeValidationResult resolvedValidationResult = resolvedValueValidationService.validate(executionTree);
+        if (!resolvedValidationResult.isValid()) {
+            return RuntimeExecutionResult.validationFailed(resolvedValidationResult);
+        }
 
         String xml = xmlGenerationService.generate(executionTree);
         return RuntimeExecutionResult.success(xml, executionTree);

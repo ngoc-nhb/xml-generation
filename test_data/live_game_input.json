@@ -1,0 +1,298 @@
+{
+  "inputData": {
+    "GameReport": {
+      "GameID": "2026062339",
+      "GameDate": "20260623",
+      "LocalDate": "",
+      "GameKindID": 68,
+      "GameKindName": "明治安田Ｊ３リーグ",
+      "SeasonID": 1,
+      "SeasonName": "シーズン（通算）",
+      "StartTime": "1400",
+      "StadiumID": 30317,
+      "StadiumName": "相模原ギオンスタジアム",
+      "DayNight": 1,
+      "StateID": 7,
+      "StateName": "PK戦",
+      "Time": 90,
+      "Half": 45,
+      "SituationID": 2,
+      "SituationName": "試合中",
+      "RefereeID": 1400420,
+      "Referee": "上原　直人",
+      "Linesman1": "山口　大輔",
+      "Linesman2": "宮原　一也",
+      "Fourth": "原田　大輔",
+      "OtherReferee1": "",
+      "OtherReferee2": "",
+      "VAR": "吉田 哲朗",
+      "AVAR1": "西橋 勲",
+      "AVAR2": "大輔 橋勲",
+      "AVAR3": "宮原 大也",
+      "HalfEndF": 1,
+      "GameFixF": 1,
+      "GameTime": "110:54",
+      "APT": "90:00",
+      "TeamInfo": [
+        {
+          "TeamInfo_HV": "1",
+          "TeamInfo_ID": " 30676 ",
+          "TeamInfo_NameS": "相模原",
+          "TeamInfo_DirectorID": "",
+          "TeamInfo_Director": "",
+          "TeamInfo_PostName": "",
+          "TeamInfo_BeforePoint": 0,
+          "TeamInfo_AfterPoint": 0,
+          "TeamInfo_FormationID": "",
+          "TeamInfo_FormationName": "",
+          "TeamInfo_Score": 1,
+          "TeamInfo_PKBScore": 2,
+          "TeamInfo_PKScore": 2,
+          "TeamInfo_PK": 2,
+          "TeamInfo_GK": 0,
+          "TeamInfo_Shoot": 0,
+          "TeamInfo_Assist": "",
+          "TeamInfo_FKD": 0,
+          "TeamInfo_FKI": 0,
+          "TeamInfo_CK": 0,
+          "TeamInfo_Yellow": 0,
+          "TeamInfo_Red": 0,
+          "TeamInfo_ShootGoal": "",
+          "TeamInfo_Offside": 0,
+          "TeamInfo_Gain": "",
+          "GameState": [
+            {
+              "GameState_ID": "1",
+              "GameState_Score": 0,
+              "GameState_PK": 0,
+              "GameState_GK": 0,
+              "GameState_Shoot": 0,
+              "GameState_FK": 0,
+              "GameState_Yellow": 0,
+              "GameState_Red": 0,
+              "GameState_CK": 0,
+              "GameState_ShootGoal": "0",
+              "GameState_Offside": 0,
+              "GameState_Gain": "0"
+            }
+          ]
+        },
+        {
+          "TeamInfo_HV": "2",
+          "TeamInfo_ID": " 30305 ",
+          "TeamInfo_NameS": "栃木SC",
+          "TeamInfo_DirectorID": "",
+          "TeamInfo_Director": "",
+          "TeamInfo_PostName": "",
+          "TeamInfo_BeforePoint": 0,
+          "TeamInfo_AfterPoint": 0,
+          "TeamInfo_FormationID": "",
+          "TeamInfo_FormationName": "",
+          "TeamInfo_Score": 1,
+          "TeamInfo_PKBScore": 3,
+          "TeamInfo_PKScore": 3,
+          "TeamInfo_PK": 3,
+          "TeamInfo_GK": 0,
+          "TeamInfo_Shoot": 4,
+          "TeamInfo_Assist": "",
+          "TeamInfo_FKD": 0,
+          "TeamInfo_FKI": 0,
+          "TeamInfo_CK": 0,
+          "TeamInfo_Yellow": 0,
+          "TeamInfo_Red": 0,
+          "TeamInfo_ShootGoal": "",
+          "TeamInfo_Offside": 0,
+          "TeamInfo_Gain": "0",
+          "GameState": [
+            {
+              "GameState_ID": "1",
+              "GameState_Score": 0,
+              "GameState_PK": 0,
+              "GameState_GK": 0,
+              "GameState_Shoot": 0,
+              "GameState_FK": 0,
+              "GameState_Yellow": 0,
+              "GameState_Red": 0,
+              "GameState_CK": 0,
+              "GameState_ShootGoal": "0",
+              "GameState_Offside": 0,
+              "GameState_Gain": "0"
+            }
+          ]
+        }
+      ],
+      "PKInfo": [
+        {
+          "PKInfo_HV": "1",
+          "Player": [
+            {
+              "Player_No": 1,
+              "Player_SerialNo": 1,
+              "Player_PlayerID": 1200059,
+              "Player_PlayerName": "白崎 凌兵",
+              "Player_PlayerNameS": "白崎",
+              "Player_PlayerUni": 41,
+              "Player_SuccessF": 1,
+              "Player_Sign": "○"
+            },
+            {
+              "Player_No": 2,
+              "Player_SerialNo": 3,
+              "Player_PlayerID": 1200049,
+              "Player_PlayerName": "後藤 優介",
+              "Player_PlayerNameS": "後藤",
+              "Player_PlayerUni": 14,
+              "Player_SuccessF": 0,
+              "Player_Sign": "×"
+            },
+            {
+              "Player_No": 3,
+              "Player_SerialNo": 5,
+              "Player_PlayerID": 700799,
+              "Player_PlayerName": "乾 貴士",
+              "Player_PlayerNameS": "乾",
+              "Player_PlayerUni": 33,
+              "Player_SuccessF": 0,
+              "Player_Sign": "×"
+            },
+            {
+              "Player_No": 4,
+              "Player_SerialNo": 7,
+              "Player_PlayerID": 1200349,
+              "Player_PlayerName": "井林 章",
+              "Player_PlayerNameS": "井林",
+              "Player_PlayerUni": 38,
+              "Player_SuccessF": 0,
+              "Player_Sign": "×"
+            },
+            {
+              "Player_No": 5,
+              "Player_SerialNo": 9,
+              "Player_PlayerID": 1635021,
+              "Player_PlayerName": "菊地 脩太",
+              "Player_PlayerNameS": "菊地",
+              "Player_PlayerUni": 83,
+              "Player_SuccessF": 1,
+              "Player_Sign": "○"
+            }
+          ]
+        },
+        {
+          "PKInfo_HV": "2",
+          "Player": [
+            {
+              "Player_No": 1,
+              "Player_SerialNo": 2,
+              "Player_PlayerID": 1600146,
+              "Player_PlayerName": "瀬川 祐輔",
+              "Player_PlayerNameS": "瀬川",
+              "Player_PlayerUni": 20,
+              "Player_SuccessF": 1,
+              "Player_Sign": "○"
+            },
+            {
+              "Player_No": 2,
+              "Player_SerialNo": 4,
+              "Player_PlayerID": 1601436,
+              "Player_PlayerName": "小西 雄大",
+              "Player_PlayerNameS": "小西",
+              "Player_PlayerUni": 21,
+              "Player_SuccessF": 0,
+              "Player_Sign": "×"
+            },
+            {
+              "Player_No": 3,
+              "Player_SerialNo": 6,
+              "Player_PlayerID": 1600210,
+              "Player_PlayerName": "三丸 拡",
+              "Player_PlayerNameS": "三丸",
+              "Player_PlayerUni": 2,
+              "Player_SuccessF": 0,
+              "Player_Sign": "×"
+            },
+            {
+              "Player_No": 4,
+              "Player_SerialNo": 8,
+              "Player_PlayerID": 1611125,
+              "Player_PlayerName": "戸嶋 祥郎",
+              "Player_PlayerNameS": "戸嶋",
+              "Player_PlayerUni": 28,
+              "Player_SuccessF": 0,
+              "Player_Sign": "○"
+            },
+            {
+              "Player_No": 5,
+              "Player_SerialNo": 10,
+              "Player_PlayerID": 1617910,
+              "Player_PlayerName": "渡井 理己",
+              "Player_PlayerNameS": "渡井",
+              "Player_PlayerUni": 11,
+              "Player_SuccessF": 1,
+              "Player_Sign": "○"
+            }
+          ]
+        }
+      ],
+      "GoalInfo": [
+        {
+          "GoalInfo_No": "1",
+          "GoalInfo_StateID": 1,
+          "GoalInfo_StateName": "前半",
+          "GoalInfo_Time": 15,
+          "GoalInfo_Half": 15,
+          "GoalInfo_TeamID": " 30676 ",
+          "GoalInfo_TeamNameS": "相模原",
+          "GoalInfo_GPlayerID": 1651283,
+          "GoalInfo_GPlayerName": "ラファエル フルタード",
+          "GoalInfo_GPlayerNameS": "Ｒフルタード",
+          "GoalInfo_GPlayerUni": 9,
+          "GoalInfo_Body": "右",
+          "GoalInfo_Operation": "クロス",
+          "GoalInfo_APlayerID": 1632479,
+          "GoalInfo_APlayerName": "加藤 拓己",
+          "GoalInfo_APlayerNameS": "加藤拓",
+          "GoalInfo_APlayerUni": 23,
+          "GoalInfo_AssistKind": "",
+          "GoalInfo_PKGoalF": 0,
+          "GoalInfo_OwnGoalF": 0,
+          "GoalInfo_ScoreTeamID": " 30676 ",
+          "GoalInfo_ScoreTeamNameS": "相模原"
+        },
+        {
+          "GoalInfo_No": "2",
+          "GoalInfo_StateID": 2,
+          "GoalInfo_StateName": "後半",
+          "GoalInfo_Time": 65,
+          "GoalInfo_Half": 20,
+          "GoalInfo_TeamID": " 30676 ",
+          "GoalInfo_TeamNameS": "相模原",
+          "GoalInfo_GPlayerID": 1651283,
+          "GoalInfo_GPlayerName": "ラファエル フルタード",
+          "GoalInfo_GPlayerNameS": "Ｒフルタード",
+          "GoalInfo_GPlayerUni": 9,
+          "GoalInfo_Body": "右",
+          "GoalInfo_Operation": "クロス",
+          "GoalInfo_APlayerID": 1632479,
+          "GoalInfo_APlayerName": "加藤 拓己",
+          "GoalInfo_APlayerNameS": "加藤拓",
+          "GoalInfo_APlayerUni": 23,
+          "GoalInfo_AssistKind": "",
+          "GoalInfo_PKGoalF": 0,
+          "GoalInfo_OwnGoalF": 1,
+          "GoalInfo_ScoreTeamID": " 30305 ",
+          "GoalInfo_ScoreTeamNameS": "栃木SC"
+        }
+      ],
+      "GameEndInfo": {
+        "GameEndInfo_Condition": "全面良芝",
+        "GameEndInfo_Surface": "乾燥",
+        "GameEndInfo_Weather": "晴",
+        "GameEndInfo_Wind": "弱風",
+        "GameEndInfo_Temperature": 29.4,
+        "GameEndInfo_Spectators": 881234,
+        "GameEndInfo_Humidity": 68
+      }
+    }
+  },
+  "selectedMasterData": {}
+}

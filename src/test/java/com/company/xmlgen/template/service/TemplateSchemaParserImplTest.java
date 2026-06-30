@@ -90,6 +90,34 @@ class TemplateSchemaParserImplTest {
                         .isEqualTo(TemplateSchemaParserErrorCode.TEMPLATE_FIELD_NAME_DUPLICATE));
     }
 
+    @Test
+    void parse_parentSavedAsElementWithoutSourceType_normalizesToGroup() {
+        TemplateFieldEntity root = containerField(1L, null, "Football", "Football", 1);
+        TemplateFieldEntity child = field(2L, 1L, "GameID", "GameID", 1);
+
+        RuntimeTemplate runtime = parser.parse(template(), List.of(child, root));
+
+        assertThat(runtime.roots().getFirst().nodeType()).isEqualTo(TemplateFieldNodeType.GROUP);
+        assertThat(runtime.roots().getFirst().sourceType()).isNull();
+        assertThat(runtime.roots().getFirst().valueType()).isNull();
+    }
+
+    private static TemplateFieldEntity containerField(
+            Long id, Long parentId, String fieldName, String xmlName, int displayOrder) {
+        TemplateFieldEntity field = mock(TemplateFieldEntity.class);
+        when(field.getId()).thenReturn(id);
+        when(field.getParentId()).thenReturn(parentId);
+        when(field.getFieldName()).thenReturn(fieldName);
+        when(field.getXmlName()).thenReturn(xmlName);
+        when(field.getDisplayName()).thenReturn(fieldName);
+        when(field.getNodeType()).thenReturn(TemplateFieldNodeType.ELEMENT);
+        when(field.getSourceType()).thenReturn(null);
+        when(field.getValueType()).thenReturn(null);
+        when(field.getEmptyHandling()).thenReturn(TemplateFieldEmptyHandling.REQUIRED);
+        when(field.getDisplayOrder()).thenReturn(displayOrder);
+        return field;
+    }
+
     private static TemplateEntity template() {
         return new TemplateEntity("LIVE_GAME", "Live Game", TemplateStatus.ACTIVE, 1L);
     }

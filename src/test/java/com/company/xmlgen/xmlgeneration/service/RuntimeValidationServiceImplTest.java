@@ -25,8 +25,7 @@ class RuntimeValidationServiceImplTest {
         validationService = new RuntimeValidationServiceImpl(List.of(
                 new HierarchyValidationRule(),
                 new NodeTypeValidationRule(),
-                new OccurrenceValidationRule(),
-                new EmptyHandlingValidationRule()));
+                new OccurrenceValidationRule()));
     }
 
     @Test
@@ -187,29 +186,6 @@ class RuntimeValidationServiceImplTest {
     }
 
     @Test
-    void validate_invalidEmptyHandling_reportsEmptyHandlingError() {
-        RuntimeTemplate runtime = new RuntimeTemplate(List.of(group(
-                "Game",
-                "Game",
-                TemplateFieldOccurrenceRule.ONE_OR_MORE,
-                1,
-                element(
-                        "GameDate",
-                        "GameDate",
-                        TemplateFieldSourceType.INPUT,
-                        TemplateFieldValueType.DATE,
-                        TemplateFieldEmptyHandling.ZERO_IF_EMPTY,
-                        1))));
-
-        RuntimeValidationResult result = validationService.validate(runtime);
-
-        assertThat(result.isValid()).isFalse();
-        assertThat(result.errors())
-                .extracting(RuntimeValidationError::code)
-                .contains(EmptyHandlingValidationRule.INVALID_EMPTY_HANDLING);
-    }
-
-    @Test
     void validate_multipleViolations_accumulatesErrorsFromAllRules() {
         RuntimeTemplate runtime = new RuntimeTemplate(List.of(
                 new RuntimeField(
@@ -246,9 +222,8 @@ class RuntimeValidationServiceImplTest {
                 .contains(
                         HierarchyValidationRule.DUPLICATE_FIELD_NAME,
                         NodeTypeValidationRule.GROUP_SOURCE_TYPE_NOT_ALLOWED,
-                        OccurrenceValidationRule.OCCURRENCE_RULE_REQUIRED,
-                        EmptyHandlingValidationRule.INVALID_EMPTY_HANDLING);
-        assertThat(result.errors().size()).isGreaterThanOrEqualTo(4);
+                        OccurrenceValidationRule.OCCURRENCE_RULE_REQUIRED);
+        assertThat(result.errors().size()).isGreaterThanOrEqualTo(3);
     }
 
     @Test

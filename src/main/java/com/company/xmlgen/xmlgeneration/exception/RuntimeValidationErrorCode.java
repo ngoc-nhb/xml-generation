@@ -7,7 +7,8 @@ import com.company.xmlgen.exception.ErrorCode;
  */
 public enum RuntimeValidationErrorCode implements ErrorCode {
 
-    RUNTIME_TEMPLATE_REQUIRED;
+    RUNTIME_TEMPLATE_REQUIRED,
+    EXECUTION_TREE_REQUIRED;
 
     @Override
     public String code() {

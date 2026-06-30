@@ -48,7 +48,7 @@ public class ValueResolutionServiceImpl implements ValueResolutionService {
                     ValueResolutionErrorCode.RESOLUTION_CONTEXT_REQUIRED, "ValueResolutionContext is required");
         }
 
-        JsonNode inputScope = nullSafe(context.inputData());
+        JsonNode inputScope = unwrapRootInputScope(runtimeTemplate.roots(), nullSafe(context.inputData()));
         JsonNode masterDataScope = nullSafe(context.selectedMasterData());
         Map<String, TemplateCompileMapping> mappingsByFieldName = context.mappingsByFieldName();
 
@@ -57,6 +57,39 @@ public class ValueResolutionServiceImpl implements ValueResolutionService {
             roots.addAll(resolveFieldOccurrences(rootField, inputScope, masterDataScope, mappingsByFieldName, true));
         }
         return new RuntimeExecutionTree(roots);
+    }
+
+    /**
+     * Accepts both canonical input ({@code CommentReport: {...}}) and wrapped root input
+     * ({@code Football: { CommentReport: {...} }}) when the template has a single root container.
+     */
+    private static JsonNode unwrapRootInputScope(List<RuntimeField> roots, JsonNode inputScope) {
+        if (roots.size() != 1 || isMissing(inputScope) || !inputScope.isObject()) {
+            return inputScope;
+        }
+
+        RuntimeField root = roots.getFirst();
+        if (root.nodeType() != TemplateFieldNodeType.GROUP || root.children().isEmpty()) {
+            return inputScope;
+        }
+        if (hasAnyChildKeyAtScope(inputScope, root.children())) {
+            return inputScope;
+        }
+
+        JsonNode wrapped = inputScope.get(root.fieldName());
+        if (!isMissing(wrapped) && wrapped.isObject()) {
+            return wrapped;
+        }
+        return inputScope;
+    }
+
+    private static boolean hasAnyChildKeyAtScope(JsonNode scope, List<RuntimeField> children) {
+        for (RuntimeField child : children) {
+            if (!isMissing(scope.get(child.fieldName()))) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<RuntimeExecutionNode> resolveFieldOccurrences(
@@ -75,13 +108,14 @@ public class ValueResolutionServiceImpl implements ValueResolutionService {
 
         JsonNode groupInput = inputScope.get(field.fieldName());
         JsonNode groupMasterData = masterDataScope.get(field.fieldName());
+        JsonNode effectiveMasterDataScope = resolveGroupMasterDataScope(masterDataScope, groupMasterData);
 
         if (!isRepeatable(field.occurrenceRule())) {
             if (field.occurrenceRule() == TemplateFieldOccurrenceRule.ZERO_OR_ONE && isMissing(groupInput)) {
                 return List.of();
             }
             return List.of(resolveField(
-                    field, nullSafe(groupInput), nullSafe(groupMasterData), mappingsByFieldName));
+                    field, nullSafe(groupInput), effectiveMasterDataScope, mappingsByFieldName));
         }
 
         if (isMissing(groupInput)) {
@@ -89,20 +123,36 @@ public class ValueResolutionServiceImpl implements ValueResolutionService {
         }
         if (groupInput.isArray()) {
             List<RuntimeExecutionNode> occurrences = new ArrayList<>();
-            JsonNode masterOccurrences = nullSafe(groupMasterData);
+            JsonNode masterOccurrences = !isMissing(groupMasterData) && groupMasterData.isArray()
+                    ? groupMasterData
+                    : NullNode.instance;
             for (int index = 0; index < groupInput.size(); index++) {
                 JsonNode occurrenceInput = groupInput.get(index);
                 JsonNode occurrenceMasterData =
                         masterOccurrences.isArray() && index < masterOccurrences.size()
                                 ? masterOccurrences.get(index)
                                 : NullNode.instance;
+                JsonNode effectiveOccurrenceMasterData =
+                        resolveGroupMasterDataScope(masterDataScope, occurrenceMasterData);
                 occurrences.add(resolveField(
-                        field, occurrenceInput, occurrenceMasterData, mappingsByFieldName));
+                        field, occurrenceInput, effectiveOccurrenceMasterData, mappingsByFieldName));
             }
             return occurrences;
         }
 
-        return List.of(resolveField(field, groupInput, nullSafe(groupMasterData), mappingsByFieldName));
+        return List.of(resolveField(
+                field, groupInput, effectiveMasterDataScope, mappingsByFieldName));
+    }
+
+    /**
+     * Master data selections are keyed by master data type code at the request root.
+     * Only descend into a nested group scope when the request actually provides one.
+     */
+    private static JsonNode resolveGroupMasterDataScope(JsonNode parentScope, JsonNode groupMasterData) {
+        if (!isMissing(groupMasterData) && groupMasterData.isObject()) {
+            return groupMasterData;
+        }
+        return parentScope;
     }
 
     private RuntimeExecutionNode resolveField(

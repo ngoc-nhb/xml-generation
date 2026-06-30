@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Football>
+	<GameReport>
+		<GameID>2026062339</GameID>
+		<GameDate>20260623</GameDate>
+		<LocalDate></LocalDate>
+		<GameKindID>68</GameKindID>
+		<GameKindName>明治安田Ｊ３リーグ</GameKindName>
+		<SeasonID>1</SeasonID>
+		<SeasonName>シーズン（通算）</SeasonName>
+		<StartTime>1400</StartTime>
+		<StadiumID>30317</StadiumID>
+		<StadiumName>相模原ギオンスタジアム</StadiumName>
+		<DayNight>1</DayNight>
+		<StateID>7</StateID>
+		<StateName>PK戦</StateName>
+		<Time>90</Time>
+		<Half>45</Half>
+		<SituationID>2</SituationID>
+		<SituationName>試合中</SituationName>
+		<RefereeID>1400420</RefereeID>
+		<Referee>上原　直人</Referee>
+		<Linesman1>山口　大輔</Linesman1>
+		<Linesman2>宮原　一也</Linesman2>
+		<Fourth>原田　大輔</Fourth>
+		<OtherReferee1></OtherReferee1>
+		<OtherReferee2></OtherReferee2>
+		<VAR>吉田 哲朗</VAR>
+		<AVAR1>西橋 勲</AVAR1>
+		<AVAR2>大輔 橋勲</AVAR2>
+		<AVAR3>宮原 大也</AVAR3>
+		<HalfEndF>1</HalfEndF>
+		<GameFixF>1</GameFixF>
+		<GameTime>110:54</GameTime>
+		<APT>90:00</APT>
+		<TeamInfo HV="1">
+			<ID> 30676 </ID>
+			<NameS>相模原</NameS>
+			<DirectorID></DirectorID>
+			<Director></Director>
+			<PostName></PostName>
+			<BeforePoint>0</BeforePoint>
+			<AfterPoint>0</AfterPoint>
+			<FormationID></FormationID>
+			<FormationName></FormationName>
+			<Score>1</Score>
+			<PKBScore>2</PKBScore>
+			<PKScore>2</PKScore>
+			<PK>2</PK>
+			<GK>0</GK>
+			<Shoot>0</Shoot>
+			<Assist></Assist>
+			<FKD>0</FKD>
+			<FKI>0</FKI>
+			<CK>0</CK>
+			<Yellow>0</Yellow>
+			<Red>0</Red>
+			<ShootGoal></ShootGoal>
+			<Offside>0</Offside>
+			<Gain></Gain>
+			<GameState ID="1">
+				<Score>0</Score>
+				<PK>0</PK>
+				<GK>0</GK>
+				<Shoot>0</Shoot>
+				<FK>0</FK>
+				<Yellow>0</Yellow>
+				<Red>0</Red>
+				<CK>0</CK>
+				<ShootGoal>0</ShootGoal>
+				<Offside>0</Offside>
+				<Gain>0</Gain>
+			</GameState>
+		</TeamInfo>
+		<TeamInfo HV="2">
+			<ID> 30305 </ID>
+			<NameS>栃木SC</NameS>
+			<DirectorID></DirectorID>
+			<Director></Director>
+			<PostName></PostName>
+			<BeforePoint>0</BeforePoint>
+			<AfterPoint>0</AfterPoint>
+			<FormationID></FormationID>
+			<FormationName></FormationName>
+			<Score>1</Score>
+			<PKBScore>3</PKBScore>
+			<PKScore>3</PKScore>
+			<PK>3</PK>
+			<GK>0</GK>
+			<Shoot>4</Shoot>
+			<Assist></Assist>
+			<FKD>0</FKD>
+			<FKI>0</FKI>
+			<CK>0</CK>
+			<Yellow>0</Yellow>
+			<Red>0</Red>
+			<ShootGoal></ShootGoal>
+			<Offside>0</Offside>
+			<Gain>0</Gain>
+			<GameState ID="1">
+				<Score>0</Score>
+				<PK>0</PK>
+				<GK>0</GK>
+				<Shoot>0</Shoot>
+				<FK>0</FK>
+				<Yellow>0</Yellow>
+				<Red>0</Red>
+				<CK>0</CK>
+				<ShootGoal>0</ShootGoal>
+				<Offside>0</Offside>
+				<Gain>0</Gain>
+			</GameState>
+		</TeamInfo>
+		<PKInfo HV="1">
+			<Player>
+				<No>1</No>
+				<SerialNo>1</SerialNo>
+				<PlayerID>1200059</PlayerID>
+				<PlayerName>白崎 凌兵</PlayerName>
+				<PlayerNameS>白崎</PlayerNameS>
+				<PlayerUni>41</PlayerUni>
+				<SuccessF>1</SuccessF>
+				<Sign>○</Sign>
+			</Player>
+			<Player>
+				<No>2</No>
+				<SerialNo>3</SerialNo>
+				<PlayerID>1200049</PlayerID>
+				<PlayerName>後藤 優介</PlayerName>
+				<PlayerNameS>後藤</PlayerNameS>
+				<PlayerUni>14</PlayerUni>
+				<SuccessF>0</SuccessF>
+				<Sign>×</Sign>
+			</Player>
+			<Player>
+				<No>3</No>
+				<SerialNo>5</SerialNo>
+				<PlayerID>700799</PlayerID>
+				<PlayerName>乾 貴士</PlayerName>
+				<PlayerNameS>乾</PlayerNameS>
+				<PlayerUni>33</PlayerUni>
+				<SuccessF>0</SuccessF>
+				<Sign>×</Sign>
+			</Player>
+			<Player>
+				<No>4</No>
+				<SerialNo>7</SerialNo>
+				<PlayerID>1200349</PlayerID>
+				<PlayerName>井林 章</PlayerName>
+				<PlayerNameS>井林</PlayerNameS>
+				<PlayerUni>38</PlayerUni>
+				<SuccessF>0</SuccessF>
+				<Sign>×</Sign>
+			</Player>
+			<Player>
+				<No>5</No>
+				<SerialNo>9</SerialNo>
+				<PlayerID>1635021</PlayerID>
+				<PlayerName>菊地 脩太</PlayerName>
+				<PlayerNameS>菊地</PlayerNameS>
+				<PlayerUni>83</PlayerUni>
+				<SuccessF>1</SuccessF>
+				<Sign>○</Sign>
+			</Player>
+		</PKInfo>
+		<PKInfo HV="2">
+			<Player>
+				<No>1</No>
+				<SerialNo>2</SerialNo>
+				<PlayerID>1600146</PlayerID>
+				<PlayerName>瀬川 祐輔</PlayerName>
+				<PlayerNameS>瀬川</PlayerNameS>
+				<PlayerUni>20</PlayerUni>
+				<SuccessF>1</SuccessF>
+				<Sign>○</Sign>
+			</Player>
+			<Player>
+				<No>2</No>
+				<SerialNo>4</SerialNo>
+				<PlayerID>1601436</PlayerID>
+				<PlayerName>小西 雄大</PlayerName>
+				<PlayerNameS>小西</PlayerNameS>
+				<PlayerUni>21</PlayerUni>
+				<SuccessF>0</SuccessF>
+				<Sign>×</Sign>
+			</Player>
+			<Player>
+				<No>3</No>
+				<SerialNo>6</SerialNo>
+				<PlayerID>1600210</PlayerID>
+				<PlayerName>三丸 拡</PlayerName>
+				<PlayerNameS>三丸</PlayerNameS>
+				<PlayerUni>2</PlayerUni>
+				<SuccessF>0</SuccessF>
+				<Sign>×</Sign>
+			</Player>
+			<Player>
+				<No>4</No>
+				<SerialNo>8</SerialNo>
+				<PlayerID>1611125</PlayerID>
+				<PlayerName>戸嶋 祥郎</PlayerName>
+				<PlayerNameS>戸嶋</PlayerNameS>
+				<PlayerUni>28</PlayerUni>
+				<SuccessF>0</SuccessF>
+				<Sign>○</Sign>
+			</Player>
+			<Player>
+				<No>5</No>
+				<SerialNo>10</SerialNo>
+				<PlayerID>1617910</PlayerID>
+				<PlayerName>渡井 理己</PlayerName>
+				<PlayerNameS>渡井</PlayerNameS>
+				<PlayerUni>11</PlayerUni>
+				<SuccessF>1</SuccessF>
+				<Sign>○</Sign>
+			</Player>
+		</PKInfo>
+		<GoalInfo No="1">
+			<StateID>1</StateID>
+			<StateName>前半</StateName>
+			<Time>15</Time>
+			<Half>15</Half>
+			<TeamID> 30676 </TeamID>
+			<TeamNameS>相模原</TeamNameS>
+			<GPlayerID>1651283</GPlayerID>
+			<GPlayerName>ラファエル フルタード</GPlayerName>
+			<GPlayerNameS>Ｒフルタード</GPlayerNameS>
+			<GPlayerUni>9</GPlayerUni>
+			<Body>右</Body>
+			<Operation>クロス</Operation>
+			<APlayerID>1632479</APlayerID>
+			<APlayerName>加藤 拓己</APlayerName>
+			<APlayerNameS>加藤拓</APlayerNameS>
+			<APlayerUni>23</APlayerUni>
+			<AssistKind></AssistKind>
+			<PKGoalF>0</PKGoalF>
+			<OwnGoalF>0</OwnGoalF>
+			<ScoreTeamID> 30676 </ScoreTeamID>
+			<ScoreTeamNameS>相模原</ScoreTeamNameS>
+		</GoalInfo>
+		<GoalInfo No="2">
+			<StateID>2</StateID>
+			<StateName>後半</StateName>
+			<Time>65</Time>
+			<Half>20</Half>
+			<TeamID> 30676 </TeamID>
+			<TeamNameS>相模原</TeamNameS>
+			<GPlayerID>1651283</GPlayerID>
+			<GPlayerName>ラファエル フルタード</GPlayerName>
+			<GPlayerNameS>Ｒフルタード</GPlayerNameS>
+			<GPlayerUni>9</GPlayerUni>
+			<Body>右</Body>
+			<Operation>クロス</Operation>
+			<APlayerID>1632479</APlayerID>
+			<APlayerName>加藤 拓己</APlayerName>
+			<APlayerNameS>加藤拓</APlayerNameS>
+			<APlayerUni>23</APlayerUni>
+			<AssistKind></AssistKind>
+			<PKGoalF>0</PKGoalF>
+			<OwnGoalF>1</OwnGoalF>
+			<ScoreTeamID> 30305 </ScoreTeamID>
+			<ScoreTeamNameS>栃木SC</ScoreTeamNameS>
+		</GoalInfo>
+		<GameEndInfo>
+			<Condition>全面良芝</Condition>
+			<Surface>乾燥</Surface>
+			<Weather>晴</Weather>
+			<Wind>弱風</Wind>
+			<Temperature>29.4</Temperature>
+			<Spectators>881234</Spectators>
+			<Humidity>68</Humidity>
+		</GameEndInfo>
+	</GameReport>
+</Football>

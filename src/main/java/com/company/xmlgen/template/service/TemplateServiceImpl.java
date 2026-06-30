@@ -207,8 +207,6 @@ public class TemplateServiceImpl implements TemplateService {
 
         templateMappingRepository.deleteByTemplateId(templateId);
         templateFieldRepository.deleteByTemplateId(templateId);
-        templateMappingRepository.flush();
-        templateFieldRepository.flush();
 
         if (fields.isEmpty()) {
             return;
@@ -216,21 +214,13 @@ public class TemplateServiceImpl implements TemplateService {
 
         Map<String, Long> fieldNameToId = new HashMap<>();
 
-        for (CreateTemplateFieldRequest field : fields) {
+        for (CreateTemplateFieldRequest field : orderFieldsByHierarchy(fields)) {
             TemplateFieldEntity entity = toFieldEntity(templateId, field);
+            if (!isBlank(field.parentFieldName())) {
+                entity.setParentId(fieldNameToId.get(field.parentFieldName()));
+            }
             TemplateFieldEntity saved = templateFieldRepository.save(entity);
             fieldNameToId.put(field.fieldName(), saved.getId());
-        }
-
-        for (CreateTemplateFieldRequest field : fields) {
-            if (isBlank(field.parentFieldName())) {
-                continue;
-            }
-            TemplateFieldEntity entity = templateFieldRepository
-                    .findById(fieldNameToId.get(field.fieldName()))
-                    .orElseThrow();
-            entity.setParentId(fieldNameToId.get(field.parentFieldName()));
-            templateFieldRepository.save(entity);
         }
 
         for (CreateTemplateMappingRequest mapping : mappings) {
@@ -287,6 +277,21 @@ public class TemplateServiceImpl implements TemplateService {
             }
         }
 
+        Map<String, Set<Integer>> displayOrdersByParent = new HashMap<>();
+        for (CreateTemplateFieldRequest field : fields) {
+            String parentKey = isBlank(field.parentFieldName()) ? "" : field.parentFieldName();
+            Set<Integer> orders = displayOrdersByParent.computeIfAbsent(parentKey, key -> new HashSet<>());
+            if (!orders.add(field.displayOrder())) {
+                violations.add(FieldViolation.of(
+                        "schema.fields",
+                        TemplateErrorCode.TEMPLATE_DISPLAY_ORDER_DUPLICATE.code(),
+                        "Duplicate displayOrder under the same parent: "
+                                + (parentKey.isEmpty() ? "(root)" : parentKey)
+                                + ", displayOrder="
+                                + field.displayOrder()));
+            }
+        }
+
         if (!mappings.isEmpty() && fields.isEmpty()) {
             violations.add(FieldViolation.of(
                     "schema.mappings",
@@ -326,6 +331,37 @@ public class TemplateServiceImpl implements TemplateService {
             return true;
         }
         return hasParentCycle(parent, parentByFieldName, visiting);
+    }
+
+    /**
+     * Persists parents before children so {@code parent_id} is set on insert.
+     *
+     * <p>Without this ordering, all rows initially share {@code parent_id = null} and duplicate
+     * {@code display_order} values under different parents violate
+     * {@code uk_template_fields_template_parent_display_order}.
+     */
+    private static List<CreateTemplateFieldRequest> orderFieldsByHierarchy(
+            List<CreateTemplateFieldRequest> fields) {
+        List<CreateTemplateFieldRequest> ordered = new ArrayList<>();
+        Set<String> persisted = new HashSet<>();
+
+        while (ordered.size() < fields.size()) {
+            boolean progress = false;
+            for (CreateTemplateFieldRequest field : fields) {
+                if (persisted.contains(field.fieldName())) {
+                    continue;
+                }
+                if (isBlank(field.parentFieldName()) || persisted.contains(field.parentFieldName())) {
+                    ordered.add(field);
+                    persisted.add(field.fieldName());
+                    progress = true;
+                }
+            }
+            if (!progress) {
+                throw new IllegalStateException("Unable to order template fields by hierarchy");
+            }
+        }
+        return ordered;
     }
 
     private static TemplateFieldEntity toFieldEntity(Long templateId, CreateTemplateFieldRequest field) {

@@ -205,6 +205,167 @@ class ValueResolutionServiceImplTest {
     }
 
     @Test
+    void resolve_wrappedRootContainerInput_unwrapsSingleRootGroupScope() throws Exception {
+        RuntimeTemplate runtime = runtime(group(
+                "Football",
+                "Football",
+                TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                1,
+                group(
+                        "CommentReport",
+                        "CommentReport",
+                        TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                        1,
+                        element(
+                                "GameID",
+                                "GameID",
+                                TemplateFieldSourceType.INPUT,
+                                TemplateFieldValueType.STRING,
+                                null,
+                                1))));
+        ValueResolutionContext context = context(json("""
+                {
+                  "Football": {
+                    "CommentReport": {
+                      "GameID": "2026062339"
+                    }
+                  }
+                }
+                """));
+
+        RuntimeExecutionNode football = valueResolutionService.resolve(runtime, context).roots().getFirst();
+        RuntimeExecutionNode commentReport = football.children().getFirst();
+        RuntimeExecutionNode gameId = commentReport.children().getFirst();
+
+        assertThat(commentReport.field().fieldName()).isEqualTo("CommentReport");
+        assertThat(valueOf(gameId)).isEqualTo("2026062339");
+    }
+
+    @Test
+    void resolve_nestedGroup_masterDataAtRootScope_resolvesMappedFields() throws Exception {
+        RuntimeTemplate runtime = runtime(group(
+                "Football",
+                "Football",
+                TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                1,
+                group(
+                        "CommentReport",
+                        "CommentReport",
+                        TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                        1,
+                        element(
+                                "GameKindID",
+                                "GameKindID",
+                                TemplateFieldSourceType.MASTER_DATA,
+                                TemplateFieldValueType.INTEGER,
+                                null,
+                                1),
+                        element(
+                                "GameKindName",
+                                "GameKindName",
+                                TemplateFieldSourceType.MASTER_DATA,
+                                TemplateFieldValueType.STRING,
+                                null,
+                                2))));
+        ValueResolutionContext context = new ValueResolutionContext(
+                json("""
+                        {
+                          "CommentReport": {
+                            "GameID": "2"
+                          }
+                        }
+                        """),
+                json("""
+                        {
+                          "GAME_KIND_ID": {
+                            "game_kind_id": 68,
+                            "game_kind_name": "J1 League"
+                          }
+                        }
+                        """),
+                List.of(
+                        new TemplateCompileMapping("GameKindID", "GAME_KIND_ID", "game_kind_id"),
+                        new TemplateCompileMapping("GameKindName", "GAME_KIND_ID", "game_kind_name")));
+
+        RuntimeExecutionNode commentReport = valueResolutionService
+                .resolve(runtime, context)
+                .roots()
+                .getFirst()
+                .children()
+                .getFirst();
+
+        assertThat(valueOf(commentReport.children().get(0))).isEqualTo("68");
+        assertThat(valueOf(commentReport.children().get(1))).isEqualTo("J1 League");
+    }
+
+    @Test
+    void resolve_repeatableGroup_masterDataAtRootScope_resolvesMappedFields() throws Exception {
+        RuntimeTemplate runtime = runtime(group(
+                "Football",
+                "Football",
+                TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                1,
+                group(
+                        "CommentReport",
+                        "CommentReport",
+                        TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                        1,
+                        element(
+                                "GameKindID",
+                                "GameKindID",
+                                TemplateFieldSourceType.MASTER_DATA,
+                                TemplateFieldValueType.INTEGER,
+                                null,
+                                1),
+                        element(
+                                "GameKindName",
+                                "GameKindName",
+                                TemplateFieldSourceType.MASTER_DATA,
+                                TemplateFieldValueType.STRING,
+                                null,
+                                2),
+                        element(
+                                "GameID",
+                                "GameID",
+                                TemplateFieldSourceType.INPUT,
+                                TemplateFieldValueType.STRING,
+                                null,
+                                3))));
+        ValueResolutionContext context = new ValueResolutionContext(
+                json("""
+                        {
+                          "CommentReport": [
+                            {
+                              "GameID": "1"
+                            }
+                          ]
+                        }
+                        """),
+                json("""
+                        {
+                          "GAME_KIND_ID": {
+                            "game_kind_id": 10,
+                            "game_kind_name": "J1 League"
+                          }
+                        }
+                        """),
+                List.of(
+                        new TemplateCompileMapping("GameKindID", "GAME_KIND_ID", "game_kind_id"),
+                        new TemplateCompileMapping("GameKindName", "GAME_KIND_ID", "game_kind_name")));
+
+        RuntimeExecutionNode commentReport = valueResolutionService
+                .resolve(runtime, context)
+                .roots()
+                .getFirst()
+                .children()
+                .getFirst();
+
+        assertThat(valueOf(commentReport.children().get(0))).isEqualTo("10");
+        assertThat(valueOf(commentReport.children().get(1))).isEqualTo("J1 League");
+        assertThat(valueOf(commentReport.children().get(2))).isEqualTo("1");
+    }
+
+    @Test
     void resolve_repeatableGroup_producesOneRuntimeExecutionNodePerOccurrence() throws Exception {
         RuntimeTemplate runtime = runtime(group(
                 "Game",

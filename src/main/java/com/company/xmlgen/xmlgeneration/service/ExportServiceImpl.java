@@ -25,14 +25,17 @@ public class ExportServiceImpl implements ExportService {
 
     private final TemplateRepository templateRepository;
     private final TemplateCompileMappingResolver templateCompileMappingResolver;
+    private final SelectedMasterDataLoader selectedMasterDataLoader;
     private final RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
 
     public ExportServiceImpl(
             TemplateRepository templateRepository,
             TemplateCompileMappingResolver templateCompileMappingResolver,
+            SelectedMasterDataLoader selectedMasterDataLoader,
             RuntimeExecutionOrchestrator runtimeExecutionOrchestrator) {
         this.templateRepository = templateRepository;
         this.templateCompileMappingResolver = templateCompileMappingResolver;
+        this.selectedMasterDataLoader = selectedMasterDataLoader;
         this.runtimeExecutionOrchestrator = runtimeExecutionOrchestrator;
     }
 
@@ -58,7 +61,7 @@ public class ExportServiceImpl implements ExportService {
         RuntimeExecutionRequest executionRequest = new RuntimeExecutionRequest(
                 compiledSchemaJson,
                 nullSafeInputData(request.inputData()),
-                nullSafeJson(request.selectedMasterData()),
+                selectedMasterDataLoader.load(nullSafeJson(request.selectedMasterData())),
                 mappings);
 
         RuntimeExecutionResult executionResult = runtimeExecutionOrchestrator.execute(executionRequest);

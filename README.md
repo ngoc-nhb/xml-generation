@@ -343,6 +343,31 @@ OpenAPI (dev backend): http://localhost:8080/swagger-ui.html
 | JSON parse error (UI) | Invalid syntax in JSON editor | Fix syntax or click **Reset**; only `{}` is valid empty input |
 | Empty preview with errors | Required INPUT fields missing | Add keys to `inputData` matching schema field names |
 | Docker frontend can't login | Wrong API base | Postman/UI against Docker: frontend at :8081, API proxied via nginx; manual dev uses :5173 |
+| **Templates / XML Generation show “Coming in a future phase”** | Stale Vite dev server still running after code update | Stop all Vite processes, clear cache, restart (see below) |
+
+### Stale Vite dev server
+
+If **Templates**, **Master Data**, or **XML Generation** show *“Coming in a future phase”* but the repo has full feature modules, an **old `npm run dev` process** is likely still serving a cached router from an earlier phase.
+
+Symptoms:
+
+- Sidebar routes exist, but pages show placeholder text instead of CRUD / execution UI
+- Multiple terminals may each have a Vite instance (ports 5173, 5174, …)
+
+Fix:
+
+```bash
+# Stop old dev servers (Ctrl+C in each terminal, or:)
+pkill -f "xmlgen/frontend/node_modules/.bin/vite"
+
+cd frontend
+rm -rf node_modules/.vite
+npm run dev
+```
+
+Then hard-refresh the browser (`Cmd+Shift+R` / `Ctrl+Shift+R`) at **http://localhost:5173**.
+
+Only **Export History** and **Settings** should show “Coming in a future phase” in MVP.
 
 ---
 

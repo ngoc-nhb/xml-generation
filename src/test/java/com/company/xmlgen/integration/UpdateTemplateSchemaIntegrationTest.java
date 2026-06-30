@@ -134,6 +134,24 @@ class UpdateTemplateSchemaIntegrationTest {
     }
 
     @Test
+    void updateSchema_allowsDuplicateDisplayOrderUnderDifferentParents() {
+        Long templateId = createTemplateWithMetadata();
+
+        CreateTemplateFieldRequest football = field("Football", null, "Football", TemplateFieldNodeType.ELEMENT, 1);
+        CreateTemplateFieldRequest commentReport =
+                field("CommentReport", "Football", "CommentReport", TemplateFieldNodeType.ELEMENT, 1);
+        CreateTemplateFieldRequest gameId =
+                field("GameID", "CommentReport", "GameID", TemplateFieldNodeType.ELEMENT, 1);
+        UpdateTemplateSchemaRequest request =
+                new UpdateTemplateSchemaRequest(null, List.of(football, commentReport, gameId), List.of());
+
+        TemplateSchemaResponse response = templateService.updateSchema(templateId, request);
+
+        assertThat(response.fields()).hasSize(3);
+        assertThat(templateFieldRepository.countByTemplateId(templateId)).isEqualTo(3);
+    }
+
+    @Test
     void updateSchema_validationFailure_preservesExistingMetadata() {
         Long templateId = createTemplateWithMetadata();
         long fieldCountBefore = templateFieldRepository.countByTemplateId(templateId);

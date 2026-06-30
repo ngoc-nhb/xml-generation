@@ -94,6 +94,52 @@ class XMLGenerationServiceImplTest {
     }
 
     @Test
+    void generate_nestedHierarchy_writesFormattedXmlWithOpenAndCloseTags() throws Exception {
+        RuntimeExecutionTree tree = resolveTree(
+                group(
+                        "Football",
+                        "Football",
+                        TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                        1,
+                        group(
+                                "CommentReport",
+                                "CommentReport",
+                                TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                                1,
+                                element(
+                                        "GameID",
+                                        "GameID",
+                                        TemplateFieldSourceType.INPUT,
+                                        TemplateFieldValueType.STRING,
+                                        null,
+                                        1),
+                                element(
+                                        "MainPlayerID",
+                                        "MainPlayerID",
+                                        TemplateFieldSourceType.INPUT,
+                                        TemplateFieldValueType.STRING,
+                                        null,
+                                        2))),
+                """
+                {
+                  "CommentReport": {
+                    "GameID": "2026062339",
+                    "MainPlayerID": ""
+                  }
+                }
+                """);
+
+        String xml = xmlGenerationService.generate(tree);
+
+        assertThat(xml).startsWith("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<Football>");
+        assertThat(xml).contains("\n\t<CommentReport>");
+        assertThat(xml).contains("\n\t\t<GameID>2026062339</GameID>");
+        assertThat(xml).contains("\n\t\t<MainPlayerID></MainPlayerID>");
+        assertThat(xml).contains("\n\t</CommentReport>");
+        assertThat(xml).endsWith("\n</Football>");
+    }
+
+    @Test
     void generate_attributes_writesAttributeOnParentElement() {
         RuntimeExecutionTree tree = tree(group(
                 "Player",
@@ -141,8 +187,8 @@ class XMLGenerationServiceImplTest {
 
         String xml = xmlGenerationService.generate(tree);
 
-        assertThat(xml).contains("<GoalInfo><Time>17</Time></GoalInfo>");
-        assertThat(xml).contains("<GoalInfo><Time>35</Time></GoalInfo>");
+        assertThat(xml).contains("<GoalInfo>\n\t\t<Time>17</Time>\n\t</GoalInfo>");
+        assertThat(xml).contains("<GoalInfo>\n\t\t<Time>35</Time>\n\t</GoalInfo>");
     }
 
     @Test

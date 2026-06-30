@@ -22,29 +22,32 @@ import javax.xml.stream.XMLStreamWriter;
  */
 final class ExecutionTreeXmlWriter {
 
+    private static final String NEWLINE = "\n";
+    private static final String INDENT = "\t";
+
     String write(RuntimeExecutionTree executionTree) throws XMLStreamException {
         StringWriter output = new StringWriter();
         XMLStreamWriter writer = XMLOutputFactory.newInstance().createXMLStreamWriter(output);
         writer.writeStartDocument("UTF-8", "1.0");
-        writeNode(executionTree.roots().getFirst(), writer);
+        writeNode(executionTree.roots().getFirst(), writer, 0);
         writer.writeEndDocument();
         writer.close();
         return output.toString();
     }
 
-    private void writeNode(RuntimeExecutionNode node, XMLStreamWriter writer) throws XMLStreamException {
+    private void writeNode(RuntimeExecutionNode node, XMLStreamWriter writer, int depth) throws XMLStreamException {
         TemplateFieldNodeType nodeType = node.field().nodeType();
         if (nodeType == TemplateFieldNodeType.ATTRIBUTE) {
             return;
         }
         if (nodeType == TemplateFieldNodeType.GROUP) {
-            writeGroup(node, writer);
+            writeGroup(node, writer, depth);
             return;
         }
-        writeElement(node, writer);
+        writeElement(node, writer, depth);
     }
 
-    private void writeGroup(RuntimeExecutionNode node, XMLStreamWriter writer) throws XMLStreamException {
+    private void writeGroup(RuntimeExecutionNode node, XMLStreamWriter writer, int depth) throws XMLStreamException {
         if (shouldOmitGroup(node)) {
             return;
         }
@@ -52,29 +55,61 @@ final class ExecutionTreeXmlWriter {
         List<RuntimeExecutionNode> attributes = attributeChildren(node);
         List<RuntimeExecutionNode> bodyChildren = bodyChildren(node);
 
+        writeIndent(writer, depth);
         writer.writeStartElement(node.field().xmlName());
         writeAttributes(attributes, writer);
-        for (RuntimeExecutionNode child : bodyChildren) {
-            writeNode(child, writer);
+        if (bodyChildren.isEmpty()) {
+            writer.writeEndElement();
+            return;
         }
+
+        for (RuntimeExecutionNode child : bodyChildren) {
+            writeNode(child, writer, depth + 1);
+        }
+        writeIndent(writer, depth);
         writer.writeEndElement();
     }
 
-    private void writeElement(RuntimeExecutionNode node, XMLStreamWriter writer) throws XMLStreamException {
+    private void writeElement(RuntimeExecutionNode node, XMLStreamWriter writer, int depth) throws XMLStreamException {
         if (shouldOmitElement(node)) {
             return;
         }
 
         List<RuntimeExecutionNode> attributes = attributeChildren(node);
         List<RuntimeExecutionNode> bodyChildren = bodyChildren(node);
+        boolean hasText = hasElementText(node);
 
+        writeIndent(writer, depth);
         writer.writeStartElement(node.field().xmlName());
         writeAttributes(attributes, writer);
-        writeElementText(node, writer);
-        for (RuntimeExecutionNode child : bodyChildren) {
-            writeNode(child, writer);
+
+        if (bodyChildren.isEmpty()) {
+            writeElementText(node, writer);
+            writer.writeEndElement();
+            return;
         }
+
+        if (hasText) {
+            writeElementText(node, writer);
+        }
+        for (RuntimeExecutionNode child : bodyChildren) {
+            writeNode(child, writer, depth + 1);
+        }
+        writeIndent(writer, depth);
         writer.writeEndElement();
+    }
+
+    private static void writeIndent(XMLStreamWriter writer, int depth) throws XMLStreamException {
+        writer.writeCharacters(NEWLINE);
+        writer.writeCharacters(INDENT.repeat(depth));
+    }
+
+    private static boolean hasElementText(RuntimeExecutionNode node) {
+        JsonNode value = node.value();
+        if (!isEmptyValue(value)) {
+            return true;
+        }
+        return node.field().emptyHandling() == TemplateFieldEmptyHandling.ZERO_IF_EMPTY;
     }
 
     private void writeAttributes(List<RuntimeExecutionNode> attributes, XMLStreamWriter writer)

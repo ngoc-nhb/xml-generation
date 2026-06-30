@@ -16,7 +16,8 @@ public enum TemplateErrorCode implements ErrorCode {
     TEMPLATE_PARENT_FIELD_NOT_FOUND,
     TEMPLATE_PARENT_CYCLE,
     TEMPLATE_MAPPING_DUPLICATE,
-    TEMPLATE_INVALID_HIERARCHY;
+    TEMPLATE_INVALID_HIERARCHY,
+    TEMPLATE_DISPLAY_ORDER_DUPLICATE;
 
     @Override
     public String code() {

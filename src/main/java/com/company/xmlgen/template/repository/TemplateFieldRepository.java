@@ -3,6 +3,8 @@ package com.company.xmlgen.template.repository;
 import com.company.xmlgen.template.entity.TemplateFieldEntity;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
 
 /**
  * Persistence access for {@link TemplateFieldEntity}.
@@ -17,6 +19,8 @@ public interface TemplateFieldRepository extends JpaRepository<TemplateFieldEnti
 
     long countByTemplateId(Long templateId);
 
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("delete from TemplateFieldEntity f where f.templateId = :templateId")
     void deleteByTemplateId(Long templateId);
 
     boolean existsByTemplateIdAndParentIdAndFieldName(Long templateId, Long parentId, String fieldName);

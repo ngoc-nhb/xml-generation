@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import com.company.xmlgen.exception.BusinessException;
 import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.masterdata.repository.MasterDataFieldRepository;
+import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
 import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
@@ -54,7 +55,13 @@ class ExportServiceImplTest {
     private MasterDataTypeRepository masterDataTypeRepository;
 
     @Mock
+    private MasterDataRecordRepository masterDataRecordRepository;
+
+    @Mock
     private TemplateCompileMappingResolver templateCompileMappingResolver;
+
+    @Mock
+    private SelectedMasterDataLoader selectedMasterDataLoader;
 
     @Mock
     private RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
@@ -64,12 +71,17 @@ class ExportServiceImplTest {
     @BeforeEach
     void setUp() {
         exportService = new ExportServiceImpl(
-                templateRepository, templateCompileMappingResolver, runtimeExecutionOrchestrator);
+                templateRepository, templateCompileMappingResolver, selectedMasterDataLoader, runtimeExecutionOrchestrator);
+    }
+
+    private void stubSelectedMasterDataPassthrough() {
+        when(selectedMasterDataLoader.load(any())).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
     void export_success_returnsExportResponse() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
+        stubSelectedMasterDataPassthrough();
         when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any())).thenReturn(RuntimeExecutionResult.success("<Game/>", null));
@@ -89,6 +101,7 @@ class ExportServiceImplTest {
     @Test
     void export_validationFailure_returnsExportResponseWithErrors() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
+        stubSelectedMasterDataPassthrough();
         when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any()))
@@ -126,6 +139,7 @@ class ExportServiceImplTest {
     @Test
     void export_emptyInput_buildsExecutionRequestWithEmptyObject() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
+        stubSelectedMasterDataPassthrough();
         when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any())).thenReturn(RuntimeExecutionResult.success("<Game/>", null));
@@ -148,14 +162,16 @@ class ExportServiceImplTest {
         ExportService integrationExportService = new ExportServiceImpl(
                 templateRepository,
                 mappingResolver,
+                new SelectedMasterDataLoaderImpl(
+                        masterDataRecordRepository, masterDataTypeRepository, OBJECT_MAPPER),
                 new RuntimeExecutionOrchestratorImpl(
                         new RuntimeLoaderImpl(),
                         new RuntimeValidationServiceImpl(List.of(
                                 new HierarchyValidationRule(),
                                 new NodeTypeValidationRule(),
-                                new OccurrenceValidationRule(),
-                                new EmptyHandlingValidationRule())),
+                                new OccurrenceValidationRule())),
                         new ValueResolutionServiceImpl(),
+                        new ResolvedValueValidationServiceImpl(),
                         new XMLGenerationServiceImpl()));
 
         TemplateEntity template = compiledTemplate(validCompiledSchema());
@@ -187,14 +203,16 @@ class ExportServiceImplTest {
         ExportService integrationExportService = new ExportServiceImpl(
                 templateRepository,
                 mappingResolver,
+                new SelectedMasterDataLoaderImpl(
+                        masterDataRecordRepository, masterDataTypeRepository, OBJECT_MAPPER),
                 new RuntimeExecutionOrchestratorImpl(
                         new RuntimeLoaderImpl(),
                         new RuntimeValidationServiceImpl(List.of(
                                 new HierarchyValidationRule(),
                                 new NodeTypeValidationRule(),
-                                new OccurrenceValidationRule(),
-                                new EmptyHandlingValidationRule())),
+                                new OccurrenceValidationRule())),
                         new ValueResolutionServiceImpl(),
+                        new ResolvedValueValidationServiceImpl(),
                         new XMLGenerationServiceImpl()));
 
         TemplateEntity template = compiledTemplate(repeatableCompiledSchema());
@@ -215,13 +233,14 @@ class ExportServiceImplTest {
                 null));
 
         assertThat(response.successful()).isTrue();
-        assertThat(response.xml()).contains("<GoalInfo><Time>17</Time></GoalInfo>");
-        assertThat(response.xml()).contains("<GoalInfo><Time>35</Time></GoalInfo>");
+        assertThat(response.xml()).contains("<GoalInfo>\n\t\t<Time>17</Time>\n\t</GoalInfo>");
+        assertThat(response.xml()).contains("<GoalInfo>\n\t\t<Time>35</Time>\n\t</GoalInfo>");
     }
 
     @Test
     void export_buildsExecutionRequestWithCompiledSchemaAndMappings() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
+        stubSelectedMasterDataPassthrough();
         when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any())).thenReturn(RuntimeExecutionResult.success("<Game/>", null));
