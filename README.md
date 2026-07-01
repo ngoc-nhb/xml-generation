@@ -118,8 +118,30 @@ export JWT_SECRET=dev-only-jwt-secret-minimum-32-characters-long
 | `SPRING_DATASOURCE_PASSWORD` | `xmlgen` | DB password |
 | `JWT_SECRET` | see above | HMAC signing key (min 32 chars) |
 | `SPRING_PROFILES_ACTIVE` | `dev` | Spring profile |
+| `PORT` | `8080` | HTTP port (Render injects this in production) |
+| `XMLGEN_CORS_ALLOWED_ORIGINS` | see `application.yml` | Comma-separated CORS origin patterns |
 
 OpenAPI (dev only): http://localhost:8080/swagger-ui.html
+
+### Production (Render + Vercel + Supabase)
+
+Backend on **Render**, frontend on **Vercel**, database on **Supabase PostgreSQL**.
+
+**Render environment:**
+
+| Variable | Example / notes |
+| -------- | ----------------- |
+| `SPRING_PROFILES_ACTIVE` | `prod` |
+| `SPRING_DATASOURCE_URL` | Supabase JDBC URL |
+| `SPRING_DATASOURCE_USERNAME` | Supabase user |
+| `SPRING_DATASOURCE_PASSWORD` | Supabase password |
+| `JWT_SECRET` | Strong secret (min 32 chars) |
+| `PORT` | Set automatically by Render |
+| `XMLGEN_CORS_ALLOWED_ORIGINS` | `https://your-app.vercel.app,https://*.vercel.app` |
+
+CORS origins are configured via `xmlgen.cors.allowed-origins` in `application.yml` (defaults include `http://localhost:5173` and `https://*.vercel.app`). Override with `XMLGEN_CORS_ALLOWED_ORIGINS` — no Java changes required for a new Vercel URL.
+
+**Vercel:** set `VITE_API_BASE_URL` to the Render backend URL (e.g. `https://your-service.onrender.com/api/v1`).
 
 ---
 
