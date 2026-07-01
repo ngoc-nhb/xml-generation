@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -19,10 +20,14 @@ import com.company.xmlgen.masterdata.dto.response.MasterDataRecordListResponse;
 import com.company.xmlgen.masterdata.entity.MasterDataFieldDataType;
 import com.company.xmlgen.masterdata.entity.MasterDataFieldEntity;
 import com.company.xmlgen.masterdata.entity.MasterDataRecordEntity;
+import com.company.xmlgen.masterdata.entity.MasterDataTypeEntity;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataFieldRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.support.WorkspaceTestSupport;
+import com.company.xmlgen.template.repository.TemplateRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
@@ -31,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -57,6 +63,9 @@ class MasterDataRecordServiceImplTest {
     private MasterDataFieldRepository masterDataFieldRepository;
 
     @Mock
+    private TemplateRepository templateRepository;
+
+    @Mock
     private MasterDataValidationService masterDataValidationService;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -65,12 +74,32 @@ class MasterDataRecordServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        masterDataRecordService =
-                new MasterDataRecordServiceImpl(
-                        masterDataRecordRepository,
-                        masterDataTypeRepository,
-                        masterDataValidationService,
-                        objectMapper);
+        WorkspaceOwnershipGuard workspaceOwnershipGuard = new WorkspaceOwnershipGuard(
+                templateRepository,
+                masterDataTypeRepository,
+                masterDataFieldRepository,
+                masterDataRecordRepository);
+        masterDataRecordService = new MasterDataRecordServiceImpl(
+                masterDataRecordRepository,
+                masterDataTypeRepository,
+                masterDataValidationService,
+                objectMapper,
+                workspaceOwnershipGuard);
+        WorkspaceTestSupport.useDefaultWorkspace();
+        lenient()
+                .when(masterDataTypeRepository.findByIdAndWorkspaceId(any(), eq(1L)))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
+    }
+
+    @AfterEach
+    void tearDownWorkspace() {
+        WorkspaceTestSupport.clearWorkspace();
+    }
+
+    private void stubRecordInWorkspace(Long recordId, MasterDataRecordEntity entity) {
+        when(masterDataRecordRepository.findById(recordId)).thenReturn(Optional.of(entity));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(entity.getMasterDataTypeId(), 1L))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
     }
 
     @Test
@@ -441,7 +470,7 @@ class MasterDataRecordServiceImplTest {
                 .put("game_kind_id", 1)
                 .put("game_kind_name", "J1");
         CreateMasterDataRecordRequest request = new CreateMasterDataRecordRequest(TYPE_ID, data);
-        when(masterDataTypeRepository.existsById(TYPE_ID)).thenReturn(true);
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(TYPE_ID, 1L)).thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
         when(masterDataValidationService.validate(any(ValidationContext.class))).thenReturn(ValidationResult.valid());
         MasterDataRecordEntity persisted = mock(MasterDataRecordEntity.class);
         when(persisted.getId()).thenReturn(10L);
@@ -459,7 +488,7 @@ class MasterDataRecordServiceImplTest {
         assertThat(response.createdAt()).isEqualTo(createdAt);
         assertThat(response.updatedAt()).isEqualTo(updatedAt);
 
-        verify(masterDataTypeRepository).existsById(TYPE_ID);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(TYPE_ID, 1L);
         verify(masterDataValidationService).validate(any(ValidationContext.class));
         ArgumentCaptor<MasterDataRecordEntity> captor = ArgumentCaptor.forClass(MasterDataRecordEntity.class);
         verify(masterDataRecordRepository).save(captor.capture());
@@ -472,14 +501,14 @@ class MasterDataRecordServiceImplTest {
     void create_typeNotFound() {
         JsonNode data = JsonNodeFactory.instance.objectNode().put("game_kind_name", "J1");
         CreateMasterDataRecordRequest request = new CreateMasterDataRecordRequest(99L, data);
-        when(masterDataTypeRepository.existsById(99L)).thenReturn(false);
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(99L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> masterDataRecordService.create(request))
                 .isInstanceOf(NotFoundException.class)
                 .extracting(ex -> ((NotFoundException) ex).getErrorCode())
                 .isEqualTo(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
 
-        verify(masterDataTypeRepository).existsById(99L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(99L, 1L);
         verify(masterDataRecordRepository, never()).save(any());
     }
 
@@ -487,7 +516,7 @@ class MasterDataRecordServiceImplTest {
     void create_callsValidationService() {
         JsonNode data = JsonNodeFactory.instance.objectNode().put("game_kind_name", "J1");
         CreateMasterDataRecordRequest request = new CreateMasterDataRecordRequest(TYPE_ID, data);
-        when(masterDataTypeRepository.existsById(TYPE_ID)).thenReturn(true);
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(TYPE_ID, 1L)).thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
         when(masterDataValidationService.validate(any(ValidationContext.class))).thenReturn(ValidationResult.valid());
         MasterDataRecordEntity persisted = mock(MasterDataRecordEntity.class);
         when(persisted.getId()).thenReturn(10L);
@@ -517,6 +546,7 @@ class MasterDataRecordServiceImplTest {
         when(entity.getDataJson()).thenReturn(data);
         when(entity.getCreatedAt()).thenReturn(createdAt);
         when(entity.getUpdatedAt()).thenReturn(updatedAt);
+        when(entity.getDeletedAt()).thenReturn(null);
         when(masterDataRecordRepository.findById(10L)).thenReturn(Optional.of(entity));
 
         MasterDataRecordDetailResponse response = masterDataRecordService.findById(10L);
@@ -561,6 +591,8 @@ class MasterDataRecordServiceImplTest {
         when(saved.getCreatedAt()).thenReturn(createdAt);
         when(saved.getUpdatedAt()).thenReturn(updatedAt);
         when(masterDataRecordRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(TYPE_ID, 1L))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
         when(masterDataValidationService.validate(any(ValidationContext.class))).thenReturn(ValidationResult.valid());
         when(masterDataRecordRepository.save(entity)).thenReturn(saved);
 
@@ -606,6 +638,8 @@ class MasterDataRecordServiceImplTest {
                 .put("game_kind_name", "J2");
         MasterDataRecordEntity entity = new MasterDataRecordEntity(TYPE_ID, oldData);
         when(masterDataRecordRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(TYPE_ID, 1L))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
         when(masterDataValidationService.validate(any(ValidationContext.class))).thenReturn(ValidationResult.valid());
         when(masterDataRecordRepository.save(entity)).thenReturn(entity);
 
@@ -623,6 +657,8 @@ class MasterDataRecordServiceImplTest {
         JsonNode newData = JsonNodeFactory.instance.objectNode().put("game_kind_name", "J2");
         MasterDataRecordEntity entity = new MasterDataRecordEntity(TYPE_ID, oldData);
         when(masterDataRecordRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(TYPE_ID, 1L))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
         when(masterDataValidationService.validate(any(ValidationContext.class))).thenReturn(ValidationResult.valid());
         when(masterDataRecordRepository.save(entity)).thenReturn(entity);
 
@@ -639,6 +675,8 @@ class MasterDataRecordServiceImplTest {
         JsonNode data = JsonNodeFactory.instance.objectNode().put("game_kind_name", "J1");
         MasterDataRecordEntity entity = new MasterDataRecordEntity(TYPE_ID, data);
         when(masterDataRecordRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(TYPE_ID, 1L))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
 
         masterDataRecordService.delete(10L);
 

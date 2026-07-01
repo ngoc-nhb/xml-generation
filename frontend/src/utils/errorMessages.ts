@@ -27,6 +27,12 @@ const ERROR_MESSAGES: Record<string, string> = {
     NETWORK_ERROR: 'Unable to connect to the server.',
     INTERNAL_SERVER_ERROR: 'An unexpected error occurred.',
     REQUEST_FAILED: 'Request failed.',
+    WORKSPACE_REQUIRED: 'Workspace selection is required.',
+    INVALID_WORKSPACE: 'The selected workspace is invalid.',
+    WORKSPACE_INACTIVE: 'This workspace is inactive.',
+    WORKSPACE_NOT_FOUND: 'Workspace not found.',
+    WORKSPACE_CODE_ALREADY_EXISTS: 'Workspace code already exists.',
+    WORKSPACE_IN_USE: 'Workspace cannot be deleted because it contains templates or master data.',
 };
 
 export function getErrorMessage(error: ApiError): string {

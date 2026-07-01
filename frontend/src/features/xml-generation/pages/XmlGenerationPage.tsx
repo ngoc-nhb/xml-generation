@@ -1,6 +1,9 @@
 import { ExecutionPanel } from '@/features/xml-generation/components/ExecutionPanel';
+import { useWorkspace } from '@/features/workspace';
 
 export function XmlGenerationPage() {
+    const { currentWorkspace } = useWorkspace();
+
     return (
         <div className="space-y-6">
             <div className="border-b border-border pb-6">
@@ -9,7 +12,7 @@ export function XmlGenerationPage() {
                     Select a template, provide input JSON and master data, then preview or export XML.
                 </p>
             </div>
-            <ExecutionPanel />
+            <ExecutionPanel key={currentWorkspace?.id ?? 'no-workspace'} />
         </div>
     );
 }

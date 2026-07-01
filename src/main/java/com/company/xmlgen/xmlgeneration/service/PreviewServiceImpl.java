@@ -7,6 +7,7 @@ import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.exception.TemplateErrorCode;
 import com.company.xmlgen.template.repository.TemplateRepository;
 import com.company.xmlgen.template.service.TemplateCompileMappingResolver;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.company.xmlgen.xmlgeneration.domain.RuntimeExecutionNode;
 import com.company.xmlgen.xmlgeneration.domain.RuntimeExecutionTree;
 import com.company.xmlgen.xmlgeneration.dto.PreviewExecutionNodeResponse;
@@ -30,16 +31,19 @@ public class PreviewServiceImpl implements PreviewService {
     private final TemplateCompileMappingResolver templateCompileMappingResolver;
     private final SelectedMasterDataLoader selectedMasterDataLoader;
     private final RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
+    private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
 
     public PreviewServiceImpl(
             TemplateRepository templateRepository,
             TemplateCompileMappingResolver templateCompileMappingResolver,
             SelectedMasterDataLoader selectedMasterDataLoader,
-            RuntimeExecutionOrchestrator runtimeExecutionOrchestrator) {
+            RuntimeExecutionOrchestrator runtimeExecutionOrchestrator,
+            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
         this.templateRepository = templateRepository;
         this.templateCompileMappingResolver = templateCompileMappingResolver;
         this.selectedMasterDataLoader = selectedMasterDataLoader;
         this.runtimeExecutionOrchestrator = runtimeExecutionOrchestrator;
+        this.workspaceOwnershipGuard = workspaceOwnershipGuard;
     }
 
     @Override
@@ -51,9 +55,7 @@ public class PreviewServiceImpl implements PreviewService {
             throw new IllegalArgumentException("templateId is required");
         }
 
-        TemplateEntity template = templateRepository
-                .findById(request.templateId())
-                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+        TemplateEntity template = workspaceOwnershipGuard.requireTemplate(request.templateId());
 
         JsonNode compiledSchemaJson = template.getCompiledSchemaJson();
         if (compiledSchemaJson == null || compiledSchemaJson.isNull()) {

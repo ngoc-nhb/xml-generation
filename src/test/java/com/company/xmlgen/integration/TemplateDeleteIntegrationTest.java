@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.company.xmlgen.authentication.domain.AuthenticatedUser;
 import com.company.xmlgen.support.TestcontainersConfig;
+import com.company.xmlgen.support.WorkspaceTestSupport;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
 import com.company.xmlgen.template.repository.TemplateRepository;
 import com.company.xmlgen.template.service.TemplateService;
@@ -38,11 +39,13 @@ class TemplateDeleteIntegrationTest {
         AuthenticatedUser currentUser = new AuthenticatedUser(1L, "admin", true);
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(currentUser, null, null));
+        WorkspaceTestSupport.useDefaultWorkspace();
     }
 
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+        WorkspaceTestSupport.clearWorkspace();
     }
 
     static boolean isDockerAvailable() {
@@ -59,14 +62,14 @@ class TemplateDeleteIntegrationTest {
         CreateTemplateRequest request = new CreateTemplateRequest(code, "Original Name", "description", null);
 
         Long id = templateService.create(request).id();
-        assertThat(templateRepository.findByCode(code)).isPresent();
+        assertThat(templateRepository.findByWorkspaceIdAndCode(1L, code)).isPresent();
 
         templateService.delete(id);
         assertThat(templateRepository.findById(id)).isEmpty();
-        assertThat(templateRepository.findByCode(code)).isEmpty();
+        assertThat(templateRepository.findByWorkspaceIdAndCode(1L, code)).isEmpty();
 
         Long recreatedId = templateService.create(request).id();
         assertThat(recreatedId).isNotEqualTo(id);
-        assertThat(templateRepository.findByCode(code)).isPresent();
+        assertThat(templateRepository.findByWorkspaceIdAndCode(1L, code)).isPresent();
     }
 }

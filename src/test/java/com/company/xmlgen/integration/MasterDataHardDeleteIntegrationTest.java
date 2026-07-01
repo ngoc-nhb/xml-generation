@@ -2,6 +2,7 @@ package com.company.xmlgen.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.company.xmlgen.authentication.domain.AuthenticatedUser;
 import com.company.xmlgen.masterdata.dto.request.CreateMasterDataFieldRequest;
 import com.company.xmlgen.masterdata.dto.request.CreateMasterDataRecordRequest;
 import com.company.xmlgen.masterdata.dto.request.CreateMasterDataTypeRequest;
@@ -14,15 +15,20 @@ import com.company.xmlgen.masterdata.service.MasterDataFieldService;
 import com.company.xmlgen.masterdata.service.MasterDataRecordService;
 import com.company.xmlgen.masterdata.service.MasterDataTypeService;
 import com.company.xmlgen.support.TestcontainersConfig;
+import com.company.xmlgen.support.WorkspaceTestSupport;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import java.util.UUID;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIf;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.testcontainers.DockerClientFactory;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -51,6 +57,20 @@ class MasterDataHardDeleteIntegrationTest {
 
     @Autowired
     private MasterDataRecordRepository masterDataRecordRepository;
+
+    @BeforeEach
+    void setUp() {
+        AuthenticatedUser currentUser = new AuthenticatedUser(1L, "admin", true);
+        SecurityContextHolder.getContext()
+                .setAuthentication(new UsernamePasswordAuthenticationToken(currentUser, null, null));
+        WorkspaceTestSupport.useDefaultWorkspace();
+    }
+
+    @AfterEach
+    void tearDown() {
+        SecurityContextHolder.clearContext();
+        WorkspaceTestSupport.clearWorkspace();
+    }
 
     static boolean isDockerAvailable() {
         try {

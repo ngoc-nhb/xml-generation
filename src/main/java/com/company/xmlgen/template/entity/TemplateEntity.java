@@ -21,9 +21,16 @@ import org.hibernate.type.SqlTypes;
 @Entity
 @Table(
         name = "templates",
-        uniqueConstraints = @UniqueConstraint(name = "uk_templates_code", columnNames = "code"),
-        indexes = @Index(name = "idx_templates_status", columnList = "status"))
+        uniqueConstraints =
+                @UniqueConstraint(name = "uk_templates_workspace_code", columnNames = {"workspace_id", "code"}),
+        indexes = {
+            @Index(name = "idx_templates_status", columnList = "status"),
+            @Index(name = "idx_templates_workspace_id", columnList = "workspace_id")
+        })
 public class TemplateEntity extends BaseEntity {
+
+    @Column(name = "workspace_id", nullable = false)
+    private Long workspaceId;
 
     @Column(name = "code", nullable = false, length = 100)
     private String code;
@@ -53,6 +60,14 @@ public class TemplateEntity extends BaseEntity {
         this.name = name;
         this.status = status;
         this.createdById = createdById;
+    }
+
+    public Long getWorkspaceId() {
+        return workspaceId;
+    }
+
+    public void setWorkspaceId(Long workspaceId) {
+        this.workspaceId = workspaceId;
     }
 
     public String getCode() {

@@ -39,6 +39,13 @@ import com.company.xmlgen.template.exception.TemplateErrorCode;
 import com.company.xmlgen.template.repository.TemplateFieldRepository;
 import com.company.xmlgen.template.repository.TemplateMappingRepository;
 import com.company.xmlgen.template.repository.TemplateRepository;
+import com.company.xmlgen.masterdata.repository.MasterDataFieldRepository;
+import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
+import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.masterdata.entity.MasterDataFieldEntity;
+import com.company.xmlgen.masterdata.entity.MasterDataTypeEntity;
+import com.company.xmlgen.support.WorkspaceTestSupport;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +71,8 @@ class TemplateServiceImplTest {
     private static final String TEMPLATE_NAME = "Live Game";
     private static final String DESCRIPTION = "J League Live Match XML";
 
+    private static final Long WORKSPACE_ID = 1L;
+
     @Mock
     private TemplateRepository templateRepository;
 
@@ -74,17 +83,34 @@ class TemplateServiceImplTest {
     private TemplateMappingRepository templateMappingRepository;
 
     @Mock
+    private MasterDataTypeRepository masterDataTypeRepository;
+
+    @Mock
+    private MasterDataFieldRepository masterDataFieldRepository;
+
+    @Mock
+    private MasterDataRecordRepository masterDataRecordRepository;
+
+    @Mock
     private TemplateCompilationOrchestrator templateCompilationOrchestrator;
 
+    private WorkspaceOwnershipGuard workspaceOwnershipGuard;
     private TemplateServiceImpl templateService;
 
     @BeforeEach
     void setUp() {
+        workspaceOwnershipGuard = new WorkspaceOwnershipGuard(
+                templateRepository,
+                masterDataTypeRepository,
+                masterDataFieldRepository,
+                masterDataRecordRepository);
         templateService = new TemplateServiceImpl(
                 templateRepository,
                 templateFieldRepository,
                 templateMappingRepository,
-                templateCompilationOrchestrator);
+                templateCompilationOrchestrator,
+                workspaceOwnershipGuard);
+        WorkspaceTestSupport.useDefaultWorkspace();
         AuthenticatedUser currentUser = new AuthenticatedUser(USER_ID, "admin", true);
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(currentUser, null, null));
@@ -93,12 +119,13 @@ class TemplateServiceImplTest {
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+        WorkspaceTestSupport.clearWorkspace();
     }
 
     @Test
     void create_withoutSchema() {
         CreateTemplateRequest request = new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, null);
-        when(templateRepository.findByCode(TEMPLATE_CODE)).thenReturn(Optional.empty());
+        when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
         when(templateRepository.save(any(TemplateEntity.class))).thenReturn(persisted);
@@ -161,7 +188,7 @@ class TemplateServiceImplTest {
                 new CreateTemplateSchemaRequest(List.of(rootField, childField), List.of());
         CreateTemplateRequest request =
                 new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
-        when(templateRepository.findByCode(TEMPLATE_CODE)).thenReturn(Optional.empty());
+        when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
         when(templateRepository.save(any(TemplateEntity.class))).thenReturn(persisted);
@@ -212,7 +239,12 @@ class TemplateServiceImplTest {
                 new CreateTemplateSchemaRequest(List.of(field), List.of(mapping));
         CreateTemplateRequest request =
                 new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
-        when(templateRepository.findByCode(TEMPLATE_CODE)).thenReturn(Optional.empty());
+        when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
+        MasterDataFieldEntity masterDataField = mock(MasterDataFieldEntity.class);
+        when(masterDataField.getMasterDataTypeId()).thenReturn(1L);
+        when(masterDataFieldRepository.findById(99L)).thenReturn(Optional.of(masterDataField));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(1L, WORKSPACE_ID))
+                .thenReturn(Optional.of(mock(MasterDataTypeEntity.class)));
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
         when(templateRepository.save(any(TemplateEntity.class))).thenReturn(persisted);
@@ -232,7 +264,7 @@ class TemplateServiceImplTest {
         CreateTemplateSchemaRequest schema = new CreateTemplateSchemaRequest(List.of(), List.of());
         CreateTemplateRequest request =
                 new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
-        when(templateRepository.findByCode(TEMPLATE_CODE)).thenReturn(Optional.empty());
+        when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
         when(templateRepository.save(any(TemplateEntity.class))).thenReturn(persisted);
@@ -271,7 +303,7 @@ class TemplateServiceImplTest {
         CreateTemplateSchemaRequest schema = new CreateTemplateSchemaRequest(List.of(field), List.of());
         CreateTemplateRequest request =
                 new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
-        when(templateRepository.findByCode(TEMPLATE_CODE)).thenReturn(Optional.empty());
+        when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
         when(templateRepository.save(any(TemplateEntity.class))).thenReturn(persisted);
@@ -292,7 +324,7 @@ class TemplateServiceImplTest {
         CreateTemplateRequest request = new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, null);
         TemplateEntity existing =
                 new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
-        when(templateRepository.findByCode(TEMPLATE_CODE)).thenReturn(Optional.of(existing));
+        when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(true);
 
         assertThatThrownBy(() -> templateService.create(request))
                 .isInstanceOf(ConflictException.class)
@@ -311,7 +343,7 @@ class TemplateServiceImplTest {
         doReturn(10L).when(entity).getId();
         doReturn(createdAt).when(entity).getCreatedAt();
         doReturn(updatedAt).when(entity).getUpdatedAt();
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
         when(templateRepository.save(entity)).thenReturn(entity);
 
         UpdateTemplateRequest request =
@@ -331,13 +363,13 @@ class TemplateServiceImplTest {
         assertThat(response.status()).isEqualTo(TemplateStatus.INACTIVE);
         assertThat(response.createdAt()).isEqualTo(createdAt);
         assertThat(response.updatedAt()).isEqualTo(updatedAt);
-        verify(templateRepository).findById(10L);
+        verify(templateRepository).findByIdAndWorkspaceId(10L, WORKSPACE_ID);
         verify(templateRepository).save(entity);
     }
 
     @Test
     void update_notFound() {
-        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+        when(templateRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         UpdateTemplateRequest request =
                 new UpdateTemplateRequest("Updated Name", "Updated description", TemplateStatus.ACTIVE);
@@ -352,7 +384,7 @@ class TemplateServiceImplTest {
     @Test
     void delete_success() {
         TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
 
         templateService.delete(10L);
 
@@ -361,7 +393,7 @@ class TemplateServiceImplTest {
 
     @Test
     void delete_notFound() {
-        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+        when(templateRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> templateService.delete(99L))
                 .isInstanceOf(NotFoundException.class)
@@ -374,7 +406,7 @@ class TemplateServiceImplTest {
     @Test
     void updateSchema_success() {
         TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
 
         CreateTemplateFieldRequest titleField = new CreateTemplateFieldRequest(
                 "title",
@@ -452,7 +484,7 @@ class TemplateServiceImplTest {
         assertThat(response.mappings()).isEmpty();
         verify(templateMappingRepository).deleteByTemplateId(10L);
         verify(templateFieldRepository).deleteByTemplateId(10L);
-        verify(templateRepository).findById(10L);
+        verify(templateRepository).findByIdAndWorkspaceId(10L, WORKSPACE_ID);
         verify(templateRepository, never()).save(any());
         verify(templateCompilationOrchestrator).compileAndPersist(10L);
     }
@@ -460,7 +492,7 @@ class TemplateServiceImplTest {
     @Test
     void updateSchema_clearsExistingMetadataWhenEmpty() {
         TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
         when(templateFieldRepository.countByTemplateId(10L)).thenReturn(0L);
         when(templateMappingRepository.countByTemplateId(10L)).thenReturn(0L);
 
@@ -478,7 +510,7 @@ class TemplateServiceImplTest {
     @Test
     void updateSchema_validationFailureDoesNotDeleteMetadata() {
         TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
 
         CreateTemplateFieldRequest duplicate = new CreateTemplateFieldRequest(
                 "Game",
@@ -511,7 +543,7 @@ class TemplateServiceImplTest {
 
     @Test
     void updateSchema_notFound() {
-        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+        when(templateRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         UpdateTemplateSchemaRequest request = new UpdateTemplateSchemaRequest(null, List.of(), List.of());
         assertThatThrownBy(() -> templateService.updateSchema(99L, request))
@@ -525,7 +557,7 @@ class TemplateServiceImplTest {
     @Test
     void updateSchema_replaceEntireSchema() {
         TemplateEntity entity = new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
 
         CreateTemplateFieldRequest titleField = new CreateTemplateFieldRequest(
                 "title",
@@ -609,7 +641,7 @@ class TemplateServiceImplTest {
 
     @Test
     void updateSchema_duplicateDisplayOrderUnderSameParent_throwsValidationException() {
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID)));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID)));
 
         CreateTemplateFieldRequest first = new CreateTemplateFieldRequest(
                 "Game",
@@ -690,7 +722,7 @@ class TemplateServiceImplTest {
         doReturn(10L).when(entity).getId();
         doReturn(createdAt).when(entity).getCreatedAt();
         doReturn(updatedAt).when(entity).getUpdatedAt();
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
         when(templateFieldRepository.countByTemplateId(10L)).thenReturn(2L);
 
         TemplateFieldEntity root = mock(TemplateFieldEntity.class);
@@ -740,7 +772,7 @@ class TemplateServiceImplTest {
         doReturn(10L).when(entity).getId();
         doReturn(createdAt).when(entity).getCreatedAt();
         doReturn(updatedAt).when(entity).getUpdatedAt();
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
         when(templateFieldRepository.countByTemplateId(10L)).thenReturn(0L);
         when(templateMappingRepository.countByTemplateId(10L)).thenReturn(0L);
 
@@ -758,7 +790,7 @@ class TemplateServiceImplTest {
         doReturn(10L).when(entity).getId();
         doReturn(createdAt).when(entity).getCreatedAt();
         doReturn(updatedAt).when(entity).getUpdatedAt();
-        when(templateRepository.findById(10L)).thenReturn(Optional.of(entity));
+        when(templateRepository.findByIdAndWorkspaceId(10L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
         when(templateFieldRepository.countByTemplateId(10L)).thenReturn(0L);
         when(templateMappingRepository.countByTemplateId(10L)).thenReturn(0L);
 
@@ -767,19 +799,19 @@ class TemplateServiceImplTest {
         assertThat(response.id()).isEqualTo(10L);
         assertThat(response.code()).isEqualTo(TEMPLATE_CODE);
         assertThat(response.schema()).isNull();
-        verify(templateRepository).findById(10L);
+        verify(templateRepository).findByIdAndWorkspaceId(10L, WORKSPACE_ID);
     }
 
     @Test
     void findById_notFound() {
-        when(templateRepository.findById(99L)).thenReturn(Optional.empty());
+        when(templateRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> templateService.findById(99L))
                 .isInstanceOf(NotFoundException.class)
                 .extracting(ex -> ((NotFoundException) ex).getErrorCode())
                 .isEqualTo(TemplateErrorCode.TEMPLATE_NOT_FOUND);
 
-        verify(templateRepository).findById(99L);
+        verify(templateRepository).findByIdAndWorkspaceId(99L, WORKSPACE_ID);
     }
 
     @Test
@@ -795,7 +827,7 @@ class TemplateServiceImplTest {
         when(entity.getCreatedAt()).thenReturn(createdAt);
         when(entity.getUpdatedAt()).thenReturn(updatedAt);
         Page<TemplateEntity> page = new PageImpl<>(List.of(entity), PageRequest.of(0, 20), 1);
-        when(templateRepository.search(eq(null), eq(null), any(Pageable.class))).thenReturn(page);
+        when(templateRepository.searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(null), any(Pageable.class))).thenReturn(page);
 
         PageResult<TemplateListResponse> result = templateService.findAll(1, 20, null, null);
 
@@ -812,72 +844,72 @@ class TemplateServiceImplTest {
         assertThat(result.meta().pageSize()).isEqualTo(20);
         assertThat(result.meta().totalRecords()).isEqualTo(1);
         assertThat(result.meta().totalPages()).isEqualTo(1);
-        verify(templateRepository).search(eq(null), eq(null), any(Pageable.class));
+        verify(templateRepository).searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(null), any(Pageable.class));
     }
 
     @Test
     void list_empty() {
         Page<TemplateEntity> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(templateRepository.search(eq(null), eq(null), any(Pageable.class))).thenReturn(page);
+        when(templateRepository.searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(null), any(Pageable.class))).thenReturn(page);
 
         PageResult<TemplateListResponse> result = templateService.findAll(1, 20, "", null);
 
         assertThat(result.content()).isEmpty();
         assertThat(result.meta().totalRecords()).isZero();
         assertThat(result.meta().totalPages()).isZero();
-        verify(templateRepository).search(eq(null), eq(null), any(Pageable.class));
+        verify(templateRepository).searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(null), any(Pageable.class));
     }
 
     @Test
     void list_keyword() {
         Page<TemplateEntity> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(templateRepository.search(eq("Live"), eq(null), any(Pageable.class))).thenReturn(page);
+        when(templateRepository.searchByWorkspace(eq(WORKSPACE_ID), eq("Live"), eq(null), any(Pageable.class))).thenReturn(page);
 
         templateService.findAll(1, 20, "  Live  ", null);
 
-        verify(templateRepository).search(eq("Live"), eq(null), any(Pageable.class));
+        verify(templateRepository).searchByWorkspace(eq(WORKSPACE_ID), eq("Live"), eq(null), any(Pageable.class));
     }
 
     @Test
     void list_active() {
         TemplateEntity active = mockListEntity(1L, "ACTIVE_CODE", TemplateStatus.ACTIVE);
         Page<TemplateEntity> page = new PageImpl<>(List.of(active), PageRequest.of(0, 20), 1);
-        when(templateRepository.search(eq(null), eq(TemplateStatus.ACTIVE), any(Pageable.class)))
+        when(templateRepository.searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(TemplateStatus.ACTIVE), any(Pageable.class)))
                 .thenReturn(page);
 
         PageResult<TemplateListResponse> result = templateService.findAll(1, 20, null, TemplateStatus.ACTIVE);
 
         assertThat(result.content()).allMatch(item -> item.status() == TemplateStatus.ACTIVE);
         assertThat(result.content()).noneMatch(item -> item.status() == TemplateStatus.INACTIVE);
-        verify(templateRepository).search(eq(null), eq(TemplateStatus.ACTIVE), any(Pageable.class));
+        verify(templateRepository).searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(TemplateStatus.ACTIVE), any(Pageable.class));
     }
 
     @Test
     void list_inactive() {
         TemplateEntity inactive = mockListEntity(2L, "INACTIVE_CODE", TemplateStatus.INACTIVE);
         Page<TemplateEntity> page = new PageImpl<>(List.of(inactive), PageRequest.of(0, 20), 1);
-        when(templateRepository.search(eq(null), eq(TemplateStatus.INACTIVE), any(Pageable.class)))
+        when(templateRepository.searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(TemplateStatus.INACTIVE), any(Pageable.class)))
                 .thenReturn(page);
 
         PageResult<TemplateListResponse> result = templateService.findAll(1, 20, null, TemplateStatus.INACTIVE);
 
         assertThat(result.content()).allMatch(item -> item.status() == TemplateStatus.INACTIVE);
         assertThat(result.content()).noneMatch(item -> item.status() == TemplateStatus.ACTIVE);
-        verify(templateRepository).search(eq(null), eq(TemplateStatus.INACTIVE), any(Pageable.class));
+        verify(templateRepository).searchByWorkspace(eq(WORKSPACE_ID), eq(null), eq(TemplateStatus.INACTIVE), any(Pageable.class));
     }
 
     @Test
     void list_keywordAndActive() {
         TemplateEntity active = mockListEntity(3L, "GAME_TEMPLATE", TemplateStatus.ACTIVE);
         Page<TemplateEntity> page = new PageImpl<>(List.of(active), PageRequest.of(0, 20), 1);
-        when(templateRepository.search(eq("game"), eq(TemplateStatus.ACTIVE), any(Pageable.class)))
+        when(templateRepository.searchByWorkspace(eq(WORKSPACE_ID), eq("game"), eq(TemplateStatus.ACTIVE), any(Pageable.class)))
                 .thenReturn(page);
 
         PageResult<TemplateListResponse> result = templateService.findAll(1, 20, "game", TemplateStatus.ACTIVE);
 
         assertThat(result.content()).allMatch(item -> item.status() == TemplateStatus.ACTIVE);
         assertThat(result.content()).noneMatch(item -> item.status() == TemplateStatus.INACTIVE);
-        verify(templateRepository).search(eq("game"), eq(TemplateStatus.ACTIVE), any(Pageable.class));
+        verify(templateRepository).searchByWorkspace(eq(WORKSPACE_ID), eq("game"), eq(TemplateStatus.ACTIVE), any(Pageable.class));
     }
 
     private TemplateEntity mockListEntity(Long id, String code, TemplateStatus status) {

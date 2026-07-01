@@ -1,5 +1,6 @@
 package com.company.xmlgen.infrastructure.security;
 
+import com.company.xmlgen.workspace.filter.WorkspaceContextFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -21,14 +22,17 @@ public class SecurityConfig {
     private final RestAuthenticationEntryPoint authenticationEntryPoint;
     private final RestAccessDeniedHandler accessDeniedHandler;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final WorkspaceContextFilter workspaceContextFilter;
 
     public SecurityConfig(
             RestAuthenticationEntryPoint authenticationEntryPoint,
             RestAccessDeniedHandler accessDeniedHandler,
-            JwtAuthenticationFilter jwtAuthenticationFilter) {
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            WorkspaceContextFilter workspaceContextFilter) {
         this.authenticationEntryPoint = authenticationEntryPoint;
         this.accessDeniedHandler = accessDeniedHandler;
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.workspaceContextFilter = workspaceContextFilter;
     }
 
     @Bean
@@ -54,7 +58,8 @@ public class SecurityConfig {
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(workspaceContextFilter, JwtAuthenticationFilter.class);
         return http.build();
     }
 }

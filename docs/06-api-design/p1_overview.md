@@ -114,6 +114,24 @@ User Logout
 
 ---
 
+### Workspace APIs (Phase 7.1.1 — planned)
+
+Purpose:
+
+```text
+List accessible workspaces
+
+Create / update workspace
+
+Scope all business data by workspace
+```
+
+Ownership strategy: [Part 9. Workspace API Strategy](./p9_workspace-api-strategy.md)
+
+Collection endpoints require `workspaceId` query parameter. See [ADR-003](../adr/ADR-003-workspace-ownership.md).
+
+---
+
 ### Template APIs
 
 Purpose:

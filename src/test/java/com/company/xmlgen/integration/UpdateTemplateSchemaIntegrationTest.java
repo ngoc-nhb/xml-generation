@@ -12,6 +12,7 @@ import com.company.xmlgen.masterdata.entity.MasterDataTypeStatus;
 import com.company.xmlgen.masterdata.service.MasterDataFieldService;
 import com.company.xmlgen.masterdata.service.MasterDataTypeService;
 import com.company.xmlgen.support.TestcontainersConfig;
+import com.company.xmlgen.support.WorkspaceTestSupport;
 import com.company.xmlgen.template.dto.request.CreateTemplateFieldRequest;
 import com.company.xmlgen.template.dto.request.CreateTemplateMappingRequest;
 import com.company.xmlgen.template.dto.request.CreateTemplateRequest;
@@ -70,11 +71,13 @@ class UpdateTemplateSchemaIntegrationTest {
         AuthenticatedUser currentUser = new AuthenticatedUser(1L, "admin", true);
         SecurityContextHolder.getContext()
                 .setAuthentication(new UsernamePasswordAuthenticationToken(currentUser, null, null));
+        WorkspaceTestSupport.useDefaultWorkspace();
     }
 
     @AfterEach
     void tearDown() {
         SecurityContextHolder.clearContext();
+        WorkspaceTestSupport.clearWorkspace();
     }
 
     static boolean isDockerAvailable() {

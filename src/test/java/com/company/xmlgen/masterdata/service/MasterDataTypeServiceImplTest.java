@@ -21,13 +21,19 @@ import com.company.xmlgen.masterdata.dto.response.UpdateMasterDataTypeResponse;
 import com.company.xmlgen.masterdata.entity.MasterDataTypeEntity;
 import com.company.xmlgen.masterdata.entity.MasterDataTypeStatus;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
+import com.company.xmlgen.masterdata.repository.MasterDataFieldRepository;
+import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.support.WorkspaceTestSupport;
+import com.company.xmlgen.template.repository.TemplateRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.util.List;
 import java.util.Optional;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -38,6 +44,7 @@ import org.springframework.data.domain.Pageable;
 @ExtendWith(MockitoExtension.class)
 class MasterDataTypeServiceImplTest {
 
+    private static final Long WORKSPACE_ID = 1L;
     private static final String TYPE_CODE = "GAME_KIND";
     private static final String TYPE_NAME = "Game Kind";
     private static final String TYPE_DESCRIPTION = "Game kind master";
@@ -45,14 +52,38 @@ class MasterDataTypeServiceImplTest {
     @Mock
     private MasterDataTypeRepository masterDataTypeRepository;
 
-    @InjectMocks
+    @Mock
+    private TemplateRepository templateRepository;
+
+    @Mock
+    private MasterDataFieldRepository masterDataFieldRepository;
+
+    @Mock
+    private MasterDataRecordRepository masterDataRecordRepository;
+
     private MasterDataTypeServiceImpl masterDataTypeService;
+
+    @BeforeEach
+    void setUp() {
+        WorkspaceOwnershipGuard workspaceOwnershipGuard = new WorkspaceOwnershipGuard(
+                templateRepository,
+                masterDataTypeRepository,
+                masterDataFieldRepository,
+                masterDataRecordRepository);
+        masterDataTypeService = new MasterDataTypeServiceImpl(masterDataTypeRepository, workspaceOwnershipGuard);
+        WorkspaceTestSupport.useDefaultWorkspace();
+    }
+
+    @AfterEach
+    void tearDown() {
+        WorkspaceTestSupport.clearWorkspace();
+    }
 
     @Test
     void create_success() {
         CreateMasterDataTypeRequest request = new CreateMasterDataTypeRequest(
                 TYPE_CODE, TYPE_NAME, TYPE_DESCRIPTION, MasterDataTypeStatus.ACTIVE);
-        when(masterDataTypeRepository.existsByCode(TYPE_CODE)).thenReturn(false);
+        when(masterDataTypeRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TYPE_CODE)).thenReturn(false);
         MasterDataTypeEntity persisted = mock(MasterDataTypeEntity.class);
         when(persisted.getId()).thenReturn(1L);
         when(persisted.getCode()).thenReturn(TYPE_CODE);
@@ -69,7 +100,7 @@ class MasterDataTypeServiceImplTest {
         assertThat(response.description()).isEqualTo(TYPE_DESCRIPTION);
         assertThat(response.status()).isEqualTo(MasterDataTypeStatus.ACTIVE);
 
-        verify(masterDataTypeRepository).existsByCode(TYPE_CODE);
+        verify(masterDataTypeRepository).existsByWorkspaceIdAndCode(WORKSPACE_ID, TYPE_CODE);
 
         ArgumentCaptor<MasterDataTypeEntity> captor = ArgumentCaptor.forClass(MasterDataTypeEntity.class);
         verify(masterDataTypeRepository).save(captor.capture());
@@ -78,20 +109,21 @@ class MasterDataTypeServiceImplTest {
         assertThat(saved.getName()).isEqualTo(TYPE_NAME);
         assertThat(saved.getDescription()).isEqualTo(TYPE_DESCRIPTION);
         assertThat(saved.getStatus()).isEqualTo(MasterDataTypeStatus.ACTIVE);
+        assertThat(saved.getWorkspaceId()).isEqualTo(WORKSPACE_ID);
     }
 
     @Test
     void create_duplicateCode() {
         CreateMasterDataTypeRequest request = new CreateMasterDataTypeRequest(
                 TYPE_CODE, TYPE_NAME, TYPE_DESCRIPTION, MasterDataTypeStatus.ACTIVE);
-        when(masterDataTypeRepository.existsByCode(TYPE_CODE)).thenReturn(true);
+        when(masterDataTypeRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TYPE_CODE)).thenReturn(true);
 
         assertThatThrownBy(() -> masterDataTypeService.create(request))
                 .isInstanceOf(ConflictException.class)
                 .extracting(ex -> ((ConflictException) ex).getErrorCode())
                 .isEqualTo(MasterDataTypeErrorCode.MASTER_DATA_TYPE_CODE_ALREADY_EXISTS);
 
-        verify(masterDataTypeRepository).existsByCode(TYPE_CODE);
+        verify(masterDataTypeRepository).existsByWorkspaceIdAndCode(WORKSPACE_ID, TYPE_CODE);
         verify(masterDataTypeRepository, never()).save(any());
     }
 
@@ -100,7 +132,8 @@ class MasterDataTypeServiceImplTest {
         MasterDataTypeEntity entity =
                 new MasterDataTypeEntity(TYPE_CODE, TYPE_NAME, MasterDataTypeStatus.ACTIVE);
         entity.setDescription(TYPE_DESCRIPTION);
-        when(masterDataTypeRepository.findById(1L)).thenReturn(Optional.of(entity));
+        entity.setWorkspaceId(WORKSPACE_ID);
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(1L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
         when(masterDataTypeRepository.save(entity)).thenReturn(entity);
 
         UpdateMasterDataTypeRequest request = new UpdateMasterDataTypeRequest(
@@ -115,13 +148,13 @@ class MasterDataTypeServiceImplTest {
         assertThat(response.name()).isEqualTo("Game Kind Updated");
         assertThat(response.description()).isEqualTo("Updated description");
         assertThat(response.status()).isEqualTo(MasterDataTypeStatus.INACTIVE);
-        verify(masterDataTypeRepository).findById(1L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(1L, WORKSPACE_ID);
         verify(masterDataTypeRepository).save(entity);
     }
 
     @Test
     void update_notFound() {
-        when(masterDataTypeRepository.findById(99L)).thenReturn(Optional.empty());
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         UpdateMasterDataTypeRequest request = new UpdateMasterDataTypeRequest(
                 "Game Kind Updated", "Updated description", MasterDataTypeStatus.INACTIVE);
@@ -130,7 +163,7 @@ class MasterDataTypeServiceImplTest {
                 .extracting(ex -> ((NotFoundException) ex).getErrorCode())
                 .isEqualTo(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
 
-        verify(masterDataTypeRepository).findById(99L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(99L, WORKSPACE_ID);
         verify(masterDataTypeRepository, never()).save(any());
     }
 
@@ -138,25 +171,26 @@ class MasterDataTypeServiceImplTest {
     void delete_success() {
         MasterDataTypeEntity entity =
                 new MasterDataTypeEntity(TYPE_CODE, TYPE_NAME, MasterDataTypeStatus.ACTIVE);
-        when(masterDataTypeRepository.findById(1L)).thenReturn(Optional.of(entity));
+        entity.setWorkspaceId(WORKSPACE_ID);
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(1L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
 
         masterDataTypeService.delete(1L);
 
-        verify(masterDataTypeRepository).findById(1L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(1L, WORKSPACE_ID);
         verify(masterDataTypeRepository).delete(entity);
         verify(masterDataTypeRepository, never()).save(any());
     }
 
     @Test
     void delete_notFound() {
-        when(masterDataTypeRepository.findById(99L)).thenReturn(Optional.empty());
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> masterDataTypeService.delete(99L))
                 .isInstanceOf(NotFoundException.class)
                 .extracting(ex -> ((NotFoundException) ex).getErrorCode())
                 .isEqualTo(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
 
-        verify(masterDataTypeRepository).findById(99L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(99L, WORKSPACE_ID);
         verify(masterDataTypeRepository, never()).delete(any());
         verify(masterDataTypeRepository, never()).save(any());
     }
@@ -168,7 +202,7 @@ class MasterDataTypeServiceImplTest {
         when(entity.getCode()).thenReturn(TYPE_CODE);
         when(entity.getName()).thenReturn(TYPE_NAME);
         when(entity.getStatus()).thenReturn(MasterDataTypeStatus.ACTIVE);
-        when(masterDataTypeRepository.findById(1L)).thenReturn(Optional.of(entity));
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(1L, WORKSPACE_ID)).thenReturn(Optional.of(entity));
 
         MasterDataTypeResponse response = masterDataTypeService.findById(1L);
 
@@ -176,19 +210,19 @@ class MasterDataTypeServiceImplTest {
         assertThat(response.code()).isEqualTo(TYPE_CODE);
         assertThat(response.name()).isEqualTo(TYPE_NAME);
         assertThat(response.status()).isEqualTo(MasterDataTypeStatus.ACTIVE);
-        verify(masterDataTypeRepository).findById(1L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(1L, WORKSPACE_ID);
     }
 
     @Test
     void findById_notFound() {
-        when(masterDataTypeRepository.findById(99L)).thenReturn(Optional.empty());
+        when(masterDataTypeRepository.findByIdAndWorkspaceId(99L, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> masterDataTypeService.findById(99L))
                 .isInstanceOf(NotFoundException.class)
                 .extracting(ex -> ((NotFoundException) ex).getErrorCode())
                 .isEqualTo(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
 
-        verify(masterDataTypeRepository).findById(99L);
+        verify(masterDataTypeRepository).findByIdAndWorkspaceId(99L, WORKSPACE_ID);
     }
 
     @Test
@@ -199,7 +233,7 @@ class MasterDataTypeServiceImplTest {
         when(entity.getName()).thenReturn(TYPE_NAME);
         when(entity.getStatus()).thenReturn(MasterDataTypeStatus.ACTIVE);
         Page<MasterDataTypeEntity> page = new PageImpl<>(List.of(entity), PageRequest.of(0, 20), 1);
-        when(masterDataTypeRepository.findAll(any(Pageable.class))).thenReturn(page);
+        when(masterDataTypeRepository.findByWorkspaceId(eq(WORKSPACE_ID), any(Pageable.class))).thenReturn(page);
 
         PageResult<MasterDataTypeListResponse> result = masterDataTypeService.findAll(1, 20, null);
 
@@ -218,7 +252,7 @@ class MasterDataTypeServiceImplTest {
     @Test
     void findAll_empty() {
         Page<MasterDataTypeEntity> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(masterDataTypeRepository.findAll(any(Pageable.class))).thenReturn(page);
+        when(masterDataTypeRepository.findByWorkspaceId(eq(WORKSPACE_ID), any(Pageable.class))).thenReturn(page);
 
         PageResult<MasterDataTypeListResponse> result = masterDataTypeService.findAll(1, 20, "");
 
@@ -230,12 +264,14 @@ class MasterDataTypeServiceImplTest {
     @Test
     void findAll_keyword() {
         Page<MasterDataTypeEntity> page = new PageImpl<>(List.of(), PageRequest.of(0, 20), 0);
-        when(masterDataTypeRepository.findByNameContainingIgnoreCase(eq("Game"), any(Pageable.class)))
+        when(masterDataTypeRepository.findByWorkspaceIdAndNameContainingIgnoreCase(
+                        eq(WORKSPACE_ID), eq("Game"), any(Pageable.class)))
                 .thenReturn(page);
 
         masterDataTypeService.findAll(1, 20, "  Game  ");
 
-        verify(masterDataTypeRepository).findByNameContainingIgnoreCase(eq("Game"), any(Pageable.class));
-        verify(masterDataTypeRepository, never()).findAll(any(Pageable.class));
+        verify(masterDataTypeRepository)
+                .findByWorkspaceIdAndNameContainingIgnoreCase(eq(WORKSPACE_ID), eq("Game"), any(Pageable.class));
+        verify(masterDataTypeRepository, never()).findByWorkspaceId(any(), any());
     }
 }

@@ -18,9 +18,18 @@ import java.time.Instant;
 @Entity
 @Table(
         name = "master_data_types",
-        uniqueConstraints = @UniqueConstraint(name = "uk_master_data_types_code", columnNames = "code"),
-        indexes = @Index(name = "idx_master_data_types_status", columnList = "status"))
+        uniqueConstraints =
+                @UniqueConstraint(
+                        name = "uk_master_data_types_workspace_code",
+                        columnNames = {"workspace_id", "code"}),
+        indexes = {
+            @Index(name = "idx_master_data_types_status", columnList = "status"),
+            @Index(name = "idx_master_data_types_workspace_id", columnList = "workspace_id")
+        })
 public class MasterDataTypeEntity extends BaseEntity {
+
+    @Column(name = "workspace_id", nullable = false)
+    private Long workspaceId;
 
     @Column(name = "code", nullable = false, length = 100)
     private String code;
@@ -45,6 +54,14 @@ public class MasterDataTypeEntity extends BaseEntity {
         this.code = code;
         this.name = name;
         this.status = status;
+    }
+
+    public Long getWorkspaceId() {
+        return workspaceId;
+    }
+
+    public void setWorkspaceId(Long workspaceId) {
+        this.workspaceId = workspaceId;
     }
 
     public String getCode() {

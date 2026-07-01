@@ -34,6 +34,9 @@ JSONB
 ```text
 users
 
+workspaces
+workspace_members
+
 templates
 template_fields
 template_mappings
@@ -49,6 +52,8 @@ saved_inputs
 
 export_histories
 ```
+
+> **Phase 7.1.0 (planned):** `workspaces` and `workspace_members` tables plus `workspace_id` on owned entities. See §4.11–4.12. Not yet migrated.
 
 ---
 
@@ -510,6 +515,84 @@ INDEX(status)
 
 INDEX(expired_at)
 ```
+
+---
+
+## 4.11 workspaces
+
+Stores workspace (tenant) boundaries.
+
+| Column      | Type         | Constraint             |
+| ----------- | ------------ | ---------------------- |
+| id          | bigint       | PK                     |
+| code        | varchar(100) | UNIQUE, NOT NULL       |
+| name        | varchar(255) | NOT NULL               |
+| description | text         | NULL                   |
+| status      | varchar(20)  | NOT NULL               |
+| created_by  | bigint       | FK -> users.id         |
+| created_at  | timestamp    | NOT NULL               |
+| updated_at  | timestamp    | NOT NULL               |
+| deleted_at  | timestamp    | NULL                   |
+
+Status: `ACTIVE`, `INACTIVE`
+
+Indexes:
+
+```text
+UNIQUE(code)
+INDEX(status)
+INDEX(created_by)
+```
+
+---
+
+## 4.12 workspace_members
+
+Links users to workspaces.
+
+| Column       | Type        | Constraint                    |
+| ------------ | ----------- | ----------------------------- |
+| id           | bigint      | PK                            |
+| workspace_id | bigint      | FK -> workspaces.id, CASCADE  |
+| user_id      | bigint      | FK -> users.id, CASCADE       |
+| role         | varchar(30) | NOT NULL                      |
+| joined_at    | timestamp   | NOT NULL                      |
+| created_at   | timestamp   | NOT NULL                      |
+| updated_at   | timestamp   | NOT NULL                      |
+
+Role: `WORKSPACE_ADMIN`, `WORKSPACE_USER`
+
+Constraints:
+
+```text
+UNIQUE(workspace_id, user_id)
+```
+
+Indexes:
+
+```text
+INDEX(workspace_id)
+INDEX(user_id)
+```
+
+---
+
+## 4.13 workspace_id FK additions
+
+The following tables gain `workspace_id BIGINT NOT NULL FK -> workspaces.id`:
+
+| Table             | Unique constraint change                          |
+| ----------------- | ------------------------------------------------- |
+| templates         | `UNIQUE(workspace_id, code)` replaces `UNIQUE(code)` |
+| master_data_types | `UNIQUE(workspace_id, code)` replaces global code unique |
+| saved_inputs      | `UNIQUE(workspace_id, user_id, template_id)`      |
+| export_histories  | (no unique change; add `INDEX(workspace_id)`)     |
+
+Migration backfill: all existing rows → `workspace_id = 1` (Default Workspace).
+
+Until Phase 7.1.3 wires workspace context into services, new rows receive `workspace_id = 1` via column `DEFAULT 1` on owned tables.
+
+See [phase-7.1.0-workspace-architecture.md](../release/phase-7.1.0-workspace-architecture.md) §8.
 
 ---
 

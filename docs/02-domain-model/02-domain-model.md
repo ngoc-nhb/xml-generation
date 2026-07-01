@@ -20,6 +20,26 @@ The design supports:
 ```text
 User
 │
+├── WorkspaceMember
+│       └── Workspace
+│              ├── Template
+│              │      ├── TemplateField
+│              │      ├── TemplateMapping
+│              │      └── TemplateGuide
+│              ├── MasterDataType
+│              │      ├── MasterDataField
+│              │      └── MasterDataRecord
+│              ├── SavedInput
+│              └── ExportHistory
+```
+
+> **Phase 7.1.0:** Workspace ownership is defined in [p5_workspace-ownership.md](./p5_workspace-ownership.md) and [ADR-003](../adr/ADR-003-workspace-ownership.md). Implementation begins in Phase 7.1.1.
+
+### Legacy overview (pre-7.1 — superseded for ownership)
+
+```text
+User
+│
 ├── SavedInput
 ├── ExportHistory
 │
@@ -580,6 +600,25 @@ Retention policy may automatically remove records after expiration.
 ---
 
 ## 13. Entity Relationship Summary
+
+```text
+User
+ └─ WorkspaceMember
+        └─ Workspace
+               ├─ Template
+               │     ├─ TemplateField
+               │     ├─ TemplateMapping
+               │     └─ TemplateGuide
+               ├─ MasterDataType
+               │     ├─ MasterDataField
+               │     └─ MasterDataRecord
+               ├─ SavedInput
+               └─ ExportHistory
+```
+
+See [p5_workspace-ownership.md](./p5_workspace-ownership.md) for the approved Phase 7.1 model.
+
+### Pre-7.1 reference
 
 ```text
 User

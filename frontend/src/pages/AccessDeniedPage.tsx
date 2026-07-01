@@ -12,7 +12,7 @@ export function AccessDeniedPage() {
             />
             <div className="flex justify-center">
                 <Button asChild variant="outline">
-                    <Link to="/dashboard">Back to dashboard</Link>
+                    <Link to="/templates">Back to home</Link>
                 </Button>
             </div>
         </div>

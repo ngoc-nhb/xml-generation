@@ -16,6 +16,7 @@ import com.company.xmlgen.masterdata.exception.MasterDataFieldErrorCode;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataFieldRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -38,12 +39,15 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
 
     private final MasterDataFieldRepository masterDataFieldRepository;
     private final MasterDataTypeRepository masterDataTypeRepository;
+    private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
 
     public MasterDataFieldServiceImpl(
             MasterDataFieldRepository masterDataFieldRepository,
-            MasterDataTypeRepository masterDataTypeRepository) {
+            MasterDataTypeRepository masterDataTypeRepository,
+            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
         this.masterDataFieldRepository = masterDataFieldRepository;
         this.masterDataTypeRepository = masterDataTypeRepository;
+        this.workspaceOwnershipGuard = workspaceOwnershipGuard;
     }
 
     @Override
@@ -72,9 +76,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Override
     @Transactional(readOnly = true)
     public MasterDataFieldResponse findById(Long id) {
-        MasterDataFieldEntity entity = masterDataFieldRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MasterDataFieldErrorCode.MASTER_DATA_FIELD_NOT_FOUND));
+        MasterDataFieldEntity entity = workspaceOwnershipGuard.requireMasterDataField(id);
 
         return toDetailResponse(entity);
     }
@@ -83,9 +85,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Transactional
     public CreateMasterDataFieldResponse create(CreateMasterDataFieldRequest request) {
         Long typeId = request.typeId();
-        if (!masterDataTypeRepository.existsById(typeId)) {
-            throw new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
-        }
+        workspaceOwnershipGuard.requireMasterDataType(typeId);
 
         if (masterDataFieldRepository.existsByMasterDataTypeIdAndFieldName(typeId, request.code())) {
             throw new ConflictException(MasterDataFieldErrorCode.MASTER_DATA_FIELD_CODE_ALREADY_EXISTS);
@@ -124,9 +124,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Override
     @Transactional
     public UpdateMasterDataFieldResponse update(Long id, UpdateMasterDataFieldRequest request) {
-        MasterDataFieldEntity entity = masterDataFieldRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MasterDataFieldErrorCode.MASTER_DATA_FIELD_NOT_FOUND));
+        MasterDataFieldEntity entity = workspaceOwnershipGuard.requireMasterDataField(id);
 
         if (masterDataFieldRepository.existsByMasterDataTypeIdAndDisplayOrderAndIdNot(
                 entity.getMasterDataTypeId(), request.displayOrder(), id)) {
@@ -141,9 +139,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
 
         MasterDataFieldEntity saved = masterDataFieldRepository.save(entity);
 
-        MasterDataTypeEntity type = masterDataTypeRepository
-                .findById(saved.getMasterDataTypeId())
-                .orElseThrow(() -> new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND));
+        MasterDataTypeEntity type = workspaceOwnershipGuard.requireMasterDataType(saved.getMasterDataTypeId());
 
         return new UpdateMasterDataFieldResponse(
                 saved.getId(),
@@ -165,23 +161,22 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Override
     @Transactional
     public void delete(Long id) {
-        MasterDataFieldEntity entity = masterDataFieldRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MasterDataFieldErrorCode.MASTER_DATA_FIELD_NOT_FOUND));
+        MasterDataFieldEntity entity = workspaceOwnershipGuard.requireMasterDataField(id);
 
         masterDataFieldRepository.delete(entity);
     }
 
     private Page<MasterDataFieldEntity> findFieldPage(Long typeId, String keyword, Pageable pageable) {
         if (typeId != null) {
+            workspaceOwnershipGuard.requireMasterDataType(typeId);
             return isBlank(keyword)
                     ? masterDataFieldRepository.findByMasterDataTypeId(typeId, pageable)
                     : masterDataFieldRepository.findByMasterDataTypeIdAndNameContainingIgnoreCase(
                             typeId, keyword.trim(), pageable);
         }
-        return isBlank(keyword)
-                ? masterDataFieldRepository.findAll(pageable)
-                : masterDataFieldRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable);
+        String normalizedKeyword = isBlank(keyword) ? null : keyword.trim();
+        return masterDataFieldRepository.findByWorkspaceId(
+                workspaceOwnershipGuard.currentWorkspaceId(), normalizedKeyword, pageable);
     }
 
     private List<MasterDataFieldListResponse> mapToListResponses(List<MasterDataFieldEntity> entities) {

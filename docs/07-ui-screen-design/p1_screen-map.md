@@ -38,6 +38,8 @@ Login
 │
 └── Dashboard
     │
+    ├── Workspace Selector (Phase 7.1.1+ — header; scopes all menus below)
+    │
     ├── Template Management (Admin)
     │   ├── Template List
     │   ├── Create Template

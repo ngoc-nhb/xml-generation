@@ -17,6 +17,7 @@ import com.company.xmlgen.template.exception.TemplateErrorCode;
 import com.company.xmlgen.xmlgeneration.dto.PreviewValidationError;
 import com.company.xmlgen.xmlgeneration.exception.PreviewErrorCode;
 import com.company.xmlgen.xmlgeneration.service.PreviewService;
+import com.company.xmlgen.workspace.service.WorkspaceContextResolver;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,9 @@ class PreviewControllerTest {
 
     @MockBean
     private TokenProvider tokenProvider;
+
+    @MockBean
+    private WorkspaceContextResolver workspaceContextResolver;
 
     @Test
     void preview_success_returnsXmlPayload() throws Exception {

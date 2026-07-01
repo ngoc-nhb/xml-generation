@@ -13,6 +13,7 @@ import com.company.xmlgen.masterdata.dto.response.UpdateMasterDataTypeResponse;
 import com.company.xmlgen.masterdata.entity.MasterDataTypeEntity;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.util.List;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -33,9 +34,12 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     private static final int MAX_PAGE_SIZE = 100;
 
     private final MasterDataTypeRepository masterDataTypeRepository;
+    private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
 
-    public MasterDataTypeServiceImpl(MasterDataTypeRepository masterDataTypeRepository) {
+    public MasterDataTypeServiceImpl(
+            MasterDataTypeRepository masterDataTypeRepository, WorkspaceOwnershipGuard workspaceOwnershipGuard) {
         this.masterDataTypeRepository = masterDataTypeRepository;
+        this.workspaceOwnershipGuard = workspaceOwnershipGuard;
     }
 
     @Override
@@ -43,13 +47,15 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     public PageResult<MasterDataTypeListResponse> findAll(int page, int pageSize, String keyword) {
         int normalizedPage = Math.max(page, 1);
         int normalizedPageSize = pageSize <= 0 ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
+        long workspaceId = workspaceOwnershipGuard.currentWorkspaceId();
 
         Pageable pageable =
                 PageRequest.of(normalizedPage - 1, normalizedPageSize, Sort.by("id").ascending());
 
         Page<MasterDataTypeEntity> entityPage = isBlank(keyword)
-                ? masterDataTypeRepository.findAll(pageable)
-                : masterDataTypeRepository.findByNameContainingIgnoreCase(keyword.trim(), pageable);
+                ? masterDataTypeRepository.findByWorkspaceId(workspaceId, pageable)
+                : masterDataTypeRepository.findByWorkspaceIdAndNameContainingIgnoreCase(
+                        workspaceId, keyword.trim(), pageable);
 
         List<MasterDataTypeListResponse> content = entityPage.getContent().stream()
                 .map(entity -> new MasterDataTypeListResponse(
@@ -68,9 +74,7 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional(readOnly = true)
     public MasterDataTypeResponse findById(Long id) {
-        MasterDataTypeEntity entity = masterDataTypeRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND));
+        MasterDataTypeEntity entity = workspaceOwnershipGuard.requireMasterDataType(id);
 
         return new MasterDataTypeResponse(
                 entity.getId(), entity.getCode(), entity.getName(), entity.getStatus());
@@ -79,13 +83,15 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional
     public CreateMasterDataTypeResponse create(CreateMasterDataTypeRequest request) {
-        if (masterDataTypeRepository.existsByCode(request.code())) {
+        long workspaceId = workspaceOwnershipGuard.currentWorkspaceId();
+        if (masterDataTypeRepository.existsByWorkspaceIdAndCode(workspaceId, request.code())) {
             throw new ConflictException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_CODE_ALREADY_EXISTS);
         }
 
         MasterDataTypeEntity entity =
                 new MasterDataTypeEntity(request.code(), request.name(), request.status());
         entity.setDescription(request.description());
+        entity.setWorkspaceId(workspaceId);
 
         MasterDataTypeEntity saved = masterDataTypeRepository.save(entity);
 
@@ -100,9 +106,7 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional
     public UpdateMasterDataTypeResponse update(Long id, UpdateMasterDataTypeRequest request) {
-        MasterDataTypeEntity entity = masterDataTypeRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND));
+        MasterDataTypeEntity entity = workspaceOwnershipGuard.requireMasterDataType(id);
 
         entity.setName(request.name());
         entity.setDescription(request.description());
@@ -121,10 +125,7 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional
     public void delete(Long id) {
-        MasterDataTypeEntity entity = masterDataTypeRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND));
-
+        MasterDataTypeEntity entity = workspaceOwnershipGuard.requireMasterDataType(id);
         masterDataTypeRepository.delete(entity);
     }
 

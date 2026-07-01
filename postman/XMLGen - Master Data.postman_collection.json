@@ -9,6 +9,17 @@
     "type": "bearer",
     "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
   },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.request.headers.upsert({ key: 'X-Workspace-Id', value: pm.environment.get('workspaceId') || '1' });"
+        ]
+      }
+    }
+  ],
   "item": [
     {
       "name": "Master Data Types",

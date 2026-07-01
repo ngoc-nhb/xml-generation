@@ -1,11 +1,9 @@
 package com.company.xmlgen.xmlgeneration.service;
 
 import com.company.xmlgen.exception.BusinessException;
-import com.company.xmlgen.exception.NotFoundException;
-import com.company.xmlgen.masterdata.entity.MasterDataRecordEntity;
-import com.company.xmlgen.masterdata.entity.MasterDataTypeEntity;
 import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.company.xmlgen.xmlgeneration.exception.XMLGenerationErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,14 +24,17 @@ public class SelectedMasterDataLoaderImpl implements SelectedMasterDataLoader {
     private final MasterDataRecordRepository masterDataRecordRepository;
     private final MasterDataTypeRepository masterDataTypeRepository;
     private final ObjectMapper objectMapper;
+    private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
 
     public SelectedMasterDataLoaderImpl(
             MasterDataRecordRepository masterDataRecordRepository,
             MasterDataTypeRepository masterDataTypeRepository,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
         this.masterDataRecordRepository = masterDataRecordRepository;
         this.masterDataTypeRepository = masterDataTypeRepository;
         this.objectMapper = objectMapper;
+        this.workspaceOwnershipGuard = workspaceOwnershipGuard;
     }
 
     @Override
@@ -66,29 +67,7 @@ public class SelectedMasterDataLoaderImpl implements SelectedMasterDataLoader {
     }
 
     private JsonNode loadRecordData(String typeCode, long recordId) {
-        MasterDataRecordEntity record = masterDataRecordRepository
-                .findById(recordId)
-                .filter(entity -> entity.getDeletedAt() == null)
-                .orElseThrow(() -> new NotFoundException(
-                        XMLGenerationErrorCode.MASTER_DATA_NOT_FOUND,
-                        "Master data record not found: " + recordId));
-
-        MasterDataTypeEntity type = masterDataTypeRepository
-                .findById(record.getMasterDataTypeId())
-                .orElseThrow(() -> new NotFoundException(
-                        XMLGenerationErrorCode.MASTER_DATA_NOT_FOUND,
-                        "Master data type not found for record: " + recordId));
-
-        if (!type.getCode().equals(typeCode)) {
-            throw new BusinessException(
-                    XMLGenerationErrorCode.MASTER_DATA_TYPE_MISMATCH,
-                    "Master data type mismatch for record "
-                            + recordId
-                            + ": expected "
-                            + typeCode
-                            + ", actual "
-                            + type.getCode());
-        }
+        var record = workspaceOwnershipGuard.requireMasterDataRecordForTypeCode(typeCode, recordId);
 
         JsonNode dataJson = record.getDataJson();
         if (dataJson == null || dataJson.isNull()) {

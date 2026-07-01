@@ -1,20 +1,12 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import {
-    Database,
-    FileCode2,
-    History,
-    LayoutDashboard,
-    LogOut,
-    Settings,
-    Shapes,
-} from 'lucide-react';
+import { Database, FileCode2, History, LogOut, Settings, Shapes } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { WorkspaceSwitcher } from '@/features/workspace';
 import { useAuth } from '@/providers/AuthProvider';
 import { cn } from '@/utils/cn';
 
 const navItems = [
-    { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, adminOnly: false },
     { to: '/templates', label: 'Templates', icon: Shapes, adminOnly: true },
     { to: '/master-data', label: 'Master Data', icon: Database, adminOnly: true },
     { to: '/xml-generation', label: 'XML Generation', icon: FileCode2, adminOnly: false },
@@ -32,6 +24,7 @@ export function AppShell() {
                     <p className="text-lg font-semibold text-foreground">XMLGen</p>
                     <p className="text-xs text-muted-foreground">Template-driven XML</p>
                 </div>
+                <WorkspaceSwitcher />
                 <nav className="flex-1 space-y-1 p-4">
                     {navItems
                         .filter((item) => !item.adminOnly || user?.isAdmin)

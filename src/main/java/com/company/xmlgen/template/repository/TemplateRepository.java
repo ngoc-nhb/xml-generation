@@ -17,17 +17,23 @@ import org.springframework.data.repository.query.Param;
  */
 public interface TemplateRepository extends JpaRepository<TemplateEntity, Long> {
 
-    Optional<TemplateEntity> findByCode(String code);
+    Optional<TemplateEntity> findByIdAndWorkspaceId(Long id, Long workspaceId);
 
-    boolean existsByCode(String code);
+    Optional<TemplateEntity> findByWorkspaceIdAndCode(Long workspaceId, String code);
+
+    boolean existsByWorkspaceIdAndCode(Long workspaceId, String code);
 
     @Query("""
             SELECT t FROM TemplateEntity t
-            WHERE (:#{#keyword} IS NULL
+            WHERE t.workspaceId = :workspaceId
+              AND (:#{#keyword} IS NULL
                    OR LOWER(t.code) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(t.name) LIKE LOWER(CONCAT('%', :keyword, '%')))
               AND (:#{#status} IS NULL OR t.status = :status)
             """)
-    Page<TemplateEntity> search(
-            @Param("keyword") String keyword, @Param("status") TemplateStatus status, Pageable pageable);
+    Page<TemplateEntity> searchByWorkspace(
+            @Param("workspaceId") Long workspaceId,
+            @Param("keyword") String keyword,
+            @Param("status") TemplateStatus status,
+            Pageable pageable);
 }

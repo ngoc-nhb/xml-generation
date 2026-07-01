@@ -1,7 +1,8 @@
 import axios, { type AxiosError, type AxiosInstance } from 'axios';
 
+import { isWorkspaceErrorCode, notifyWorkspaceError } from '@/api/workspaceErrors';
 import { ApiClientError, type ApiError, type ApiResponse, type PageMeta } from '@/types/api/common';
-import { clearAuthStorage, getAccessToken } from '@/utils/storage';
+import { clearAuthStorage, getAccessToken, getStoredWorkspaceId } from '@/utils/storage';
 
 const baseURL = import.meta.env.VITE_API_BASE_URL ?? '/api/v1';
 
@@ -49,6 +50,10 @@ function createApiClient(): AxiosInstance {
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
+        const workspaceId = getStoredWorkspaceId();
+        if (workspaceId !== null) {
+            config.headers['X-Workspace-Id'] = String(workspaceId);
+        }
         return config;
     });
 
@@ -68,7 +73,12 @@ function createApiClient(): AxiosInstance {
             if (error.response?.status === 401) {
                 clearAuthStorage();
             }
-            throw toApiClientError(error);
+            const apiError = toApiClientError(error);
+            const primaryCode = apiError.errors[0]?.code;
+            if (primaryCode && isWorkspaceErrorCode(primaryCode)) {
+                notifyWorkspaceError(primaryCode);
+            }
+            throw apiError;
         },
     );
 

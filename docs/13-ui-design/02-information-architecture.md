@@ -15,6 +15,9 @@ Login (public)
     │
     └── App Shell (authenticated)
             │
+            ├── Workspace Selector (header — Phase 7.1.1+)
+            │       └── scopes all features below
+            │
             ├── Dashboard
             │
             ├── Templates (Admin)
@@ -77,6 +80,17 @@ Login (public)
 | Settings | ✅ | ✅ | `/settings` |
 
 Backend authorization remains authoritative. Hidden nav items must not be the only access control.
+
+### Workspace context (Phase 7.1.1+)
+
+| Rule | Behavior |
+| ---- | -------- |
+| Single workspace | Auto-select; selector hidden or read-only |
+| Multiple workspaces | Header dropdown; switching invalidates TanStack Query caches |
+| API calls | All collection requests include `workspaceId` from context |
+| Deep links | Optional future: `/w/:workspaceId/...` — not required for 7.1.1 |
+
+See [Phase 7.1.0 Workspace Architecture](../release/phase-7.1.0-workspace-architecture.md) §7.
 
 ### Breadcrumbs (management screens)
 

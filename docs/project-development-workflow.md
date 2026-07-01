@@ -1468,3 +1468,33 @@ REST is visible to the UI.
 Release artifacts: `docs/release/` (deployment guide, architecture summary, known limitations, technical debt summary).
 
 Task execution details belong in `docs/release/phase-7.*.md`, not in this workflow document (Documentation Separation Principle).
+
+---
+
+## Phase 7.1 — Workspace Architecture & Implementation
+
+| Phase | Scope | Status |
+| ----- | ----- | ------ |
+| 7.1.0 | Workspace architecture (ownership, DB, API, UI, migration) | ✅ Approved — [phase-7.1.0-workspace-architecture.md](./release/phase-7.1.0-workspace-architecture.md) |
+| 7.1.1 | Workspace domain model (entities, enums — no migration/API) | ✅ Complete |
+| 7.1.2 | Workspace database migration | ✅ Complete |
+| 7.1.3 | Workspace CRUD APIs | ✅ Complete |
+| 7.1.4 | Workspace Context (filter, holder, resolver) | ✅ Complete |
+| 7.1.5 | Workspace-aware existing APIs | ✅ Complete |
+
+**7.1.0 deliverables:** [ADR-003](./adr/ADR-003-workspace-ownership.md), [Domain p5](./02-domain-model/p5_workspace-ownership.md), [API p9](./06-api-design/p9_workspace-api-strategy.md), ER/database strategy in [03-database-design.md](./03-database-design/03-database-design.md) §4.11–4.13.
+
+**Architectural constraints carried forward:**
+
+- Runtime Engine remains workspace-agnostic
+- Template and Master Data aggregates unchanged internally
+- Canonical list API style: `?workspaceId=` (Convention 2 aligned)
+- Default Workspace migration for existing data
+
+### Convention 7 — Workspace-scoped business data (Phase 7.1.0)
+
+All configurable and generated business data belongs to exactly one Workspace. Application services enforce isolation; the Runtime Engine does not receive `workspaceId`. New features must attach via `workspace_id` FK or inherit through a workspace-scoped aggregate. See [ADR-003](./adr/ADR-003-workspace-ownership.md).
+
+### Convention 8 — Workspace Context is mandatory on API requests (Phase 7.1.4)
+
+Every `/api/v1/**` request (except login) must resolve an active workspace before reaching application services. Resolution order: `X-Workspace-Id` header, then `workspaceId` query parameter. Missing workspace → `WORKSPACE_REQUIRED`. No silent default. Services will consume `WorkspaceContextHolder` in Phase 7.1.5; the Runtime Engine remains unchanged.

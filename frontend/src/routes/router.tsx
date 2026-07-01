@@ -1,4 +1,4 @@
-import { Navigate, createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter } from 'react-router-dom';
 
 import { AppShell } from '@/layouts/AppShell';
 import { AuthLayout } from '@/layouts/AuthLayout';
@@ -9,8 +9,14 @@ import {
     TemplateListPage,
     TemplateSchemaEditorPage,
 } from '@/features/templates';
+import {
+    WorkspaceCreatePage,
+    WorkspaceEditPage,
+    WorkspaceListPage,
+    WorkspaceProvider,
+    WorkspaceRequiredPage,
+} from '@/features/workspace';
 import { AccessDeniedPage } from '@/pages/AccessDeniedPage';
-import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -23,6 +29,7 @@ import {
     MasterDataTypeListPage,
 } from '@/features/master-data';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
+import { DefaultHomeRedirect } from '@/routes/DefaultHomeRedirect';
 
 export const router = createBrowserRouter([
     {
@@ -35,10 +42,13 @@ export const router = createBrowserRouter([
         element: <ProtectedRoute />,
         children: [
             {
-                element: <AppShell />,
+                element: (
+                    <WorkspaceProvider>
+                        <AppShell />
+                    </WorkspaceProvider>
+                ),
                 children: [
-                    { index: true, element: <Navigate to="/dashboard" replace /> },
-                    { path: 'dashboard', element: <DashboardPage /> },
+                    { index: true, element: <DefaultHomeRedirect /> },
                     {
                         path: 'templates',
                         element: <ProtectedRoute requireAdmin />,
@@ -59,6 +69,14 @@ export const router = createBrowserRouter([
                             { path: 'types/:typeId/edit', element: <MasterDataTypeEditPage /> },
                             { path: 'types/:typeId/fields', element: <MasterDataFieldListPage /> },
                             { path: 'types/:typeId/records', element: <MasterDataRecordListPage /> },
+                        ],
+                    },
+                    {
+                        path: 'workspaces',
+                        children: [
+                            { index: true, element: <WorkspaceListPage /> },
+                            { path: 'new', element: <WorkspaceCreatePage /> },
+                            { path: ':id/edit', element: <WorkspaceEditPage /> },
                         ],
                     },
                     {
@@ -83,6 +101,7 @@ export const router = createBrowserRouter([
                             />
                         ),
                     },
+                    { path: 'workspace-required', element: <WorkspaceRequiredPage /> },
                     { path: 'access-denied', element: <AccessDeniedPage /> },
                 ],
             },

@@ -16,7 +16,9 @@ import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.repository.TemplateFieldRepository;
 import com.company.xmlgen.template.repository.TemplateMappingRepository;
+import com.company.xmlgen.support.WorkspaceTestSupport;
 import com.company.xmlgen.template.repository.TemplateRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.company.xmlgen.template.service.RuntimeLoaderImpl;
 import com.company.xmlgen.template.service.TemplateCompileMappingResolver;
 import com.company.xmlgen.template.service.TemplateCompileMappingResolverImpl;
@@ -36,6 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class ExportServiceImplTest {
 
+    private static final Long WORKSPACE_ID = 1L;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final Long TEMPLATE_ID = 10L;
 
@@ -66,12 +69,23 @@ class ExportServiceImplTest {
     @Mock
     private RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
 
+    private WorkspaceOwnershipGuard workspaceOwnershipGuard;
     private ExportService exportService;
 
     @BeforeEach
     void setUp() {
+        workspaceOwnershipGuard = new WorkspaceOwnershipGuard(
+                templateRepository,
+                masterDataTypeRepository,
+                masterDataFieldRepository,
+                masterDataRecordRepository);
         exportService = new ExportServiceImpl(
-                templateRepository, templateCompileMappingResolver, selectedMasterDataLoader, runtimeExecutionOrchestrator);
+                templateRepository,
+                templateCompileMappingResolver,
+                selectedMasterDataLoader,
+                runtimeExecutionOrchestrator,
+                workspaceOwnershipGuard);
+        WorkspaceTestSupport.useDefaultWorkspace();
     }
 
     private void stubSelectedMasterDataPassthrough() {
@@ -82,7 +96,7 @@ class ExportServiceImplTest {
     void export_success_returnsExportResponse() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
         stubSelectedMasterDataPassthrough();
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any())).thenReturn(RuntimeExecutionResult.success("<Game/>", null));
 
@@ -102,7 +116,7 @@ class ExportServiceImplTest {
     void export_validationFailure_returnsExportResponseWithErrors() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
         stubSelectedMasterDataPassthrough();
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any()))
                 .thenReturn(RuntimeExecutionResult.validationFailed(RuntimeValidationResult.invalid(List.of(
@@ -118,7 +132,7 @@ class ExportServiceImplTest {
 
     @Test
     void export_missingTemplate_throwsNotFoundException() {
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.empty());
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> exportService.export(new ExportRequest(TEMPLATE_ID, null, null)))
                 .isInstanceOf(NotFoundException.class);
@@ -127,7 +141,7 @@ class ExportServiceImplTest {
     @Test
     void export_missingCompiledSchema_throwsBusinessException() {
         TemplateEntity template = new TemplateEntity("CODE", "Name", TemplateStatus.ACTIVE, 1L);
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
 
         assertThatThrownBy(() -> exportService.export(new ExportRequest(TEMPLATE_ID, null, null)))
                 .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getErrorCode())
@@ -140,7 +154,7 @@ class ExportServiceImplTest {
     void export_emptyInput_buildsExecutionRequestWithEmptyObject() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
         stubSelectedMasterDataPassthrough();
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any())).thenReturn(RuntimeExecutionResult.success("<Game/>", null));
 
@@ -163,7 +177,7 @@ class ExportServiceImplTest {
                 templateRepository,
                 mappingResolver,
                 new SelectedMasterDataLoaderImpl(
-                        masterDataRecordRepository, masterDataTypeRepository, OBJECT_MAPPER),
+                        masterDataRecordRepository, masterDataTypeRepository, OBJECT_MAPPER, workspaceOwnershipGuard),
                 new RuntimeExecutionOrchestratorImpl(
                         new RuntimeLoaderImpl(),
                         new RuntimeValidationServiceImpl(List.of(
@@ -172,10 +186,11 @@ class ExportServiceImplTest {
                                 new OccurrenceValidationRule())),
                         new ValueResolutionServiceImpl(),
                         new ResolvedValueValidationServiceImpl(),
-                        new XMLGenerationServiceImpl()));
+                        new XMLGenerationServiceImpl()),
+                workspaceOwnershipGuard);
 
         TemplateEntity template = compiledTemplate(validCompiledSchema());
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
         when(templateFieldRepository.findAllByTemplateIdOrderByDisplayOrderAsc(TEMPLATE_ID)).thenReturn(List.of());
         when(templateMappingRepository.findAllByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
 
@@ -204,7 +219,7 @@ class ExportServiceImplTest {
                 templateRepository,
                 mappingResolver,
                 new SelectedMasterDataLoaderImpl(
-                        masterDataRecordRepository, masterDataTypeRepository, OBJECT_MAPPER),
+                        masterDataRecordRepository, masterDataTypeRepository, OBJECT_MAPPER, workspaceOwnershipGuard),
                 new RuntimeExecutionOrchestratorImpl(
                         new RuntimeLoaderImpl(),
                         new RuntimeValidationServiceImpl(List.of(
@@ -213,10 +228,11 @@ class ExportServiceImplTest {
                                 new OccurrenceValidationRule())),
                         new ValueResolutionServiceImpl(),
                         new ResolvedValueValidationServiceImpl(),
-                        new XMLGenerationServiceImpl()));
+                        new XMLGenerationServiceImpl()),
+                workspaceOwnershipGuard);
 
         TemplateEntity template = compiledTemplate(repeatableCompiledSchema());
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
         when(templateFieldRepository.findAllByTemplateIdOrderByDisplayOrderAsc(TEMPLATE_ID)).thenReturn(List.of());
         when(templateMappingRepository.findAllByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
 
@@ -241,7 +257,7 @@ class ExportServiceImplTest {
     void export_buildsExecutionRequestWithCompiledSchemaAndMappings() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
         stubSelectedMasterDataPassthrough();
-        when(templateRepository.findById(TEMPLATE_ID)).thenReturn(Optional.of(template));
+        when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
         when(templateCompileMappingResolver.resolveByTemplateId(TEMPLATE_ID)).thenReturn(List.of());
         when(runtimeExecutionOrchestrator.execute(any())).thenReturn(RuntimeExecutionResult.success("<Game/>", null));
 

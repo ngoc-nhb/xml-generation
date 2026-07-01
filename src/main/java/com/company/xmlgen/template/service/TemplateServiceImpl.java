@@ -28,6 +28,7 @@ import com.company.xmlgen.template.exception.TemplateErrorCode;
 import com.company.xmlgen.template.repository.TemplateFieldRepository;
 import com.company.xmlgen.template.repository.TemplateMappingRepository;
 import com.company.xmlgen.template.repository.TemplateRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -58,24 +59,28 @@ public class TemplateServiceImpl implements TemplateService {
     private final TemplateFieldRepository templateFieldRepository;
     private final TemplateMappingRepository templateMappingRepository;
     private final TemplateCompilationOrchestrator templateCompilationOrchestrator;
+    private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
 
     public TemplateServiceImpl(
             TemplateRepository templateRepository,
             TemplateFieldRepository templateFieldRepository,
             TemplateMappingRepository templateMappingRepository,
-            TemplateCompilationOrchestrator templateCompilationOrchestrator) {
+            TemplateCompilationOrchestrator templateCompilationOrchestrator,
+            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
         this.templateRepository = templateRepository;
         this.templateFieldRepository = templateFieldRepository;
         this.templateMappingRepository = templateMappingRepository;
         this.templateCompilationOrchestrator = templateCompilationOrchestrator;
+        this.workspaceOwnershipGuard = workspaceOwnershipGuard;
     }
 
     @Override
     @Transactional
     public CreateTemplateResponse create(CreateTemplateRequest request) {
         AuthenticatedUser currentUser = getCurrentUser();
+        long workspaceId = workspaceOwnershipGuard.currentWorkspaceId();
 
-        if (templateRepository.findByCode(request.code()).isPresent()) {
+        if (templateRepository.existsByWorkspaceIdAndCode(workspaceId, request.code())) {
             throw new ConflictException(TemplateErrorCode.TEMPLATE_CODE_ALREADY_EXISTS);
         }
 
@@ -84,6 +89,7 @@ public class TemplateServiceImpl implements TemplateService {
                 request.name(),
                 TemplateStatus.ACTIVE,
                 currentUser.id());
+        template.setWorkspaceId(workspaceId);
         template.setDescription(request.description());
 
         TemplateEntity saved = templateRepository.save(template);
@@ -103,9 +109,7 @@ public class TemplateServiceImpl implements TemplateService {
     @Override
     @Transactional
     public UpdateTemplateResponse update(Long id, UpdateTemplateRequest request) {
-        TemplateEntity template = templateRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+        TemplateEntity template = workspaceOwnershipGuard.requireTemplate(id);
 
         template.setName(request.name());
         template.setDescription(request.description());
@@ -126,9 +130,7 @@ public class TemplateServiceImpl implements TemplateService {
     @Override
     @Transactional
     public void delete(Long id) {
-        TemplateEntity template = templateRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+        TemplateEntity template = workspaceOwnershipGuard.requireTemplate(id);
 
         templateRepository.delete(template);
         templateRepository.flush();
@@ -137,9 +139,7 @@ public class TemplateServiceImpl implements TemplateService {
     @Override
     @Transactional
     public TemplateSchemaResponse updateSchema(Long id, UpdateTemplateSchemaRequest request) {
-        templateRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+        workspaceOwnershipGuard.requireTemplate(id);
 
         replaceSchemaMetadata(id, request.fields(), request.mappings());
         templateCompilationOrchestrator.compileAndPersist(id);
@@ -150,9 +150,7 @@ public class TemplateServiceImpl implements TemplateService {
     @Override
     @Transactional(readOnly = true)
     public TemplateResponse findById(Long id) {
-        TemplateEntity template = templateRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(TemplateErrorCode.TEMPLATE_NOT_FOUND));
+        TemplateEntity template = workspaceOwnershipGuard.requireTemplate(id);
 
         return new TemplateResponse(
                 template.getId(),
@@ -176,8 +174,8 @@ public class TemplateServiceImpl implements TemplateService {
                 PageRequest.of(normalizedPage - 1, normalizedPageSize, Sort.by("id").ascending());
 
         String normalizedKeyword = isBlank(keyword) ? null : keyword.trim();
-        Page<TemplateEntity> entityPage =
-                templateRepository.search(normalizedKeyword, status, pageable);
+        Page<TemplateEntity> entityPage = templateRepository.searchByWorkspace(
+                workspaceOwnershipGuard.currentWorkspaceId(), normalizedKeyword, status, pageable);
 
         List<TemplateListResponse> content = entityPage.getContent().stream()
                 .map(entity -> new TemplateListResponse(
@@ -224,6 +222,7 @@ public class TemplateServiceImpl implements TemplateService {
         }
 
         for (CreateTemplateMappingRequest mapping : mappings) {
+            workspaceOwnershipGuard.requireMasterDataField(mapping.masterDataFieldId());
             TemplateMappingEntity mappingEntity = new TemplateMappingEntity(
                     templateId,
                     fieldNameToId.get(mapping.fieldName()),

@@ -14,6 +14,7 @@ import com.company.xmlgen.masterdata.entity.MasterDataRecordEntity;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -40,16 +41,19 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     private final MasterDataTypeRepository masterDataTypeRepository;
     private final MasterDataValidationService masterDataValidationService;
     private final ObjectMapper objectMapper;
+    private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
 
     public MasterDataRecordServiceImpl(
             MasterDataRecordRepository masterDataRecordRepository,
             MasterDataTypeRepository masterDataTypeRepository,
             MasterDataValidationService masterDataValidationService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
         this.masterDataRecordRepository = masterDataRecordRepository;
         this.masterDataTypeRepository = masterDataTypeRepository;
         this.masterDataValidationService = masterDataValidationService;
         this.objectMapper = objectMapper;
+        this.workspaceOwnershipGuard = workspaceOwnershipGuard;
     }
 
     @Override
@@ -60,6 +64,8 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
         int normalizedPageSize = pageSize <= 0 ? DEFAULT_PAGE_SIZE : Math.min(pageSize, MAX_PAGE_SIZE);
 
         Pageable pageable = PageRequest.of(normalizedPage - 1, normalizedPageSize, Sort.by("id").ascending());
+
+        workspaceOwnershipGuard.requireMasterDataType(typeId);
 
         String normalizedKeyword = isBlank(keyword) ? null : keyword.trim();
         Page<MasterDataRecordEntity> entityPage =
@@ -82,9 +88,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional
     public MasterDataRecordDetailResponse create(CreateMasterDataRecordRequest request) {
-        if (!masterDataTypeRepository.existsById(request.typeId())) {
-            throw new NotFoundException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_NOT_FOUND);
-        }
+        workspaceOwnershipGuard.requireMasterDataType(request.typeId());
 
         validate(ValidationContext.create(request.typeId(), request.data()));
 
@@ -97,9 +101,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional(readOnly = true)
     public MasterDataRecordDetailResponse findById(Long id) {
-        MasterDataRecordEntity entity = masterDataRecordRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MASTER_DATA_RECORD_NOT_FOUND));
+        MasterDataRecordEntity entity = workspaceOwnershipGuard.requireMasterDataRecord(id);
 
         return toDetailResponse(entity);
     }
@@ -107,9 +109,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional
     public MasterDataRecordDetailResponse update(Long id, UpdateMasterDataRecordRequest request) {
-        MasterDataRecordEntity entity = masterDataRecordRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MASTER_DATA_RECORD_NOT_FOUND));
+        MasterDataRecordEntity entity = workspaceOwnershipGuard.requireMasterDataRecord(id);
 
         validate(ValidationContext.update(id, entity.getMasterDataTypeId(), request.data()));
 
@@ -122,9 +122,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional
     public void delete(Long id) {
-        MasterDataRecordEntity entity = masterDataRecordRepository
-                .findById(id)
-                .orElseThrow(() -> new NotFoundException(MASTER_DATA_RECORD_NOT_FOUND));
+        MasterDataRecordEntity entity = workspaceOwnershipGuard.requireMasterDataRecord(id);
 
         masterDataRecordRepository.delete(entity);
     }

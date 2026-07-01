@@ -28,6 +28,7 @@ Postman **v10.18+** or Postman for Web.
 1. **Import** these files from this directory:
    - `XMLGen - Template Module.postman_collection.json`
    - `XMLGen - Master Data.postman_collection.json`
+   - `XMLGen - Workspace.postman_collection.json`
    - `XMLGen - Local.postman_environment.json`
 2. Select environment **XMLGen - Local** (top-right).
 
@@ -46,8 +47,12 @@ Postman **v10.18+** or Postman for Web.
 | `masterDataTypeId` | (empty) | **Master Data → Create Type** |
 | `masterDataFieldId` | (empty) | **Master Data → Create Field** |
 | `masterDataRecordId` | (empty) | **Master Data → Create Record** |
+| `workspaceId` | (empty) | **Workspace → Create Workspace** |
+| `workspaceCode` | (empty) | **Workspace → Create Workspace** |
 
 All collections use bearer auth: `Authorization: Bearer {{token}}`.
+
+Protected API requests also require workspace context (Phase 7.1.4): `X-Workspace-Id: {{workspaceId}}` (defaults to `1` via collection pre-request script).
 
 ---
 
@@ -133,6 +138,7 @@ Matches the sample schema created by **Create Template** (`Title` field under `G
 | Templates | Template Module | `/api/v1/templates`, `/templates/{id}`, `/templates/{id}/schema` |
 | Preview / Export | Template Module | `POST /api/v1/templates/{id}/preview`, `.../export` |
 | Master Data | Master Data | `/api/v1/master-data/types`, `/fields`, `/records` |
+| Workspace | Workspace | `/api/v1/workspaces`, `/workspaces/{id}` |
 
 Full inventory: [`docs/release/API-CONTRACT.md`](../docs/release/API-CONTRACT.md)
 

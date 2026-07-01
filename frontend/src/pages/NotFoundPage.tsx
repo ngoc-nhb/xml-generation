@@ -9,7 +9,7 @@ export function NotFoundPage() {
             <FullPageError title="Page not found" description="The requested page does not exist." />
             <div className="flex justify-center">
                 <Button asChild variant="outline">
-                    <Link to="/dashboard">Back to dashboard</Link>
+                    <Link to="/templates">Back to home</Link>
                 </Button>
             </div>
         </div>
