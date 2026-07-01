@@ -39,6 +39,12 @@ export function useCreateTemplate() {
     });
 }
 
+export function useImportTemplateXml() {
+    return useMutation({
+        mutationFn: (file: File) => templatesApi.importTemplateXml(file),
+    });
+}
+
 export function useUpdateTemplate(id: number) {
     const queryClient = useQueryClient();
 

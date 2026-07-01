@@ -85,11 +85,43 @@ export function toDraftFields(fields: TemplateField[]): DraftTemplateField[] {
 }
 
 export function toApiFields(fields: DraftTemplateField[]): TemplateField[] {
-    return fields.map(({ clientId: _clientId, parentClientId: _parentClientId, ...field }) => {
+    return fields.map(({ clientId: _clientId, parentClientId: _parentClientId, imported: _imported, ...field }) => {
         void _clientId;
         void _parentClientId;
+        void _imported;
         return field;
     });
+}
+
+export function toDraftFieldsFromImport(
+    fields: Array<TemplateField & { imported?: boolean }>,
+): DraftTemplateField[] {
+    const drafts: DraftTemplateField[] = fields.map((field) => ({
+        ...field,
+        clientId: createClientId(),
+        parentClientId: null,
+        imported: field.imported ?? true,
+    }));
+
+    const byName = new Map<string, DraftTemplateField[]>();
+    for (const draft of drafts) {
+        const siblings = byName.get(draft.fieldName) ?? [];
+        siblings.push(draft);
+        byName.set(draft.fieldName, siblings);
+    }
+
+    for (const draft of drafts) {
+        if (!draft.parentFieldName) {
+            continue;
+        }
+        const parentCandidates = byName.get(draft.parentFieldName) ?? [];
+        const parent = parentCandidates[0];
+        if (parent) {
+            draft.parentClientId = parent.clientId;
+        }
+    }
+
+    return drafts;
 }
 
 /** Canonical serialized form for dirty-checking and post-save baseline. */
@@ -391,8 +423,8 @@ export function createEmptyField(
 export function normalizeDraftFieldMetadata(field: DraftTemplateField): DraftTemplateField {
     const withNames: DraftTemplateField = {
         ...field,
-        xmlName: field.fieldName,
-        displayName: field.fieldName,
+        xmlName: field.xmlName || field.fieldName,
+        displayName: field.displayName ?? field.xmlName ?? field.fieldName,
     };
 
     if (withNames.nodeType === 'GROUP') {

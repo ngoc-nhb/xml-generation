@@ -22,6 +22,7 @@ import {
     serializeSchemaState,
     toApiFields,
     toDraftFields,
+    toDraftFieldsFromImport,
 } from '@/features/templates/utils/schemaTree';
 import { toast } from '@/providers/ToastProvider';
 
@@ -32,24 +33,37 @@ interface SchemaEditorSavePayload {
 
 interface SchemaEditorProps {
     initialSchema: TemplateSchema | null;
+    importMode?: boolean;
     saving?: boolean;
     onSave: (schema: SchemaEditorSavePayload) => Promise<void>;
     onSaved?: () => void;
     onCancel: () => void;
 }
 
-function cloneSchema(schema: TemplateSchema | null): { fields: DraftTemplateField[]; mappings: TemplateMapping[] } {
-    const fields = normalizeDraftSchemaFields(
-        normalizeAllDraftFieldMetadata(toDraftFields(schema?.fields ?? [])),
-    );
+function cloneSchema(
+    schema: TemplateSchema | null,
+    importMode = false,
+): { fields: DraftTemplateField[]; mappings: TemplateMapping[] } {
+    const fields = importMode
+        ? normalizeDraftSchemaFields(
+              normalizeAllDraftFieldMetadata(
+                  toDraftFieldsFromImport(
+                      (schema?.fields ?? []).map((field) => ({
+                          ...field,
+                          imported: true,
+                      })),
+                  ),
+              ),
+          )
+        : normalizeDraftSchemaFields(normalizeAllDraftFieldMetadata(toDraftFields(schema?.fields ?? [])));
     return {
         fields,
         mappings: schema?.mappings.map((mapping) => ({ ...mapping })) ?? [],
     };
 }
 
-export function SchemaEditor({ initialSchema, saving, onSave, onSaved, onCancel }: SchemaEditorProps) {
-    const [draft, setDraft] = useState(() => cloneSchema(initialSchema));
+export function SchemaEditor({ initialSchema, importMode, saving, onSave, onSaved, onCancel }: SchemaEditorProps) {
+    const [draft, setDraft] = useState(() => cloneSchema(initialSchema, importMode));
     const [selectedClientId, setSelectedClientId] = useState<string | null>(draft.fields[0]?.clientId ?? null);
     const [deleteTargetClientId, setDeleteTargetClientId] = useState<string | null>(null);
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);

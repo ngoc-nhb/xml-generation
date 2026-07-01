@@ -1,9 +1,12 @@
+import { apiClient } from '@/api/client';
 import { deleteData, getData, getPaginatedData, postData, putData } from '@/api/client';
+import type { ApiResponse } from '@/types/api/common';
 import type { PageMeta } from '@/types/api/common';
 import type {
     CreateTemplateRequest,
     CreateTemplateResponse,
     TemplateDetail,
+    TemplateImportDraft,
     TemplateListItem,
     TemplateListParams,
     TemplateSchema,
@@ -45,4 +48,13 @@ export async function updateTemplateSchema(
 
 export async function deleteTemplate(id: number): Promise<void> {
     await deleteData(`/templates/${id}`);
+}
+
+export async function importTemplateXml(file: File): Promise<TemplateImportDraft> {
+    const formData = new FormData();
+    formData.append('file', file);
+    const response = await apiClient.post<ApiResponse<TemplateImportDraft>>('/templates/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data.data;
 }

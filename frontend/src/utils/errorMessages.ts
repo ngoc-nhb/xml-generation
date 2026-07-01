@@ -33,6 +33,11 @@ const ERROR_MESSAGES: Record<string, string> = {
     WORKSPACE_NOT_FOUND: 'Workspace not found.',
     WORKSPACE_CODE_ALREADY_EXISTS: 'Workspace code already exists.',
     WORKSPACE_IN_USE: 'Workspace cannot be deleted because it contains templates or master data.',
+    XML_IMPORT_MALFORMED: 'The XML file is malformed.',
+    XML_IMPORT_EMPTY: 'The XML file is empty.',
+    XML_IMPORT_MULTIPLE_ROOTS: 'The XML file must contain exactly one root element.',
+    XML_IMPORT_DUPLICATE_ATTRIBUTE: 'The XML file contains duplicate attributes.',
+    XML_IMPORT_UNSUPPORTED_CONSTRUCT: 'The XML file contains an unsupported construct.',
 };
 
 export function getErrorMessage(error: ApiError): string {

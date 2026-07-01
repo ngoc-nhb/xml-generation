@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Upload } from 'lucide-react';
 
 import { EmptyPlaceholder } from '@/components/empty-placeholder';
 import { FullPageError } from '@/components/full-page-error';
@@ -8,6 +8,7 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { DeleteTemplateDialog } from '@/features/templates/components/DeleteTemplateDialog';
+import { TemplateImportDialog } from '@/features/templates/components/TemplateImportDialog';
 import { TemplateListTable } from '@/features/templates/components/TemplateListTable';
 import { TemplatePageHeader } from '@/features/templates/components/TemplatePageHeader';
 import { TemplatePagination } from '@/features/templates/components/TemplatePagination';
@@ -21,6 +22,7 @@ export function TemplateListPage() {
     const [searchParams, setSearchParams] = useSearchParams();
     const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') ?? '');
     const [deleteTarget, setDeleteTarget] = useState<TemplateListItem | null>(null);
+    const [importOpen, setImportOpen] = useState(false);
 
     const page = Number(searchParams.get('page') ?? '1');
     const keyword = searchParams.get('keyword') ?? '';
@@ -77,12 +79,18 @@ export function TemplateListPage() {
                 title="Templates"
                 description="Manage XML template metadata and schemas."
                 actions={
-                    <Button asChild>
-                        <Link to="/templates/new">
-                            <Plus className="h-4 w-4" />
-                            Create template
-                        </Link>
-                    </Button>
+                    <div className="flex flex-wrap gap-2">
+                        <Button variant="outline" onClick={() => setImportOpen(true)}>
+                            <Upload className="h-4 w-4" />
+                            Import XML
+                        </Button>
+                        <Button asChild>
+                            <Link to="/templates/new">
+                                <Plus className="h-4 w-4" />
+                                Create template
+                            </Link>
+                        </Button>
+                    </div>
                 }
             />
 
@@ -141,6 +149,7 @@ export function TemplateListPage() {
                 onConfirm={() => void handleDeleteConfirm()}
                 onCancel={() => setDeleteTarget(null)}
             />
+            <TemplateImportDialog open={importOpen} onOpenChange={setImportOpen} />
         </div>
     );
 }

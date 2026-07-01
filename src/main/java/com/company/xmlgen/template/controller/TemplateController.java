@@ -12,6 +12,8 @@ import com.company.xmlgen.template.dto.response.TemplateSchemaResponse;
 import com.company.xmlgen.template.dto.response.UpdateTemplateResponse;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.service.TemplateService;
+import com.company.xmlgen.template.importing.dto.response.TemplateImportDraftResponse;
+import com.company.xmlgen.template.importing.service.TemplateImportService;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 /**
  * Template HTTP endpoints.
@@ -36,9 +39,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class TemplateController {
 
     private final TemplateService templateService;
+    private final TemplateImportService templateImportService;
 
-    public TemplateController(TemplateService templateService) {
+    public TemplateController(TemplateService templateService, TemplateImportService templateImportService) {
         this.templateService = templateService;
+        this.templateImportService = templateImportService;
     }
 
     @GetMapping
@@ -49,6 +54,11 @@ public class TemplateController {
             @RequestParam(required = false) TemplateStatus status) {
         PageResult<TemplateListResponse> result = templateService.findAll(page, pageSize, keyword, status);
         return ApiResponse.ok(result.content(), result.meta());
+    }
+
+    @PostMapping("/import")
+    public ApiResponse<TemplateImportDraftResponse> importXml(@RequestParam("file") MultipartFile file) {
+        return ApiResponse.ok(templateImportService.importXml(file));
     }
 
     @PostMapping

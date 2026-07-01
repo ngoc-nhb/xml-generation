@@ -6,6 +6,7 @@ import {
     TemplateCreatePage,
     TemplateDetailPage,
     TemplateEditPage,
+    TemplateImportReviewPage,
     TemplateListPage,
     TemplateSchemaEditorPage,
 } from '@/features/templates';
@@ -55,6 +56,7 @@ export const router = createBrowserRouter([
                         children: [
                             { index: true, element: <TemplateListPage /> },
                             { path: 'new', element: <TemplateCreatePage /> },
+                            { path: 'import', element: <TemplateImportReviewPage /> },
                             { path: ':id', element: <TemplateDetailPage /> },
                             { path: ':id/edit', element: <TemplateEditPage /> },
                             { path: ':id/schema', element: <TemplateSchemaEditorPage /> },

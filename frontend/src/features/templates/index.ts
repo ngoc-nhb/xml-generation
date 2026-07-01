@@ -8,6 +8,7 @@
 export { TemplateCreatePage } from '@/features/templates/pages/TemplateCreatePage';
 export { TemplateDetailPage } from '@/features/templates/pages/TemplateDetailPage';
 export { TemplateEditPage } from '@/features/templates/pages/TemplateEditPage';
+export { TemplateImportReviewPage } from '@/features/templates/pages/TemplateImportReviewPage';
 export { TemplateListPage } from '@/features/templates/pages/TemplateListPage';
 export { TemplateSchemaEditorPage } from '@/features/templates/pages/TemplateSchemaEditorPage';
 

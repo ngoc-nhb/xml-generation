@@ -51,6 +51,15 @@ export interface TemplateField {
 export interface DraftTemplateField extends TemplateField {
     clientId: string;
     parentClientId: string | null;
+    /** True when the field originated from XML import. */
+    imported?: boolean;
+}
+
+export interface TemplateImportDraft {
+    suggestedCode: string;
+    suggestedName: string;
+    sourceFileName: string;
+    fields: Array<TemplateField & { imported: boolean }>;
 }
 
 export interface TemplateMapping {

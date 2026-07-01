@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/select';
 import { SchemaHelpTooltip } from '@/features/templates/components/SchemaHelpTooltip';
@@ -38,7 +39,10 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
 
     return (
         <div className="space-y-4 rounded-md border border-border p-4">
-            <h2 className="text-sm font-semibold text-foreground">Field details</h2>
+            <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold text-foreground">Field details</h2>
+                {currentField.imported ? <Badge variant="secondary">Imported</Badge> : null}
+            </div>
             <FieldInput
                 label="Field name"
                 value={currentField.fieldName}
