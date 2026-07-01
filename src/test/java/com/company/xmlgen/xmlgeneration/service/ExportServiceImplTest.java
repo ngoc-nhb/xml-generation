@@ -3,6 +3,8 @@ package com.company.xmlgen.xmlgeneration.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -16,15 +18,16 @@ import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.entity.TemplateStatus;
 import com.company.xmlgen.template.repository.TemplateFieldRepository;
 import com.company.xmlgen.template.repository.TemplateMappingRepository;
+import com.company.xmlgen.savedinput.service.SavedInputService;
 import com.company.xmlgen.support.WorkspaceTestSupport;
 import com.company.xmlgen.template.repository.TemplateRepository;
-import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.company.xmlgen.template.service.RuntimeLoaderImpl;
 import com.company.xmlgen.template.service.TemplateCompileMappingResolver;
 import com.company.xmlgen.template.service.TemplateCompileMappingResolverImpl;
 import com.company.xmlgen.xmlgeneration.dto.ExportRequest;
 import com.company.xmlgen.xmlgeneration.dto.ExportResponse;
 import com.company.xmlgen.xmlgeneration.exception.ExportErrorCode;
+import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Optional;
@@ -69,6 +72,9 @@ class ExportServiceImplTest {
     @Mock
     private RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
 
+    @Mock
+    private SavedInputService savedInputService;
+
     private WorkspaceOwnershipGuard workspaceOwnershipGuard;
     private ExportService exportService;
 
@@ -84,7 +90,8 @@ class ExportServiceImplTest {
                 templateCompileMappingResolver,
                 selectedMasterDataLoader,
                 runtimeExecutionOrchestrator,
-                workspaceOwnershipGuard);
+                workspaceOwnershipGuard,
+                savedInputService);
         WorkspaceTestSupport.useDefaultWorkspace();
     }
 
@@ -110,10 +117,11 @@ class ExportServiceImplTest {
         assertThat(response.successful()).isTrue();
         assertThat(response.xml()).isEqualTo("<Game/>");
         assertThat(response.validationErrors()).isEmpty();
+        verify(savedInputService).saveFromExport(eq(TEMPLATE_ID), any(), isNull());
     }
 
     @Test
-    void export_validationFailure_returnsExportResponseWithErrors() throws Exception {
+    void export_validationFailure_doesNotSaveInput() throws Exception {
         TemplateEntity template = compiledTemplate(validCompiledSchema());
         stubSelectedMasterDataPassthrough();
         when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
@@ -128,6 +136,7 @@ class ExportServiceImplTest {
         assertThat(response.xml()).isNull();
         assertThat(response.validationErrors()).hasSize(1);
         assertThat(response.validationErrors().getFirst().code()).isEqualTo("SOURCE_TYPE_REQUIRED");
+        verify(savedInputService, never()).saveFromExport(any(), any(), any());
     }
 
     @Test
@@ -187,7 +196,8 @@ class ExportServiceImplTest {
                         new ValueResolutionServiceImpl(),
                         new ResolvedValueValidationServiceImpl(),
                         new XMLGenerationServiceImpl()),
-                workspaceOwnershipGuard);
+                workspaceOwnershipGuard,
+                savedInputService);
 
         TemplateEntity template = compiledTemplate(validCompiledSchema());
         when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));
@@ -229,7 +239,8 @@ class ExportServiceImplTest {
                         new ValueResolutionServiceImpl(),
                         new ResolvedValueValidationServiceImpl(),
                         new XMLGenerationServiceImpl()),
-                workspaceOwnershipGuard);
+                workspaceOwnershipGuard,
+                savedInputService);
 
         TemplateEntity template = compiledTemplate(repeatableCompiledSchema());
         when(templateRepository.findByIdAndWorkspaceId(TEMPLATE_ID, WORKSPACE_ID)).thenReturn(Optional.of(template));

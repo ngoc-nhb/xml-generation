@@ -172,6 +172,43 @@ export function buildDefaultFormData(fields: TemplateField[]): FormObject {
     return result;
 }
 
+function mergeFormValue(base: FormValue | undefined, saved: unknown): FormValue | undefined {
+    if (saved === undefined) {
+        return base;
+    }
+    if (Array.isArray(saved)) {
+        return saved as FormArray;
+    }
+    if (saved !== null && typeof saved === 'object') {
+        const baseObject = base && typeof base === 'object' && !Array.isArray(base) ? (base as FormObject) : {};
+        const savedObject = saved as Record<string, unknown>;
+        const merged: FormObject = { ...baseObject };
+        for (const [key, value] of Object.entries(savedObject)) {
+            const next = mergeFormValue(baseObject[key], value);
+            if (next !== undefined) {
+                merged[key] = next;
+            }
+        }
+        return merged;
+    }
+    return saved as FormScalar;
+}
+
+/** Saved input values override template defaults; missing keys keep defaults. */
+export function mergeSavedInputIntoFormData(
+    defaults: FormObject,
+    savedInputData: Record<string, unknown>,
+): FormObject {
+    const merged: FormObject = { ...defaults };
+    for (const [key, value] of Object.entries(savedInputData)) {
+        const next = mergeFormValue(defaults[key], value);
+        if (next !== undefined) {
+            merged[key] = next;
+        }
+    }
+    return merged;
+}
+
 function writeNodeOutput(node: FieldTreeNode, value: FormValue | undefined): unknown {
     const { field, children } = node;
 

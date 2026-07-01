@@ -7,6 +7,7 @@ import com.company.xmlgen.template.entity.TemplateEntity;
 import com.company.xmlgen.template.exception.TemplateErrorCode;
 import com.company.xmlgen.template.repository.TemplateRepository;
 import com.company.xmlgen.template.service.TemplateCompileMappingResolver;
+import com.company.xmlgen.savedinput.service.SavedInputService;
 import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.company.xmlgen.xmlgeneration.dto.ExportRequest;
 import com.company.xmlgen.xmlgeneration.dto.ExportResponse;
@@ -29,18 +30,21 @@ public class ExportServiceImpl implements ExportService {
     private final SelectedMasterDataLoader selectedMasterDataLoader;
     private final RuntimeExecutionOrchestrator runtimeExecutionOrchestrator;
     private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
+    private final SavedInputService savedInputService;
 
     public ExportServiceImpl(
             TemplateRepository templateRepository,
             TemplateCompileMappingResolver templateCompileMappingResolver,
             SelectedMasterDataLoader selectedMasterDataLoader,
             RuntimeExecutionOrchestrator runtimeExecutionOrchestrator,
-            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
+            WorkspaceOwnershipGuard workspaceOwnershipGuard,
+            SavedInputService savedInputService) {
         this.templateRepository = templateRepository;
         this.templateCompileMappingResolver = templateCompileMappingResolver;
         this.selectedMasterDataLoader = selectedMasterDataLoader;
         this.runtimeExecutionOrchestrator = runtimeExecutionOrchestrator;
         this.workspaceOwnershipGuard = workspaceOwnershipGuard;
+        this.savedInputService = savedInputService;
     }
 
     @Override
@@ -67,7 +71,12 @@ public class ExportServiceImpl implements ExportService {
                 mappings);
 
         RuntimeExecutionResult executionResult = runtimeExecutionOrchestrator.execute(executionRequest);
-        return toExportResponse(executionResult);
+        ExportResponse response = toExportResponse(executionResult);
+        if (response.successful()) {
+            savedInputService.saveFromExport(
+                    request.templateId(), request.inputData(), request.selectedMasterData());
+        }
+        return response;
     }
 
     private static ExportResponse toExportResponse(RuntimeExecutionResult executionResult) {

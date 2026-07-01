@@ -182,3 +182,23 @@ export function toSelectedMasterDataPayload(
     }
     return payload;
 }
+
+export function applySavedMasterDataSelections(
+    base: SelectedMasterDataEntry[],
+    saved: Record<string, { id: number }> | null | undefined,
+): SelectedMasterDataEntry[] {
+    if (!saved) {
+        return base;
+    }
+    return base.map((entry) => {
+        const savedEntry = saved[entry.typeCode];
+        if (savedEntry && savedEntry.id > 0) {
+            return {
+                ...entry,
+                recordId: savedEntry.id,
+                recordLabel: entry.recordLabel || `Record #${savedEntry.id}`,
+            };
+        }
+        return entry;
+    });
+}

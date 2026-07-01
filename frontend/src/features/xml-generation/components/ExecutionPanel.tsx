@@ -1,13 +1,17 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import type { ApiError } from '@/types/api/common';
 import { ConfirmDialog } from '@/features/templates/components/ConfirmDialog';
 import { useTemplateDetail, type TemplateListItem } from '@/features/templates';
+import { useSavedInput, savedInputQueryKeys } from '@/features/saved-input/hooks/useSavedInput';
 import { DynamicInputForm } from '@/features/xml-generation/components/DynamicInputForm';
 import { JsonInputEditor, parseInputJson } from '@/features/xml-generation/components/JsonInputEditor';
-import { toSelectedMasterDataPayload } from '@/features/xml-generation/components/MasterDataSelector';
+import {
+    applySavedMasterDataSelections,
+    toSelectedMasterDataPayload,
+} from '@/features/xml-generation/components/MasterDataSelector';
 import { PreviewPanel } from '@/features/xml-generation/components/PreviewPanel';
 import { ExportToolbar, PreviewToolbar } from '@/features/xml-generation/components/PreviewToolbar';
 import { TemplateMappedMasterDataSelector } from '@/features/xml-generation/components/TemplateMappedMasterDataSelector';
@@ -19,6 +23,7 @@ import {
     buildDefaultFormData,
     countInputFields,
     formDataToInputData,
+    mergeSavedInputIntoFormData,
     serializeFormState,
     type FormObject,
 } from '@/features/xml-generation/utils/inputFormSchema';
@@ -30,6 +35,7 @@ import { EMPTY_JSON } from '@/features/xml-generation/utils/jsonEditor';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 import { toast } from '@/providers/ToastProvider';
+import { useQueryClient } from '@tanstack/react-query';
 
 type InputMode = 'form' | 'json';
 
@@ -50,7 +56,11 @@ export function ExecutionPanel() {
     } | null>(null);
     const [showSwitchDialog, setShowSwitchDialog] = useState(false);
 
+    const queryClient = useQueryClient();
+    const restoredToastTemplateId = useRef<number | null>(null);
+
     const { data: templateDetail, isLoading: templateDetailLoading } = useTemplateDetail(selectedTemplateId ?? undefined);
+    const savedInputQuery = useSavedInput(selectedTemplateId);
     const schemaFields = useMemo(() => templateDetail?.schema?.fields ?? [], [templateDetail?.schema?.fields]);
     const schemaMappings = useMemo(() => templateDetail?.schema?.mappings ?? [], [templateDetail?.schema?.mappings]);
     const inputFieldCount = useMemo(() => countInputFields(schemaFields), [schemaFields]);
@@ -60,22 +70,63 @@ export function ExecutionPanel() {
         () => (schemaFields.length > 0 ? buildDefaultFormData(schemaFields) : {}),
         [schemaFields],
     );
+
+    const initialFormData = useMemo(() => {
+        if (schemaFields.length === 0) {
+            return {};
+        }
+        if (!savedInputQuery.data) {
+            return defaultFormData;
+        }
+        return mergeSavedInputIntoFormData(defaultFormData, savedInputQuery.data.inputData);
+    }, [schemaFields, defaultFormData, savedInputQuery.data]);
+
+    const initialMasterDataSelections = useMemo(() => {
+        if (masterTypesLoading) {
+            return emptySelections;
+        }
+        return applySavedMasterDataSelections(emptySelections, savedInputQuery.data?.selectedMasterData ?? null);
+    }, [emptySelections, masterTypesLoading, savedInputQuery.data]);
+
     const defaultInputJson = useMemo(
         () =>
             schemaFields.length > 0
-                ? JSON.stringify(formDataToInputData(schemaFields, defaultFormData), null, 2)
+                ? JSON.stringify(formDataToInputData(schemaFields, initialFormData), null, 2)
                 : EMPTY_JSON,
-        [schemaFields, defaultFormData],
+        [schemaFields, initialFormData],
     );
     const formBaseline = useMemo(
-        () => (schemaFields.length > 0 ? serializeFormState(schemaFields, defaultFormData) : ''),
-        [schemaFields, defaultFormData],
+        () => (schemaFields.length > 0 ? serializeFormState(schemaFields, initialFormData) : ''),
+        [schemaFields, initialFormData],
     );
-    const masterDataBaseline = useMemo(() => JSON.stringify(emptySelections), [emptySelections]);
+    const masterDataBaseline = useMemo(
+        () => JSON.stringify(initialMasterDataSelections),
+        [initialMasterDataSelections],
+    );
 
-    const formData = formDataOverride ?? defaultFormData;
-    const masterDataSelections = masterDataOverride ?? emptySelections;
+    const formData = formDataOverride ?? initialFormData;
+    const masterDataSelections = masterDataOverride ?? initialMasterDataSelections;
     const inputJson = inputJsonOverride ?? defaultInputJson;
+
+    useEffect(() => {
+        if (!savedInputQuery.data || selectedTemplateId === null) {
+            return;
+        }
+        if (templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading) {
+            return;
+        }
+        if (restoredToastTemplateId.current === selectedTemplateId) {
+            return;
+        }
+        restoredToastTemplateId.current = selectedTemplateId;
+        toast.success('Loaded previous input.');
+    }, [
+        savedInputQuery.data,
+        savedInputQuery.isLoading,
+        selectedTemplateId,
+        templateDetailLoading,
+        masterTypesLoading,
+    ]);
 
     const previewMutation = usePreviewXml();
     const exportMutation = useExportXml();
@@ -85,7 +136,8 @@ export function ExecutionPanel() {
     const isMasterDirty = JSON.stringify(masterDataSelections) !== masterDataBaseline;
     const isDirty = isFormDirty || isMasterDirty;
 
-    const schemaReady = Boolean(selectedTemplateId && templateDetail?.schema && !masterTypesLoading);
+    const schemaReady =
+        Boolean(selectedTemplateId && templateDetail?.schema && !masterTypesLoading && !savedInputQuery.isLoading);
     const executionDisabled =
         selectedTemplateId === null ||
         templateDetailLoading ||
@@ -158,6 +210,11 @@ export function ExecutionPanel() {
                 setValidationErrors([]);
                 downloadXml(result.xml, resolveXmlDownloadFilename(selectedTemplate?.name));
                 toast.success('XML downloaded');
+                if (selectedTemplateId !== null) {
+                    void queryClient.invalidateQueries({
+                        queryKey: savedInputQueryKeys.byTemplate(selectedTemplateId),
+                    });
+                }
             } else {
                 setValidationErrors(result.errors);
                 setOutputSource('export');
@@ -176,6 +233,7 @@ export function ExecutionPanel() {
 
     function applyTemplateSelection(templateId: number | null, template: TemplateListItem | null) {
         resetInputOverrides();
+        restoredToastTemplateId.current = null;
         setSelectedTemplateId(templateId);
         setSelectedTemplate(template);
         setOutputXml(null);
@@ -241,7 +299,7 @@ export function ExecutionPanel() {
                             </Button>
                         </div>
                     </div>
-                    {templateDetailLoading || masterTypesLoading ? (
+                    {templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading ? (
                         <LoadingSpinner label="Loading template schema…" />
                     ) : !selectedTemplateId ? (
                         <p className="text-sm text-muted-foreground">Select a template to generate the input form.</p>
