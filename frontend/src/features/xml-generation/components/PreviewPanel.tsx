@@ -12,20 +12,15 @@ interface PreviewPanelProps {
 
 export function PreviewPanel({ xml, validationErrors, loading, source }: PreviewPanelProps) {
     return (
-        <div className="flex h-full flex-col space-y-3">
-            <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-foreground">XML output</p>
-                {source ? (
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                        {source === 'preview' ? 'Preview' : 'Export'}
-                    </span>
-                ) : null}
-            </div>
+        <div className="space-y-3">
+            {source ? (
+                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    {source === 'preview' ? 'Preview result' : 'Export result'}
+                </p>
+            ) : null}
             {loading ? <LoadingSpinner label="Generating XML…" /> : null}
             <PreviewErrorPanel errors={validationErrors} />
-            <div className="flex-1">
-                <XmlViewer xml={loading ? null : xml} />
-            </div>
+            <XmlViewer xml={loading ? null : xml} />
         </div>
     );
 }

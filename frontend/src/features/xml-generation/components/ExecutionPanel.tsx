@@ -1,21 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { LoadingSpinner } from '@/components/loading-spinner';
+import { ResizableSidebarLayout } from '@/components/resizable-sidebar-layout';
 import { Button } from '@/components/ui/button';
 import type { ApiError } from '@/types/api/common';
 import { ConfirmDialog } from '@/features/templates/components/ConfirmDialog';
 import { useTemplateDetail, type TemplateListItem } from '@/features/templates';
+import { buildFieldTree } from '@/features/templates/utils/schemaTree';
 import { useSavedInput, savedInputQueryKeys } from '@/features/saved-input/hooks/useSavedInput';
-import { DynamicInputForm } from '@/features/xml-generation/components/DynamicInputForm';
+import {
+    DynamicInputForm,
+    buildInputGroupOpenState,
+    collectInputGroupKeys,
+} from '@/features/xml-generation/components/DynamicInputForm';
+import { ExportSuccessDialog } from '@/features/xml-generation/components/ExportSuccessDialog';
 import { JsonInputEditor, parseInputJson } from '@/features/xml-generation/components/JsonInputEditor';
 import {
     applySavedMasterDataSelections,
     toSelectedMasterDataPayload,
 } from '@/features/xml-generation/components/MasterDataSelector';
-import { PreviewPanel } from '@/features/xml-generation/components/PreviewPanel';
 import { ExportToolbar, PreviewToolbar } from '@/features/xml-generation/components/PreviewToolbar';
 import { TemplateMappedMasterDataSelector } from '@/features/xml-generation/components/TemplateMappedMasterDataSelector';
 import { TemplateSelector } from '@/features/xml-generation/components/TemplateSelector';
+import { XmlPreviewDialog } from '@/features/xml-generation/components/XmlPreviewDialog';
 import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useResolvedMasterDataTypes';
 import { useExportXml, usePreviewXml } from '@/features/xml-generation/hooks/useXmlGeneration';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
@@ -28,7 +35,6 @@ import {
     type FormObject,
 } from '@/features/xml-generation/utils/inputFormSchema';
 import {
-    downloadXml,
     resolveXmlDownloadFilename,
 } from '@/features/xml-generation/utils/downloadXml';
 import { EMPTY_JSON } from '@/features/xml-generation/utils/jsonEditor';
@@ -49,12 +55,16 @@ export function ExecutionPanel() {
     const [jsonError, setJsonError] = useState<string | null>(null);
     const [outputXml, setOutputXml] = useState<string | null>(null);
     const [validationErrors, setValidationErrors] = useState<ApiError[]>([]);
-    const [outputSource, setOutputSource] = useState<'preview' | 'export' | null>(null);
     const [pendingTemplate, setPendingTemplate] = useState<{
         templateId: number | null;
         template: TemplateListItem | null;
     } | null>(null);
     const [showSwitchDialog, setShowSwitchDialog] = useState(false);
+    const [masterDataSidebarCollapsed, setMasterDataSidebarCollapsed] = useState(false);
+    const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+    const [exportSuccessDialogOpen, setExportSuccessDialogOpen] = useState(false);
+    const [exportedFilename, setExportedFilename] = useState('');
+    const [groupOpenState, setGroupOpenState] = useState<Record<string, boolean>>({});
 
     const queryClient = useQueryClient();
     const restoredToastTemplateId = useRef<number | null>(null);
@@ -65,6 +75,17 @@ export function ExecutionPanel() {
     const schemaMappings = useMemo(() => templateDetail?.schema?.mappings ?? [], [templateDetail?.schema?.mappings]);
     const inputFieldCount = useMemo(() => countInputFields(schemaFields), [schemaFields]);
     const { emptySelections, isLoading: masterTypesLoading } = useResolvedMasterDataTypes(schemaMappings);
+
+    const groupKeys = useMemo(() => {
+        if (schemaFields.length === 0) {
+            return [];
+        }
+        return collectInputGroupKeys(buildFieldTree(schemaFields), schemaFields);
+    }, [schemaFields]);
+
+    useEffect(() => {
+        setGroupOpenState(buildInputGroupOpenState(groupKeys, true));
+    }, [selectedTemplateId, groupKeys]);
 
     const defaultFormData = useMemo(
         () => (schemaFields.length > 0 ? buildDefaultFormData(schemaFields) : {}),
@@ -181,12 +202,13 @@ export function ExecutionPanel() {
             const result = await previewMutation.mutateAsync({ templateId: selectedTemplateId, body });
             if (result.kind === 'success') {
                 setOutputXml(result.xml);
-                setOutputSource('preview');
                 setValidationErrors([]);
+                setPreviewDialogOpen(true);
                 toast.success('Preview generated');
             } else {
+                setOutputXml(null);
                 setValidationErrors(result.errors);
-                setOutputSource('preview');
+                setPreviewDialogOpen(true);
             }
         } catch (error) {
             toast.error(error instanceof ApiClientError ? getPrimaryErrorMessage(error.errors) : 'Preview failed');
@@ -205,19 +227,21 @@ export function ExecutionPanel() {
         try {
             const result = await exportMutation.mutateAsync({ templateId: selectedTemplateId, body });
             if (result.kind === 'success') {
+                const filename = resolveXmlDownloadFilename(selectedTemplate?.name);
                 setOutputXml(result.xml);
-                setOutputSource('export');
                 setValidationErrors([]);
-                downloadXml(result.xml, resolveXmlDownloadFilename(selectedTemplate?.name));
-                toast.success('XML downloaded');
+                setExportedFilename(filename);
+                setExportSuccessDialogOpen(true);
+                toast.success('Export successful');
                 if (selectedTemplateId !== null) {
                     void queryClient.invalidateQueries({
                         queryKey: savedInputQueryKeys.byTemplate(selectedTemplateId),
                     });
                 }
             } else {
+                setOutputXml(null);
                 setValidationErrors(result.errors);
-                setOutputSource('export');
+                setPreviewDialogOpen(true);
             }
         } catch (error) {
             toast.error(error instanceof ApiClientError ? getPrimaryErrorMessage(error.errors) : 'Export failed');
@@ -238,7 +262,9 @@ export function ExecutionPanel() {
         setSelectedTemplate(template);
         setOutputXml(null);
         setValidationErrors([]);
-        setOutputSource(null);
+        setPreviewDialogOpen(false);
+        setExportSuccessDialogOpen(false);
+        setExportedFilename('');
         setInputMode('form');
     }
 
@@ -259,98 +285,142 @@ export function ExecutionPanel() {
         setInputMode(mode);
     }
 
-    return (
-        <div className="space-y-6">
-            <section className="grid gap-6 lg:grid-cols-2">
-                <TemplateSelector value={selectedTemplateId} onChange={handleTemplateChange} />
-                {selectedTemplateId ? (
-                    <TemplateMappedMasterDataSelector
-                        mappings={schemaMappings}
-                        selections={masterDataSelections}
-                        onChange={setMasterDataOverride}
-                    />
-                ) : (
-                    <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                        Select a template to load required master data selectors.
-                    </div>
-                )}
-            </section>
+    function handleGroupOpenChange(groupKey: string, open: boolean) {
+        setGroupOpenState((current) => ({ ...current, [groupKey]: open }));
+    }
 
-            <section className="grid gap-6 lg:grid-cols-2">
-                <div className="flex h-full flex-col space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-medium text-foreground">Input data</p>
-                        <div className="flex gap-2">
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant={inputMode === 'form' ? 'default' : 'outline'}
-                                onClick={() => handleInputModeChange('form')}
-                            >
-                                Form
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant={inputMode === 'json' ? 'default' : 'outline'}
-                                onClick={() => handleInputModeChange('json')}
-                            >
-                                JSON
-                            </Button>
+    function expandAllGroups() {
+        setGroupOpenState(buildInputGroupOpenState(groupKeys, true));
+    }
+
+    function collapseAllGroups() {
+        setGroupOpenState(buildInputGroupOpenState(groupKeys, false));
+    }
+
+    const masterDataSidebar = selectedTemplateId ? (
+        <TemplateMappedMasterDataSelector
+            mappings={schemaMappings}
+            selections={masterDataSelections}
+            onChange={setMasterDataOverride}
+        />
+    ) : (
+        <p className="text-sm text-muted-foreground">Select a template to load master data selectors.</p>
+    );
+
+    return (
+        <div className="flex h-[calc(100vh-7rem)] min-h-[32rem] flex-col">
+            <div className="sticky top-0 z-10 shrink-0 space-y-4 border-b border-border bg-background pb-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl font-semibold text-foreground">XML Generation</h1>
+                        <p className="text-sm text-muted-foreground">
+                            Select a template, provide input JSON and master data, then preview or export XML.
+                        </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                        <PreviewToolbar
+                            disabled={executionDisabled}
+                            loading={previewMutation.isPending}
+                            onPreview={() => void handlePreview()}
+                        />
+                        <ExportToolbar
+                            disabled={executionDisabled}
+                            loading={exportMutation.isPending}
+                            onExport={() => void handleExport()}
+                        />
+                    </div>
+                </div>
+                <div className="max-w-md">
+                    <TemplateSelector value={selectedTemplateId} onChange={handleTemplateChange} />
+                </div>
+            </div>
+
+            <div className="flex min-h-0 flex-1 flex-col py-4">
+                <ResizableSidebarLayout
+                    sidebarCollapsed={masterDataSidebarCollapsed}
+                    onSidebarCollapsedChange={setMasterDataSidebarCollapsed}
+                    sidebar={masterDataSidebar}
+                >
+                    <div className="flex min-h-0 flex-1 flex-col pl-4">
+                        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
+                            <p className="text-sm font-medium text-foreground">Input data</p>
+                            <div className="flex flex-wrap items-center gap-2">
+                                {inputMode === 'form' && groupKeys.length > 0 ? (
+                                    <>
+                                        <Button type="button" size="sm" variant="outline" onClick={expandAllGroups}>
+                                            Expand all
+                                        </Button>
+                                        <Button type="button" size="sm" variant="outline" onClick={collapseAllGroups}>
+                                            Collapse all
+                                        </Button>
+                                    </>
+                                ) : null}
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={inputMode === 'form' ? 'default' : 'outline'}
+                                    onClick={() => handleInputModeChange('form')}
+                                >
+                                    Form
+                                </Button>
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant={inputMode === 'json' ? 'default' : 'outline'}
+                                    onClick={() => handleInputModeChange('json')}
+                                >
+                                    JSON
+                                </Button>
+                            </div>
+                        </div>
+                        <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border p-4">
+                            {templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading ? (
+                                <LoadingSpinner label="Loading template schema…" />
+                            ) : !selectedTemplateId ? (
+                                <p className="text-sm text-muted-foreground">Select a template to generate the input form.</p>
+                            ) : inputMode === 'form' ? (
+                                schemaReady && inputFieldCount > 0 ? (
+                                    <DynamicInputForm
+                                        key={selectedTemplateId}
+                                        fields={schemaFields}
+                                        value={formData}
+                                        groupOpenState={groupOpenState}
+                                        onGroupOpenChange={handleGroupOpenChange}
+                                        onChange={(next) => setFormDataOverride(next)}
+                                    />
+                                ) : (
+                                    <p className="text-sm text-muted-foreground">
+                                        This template has no INPUT fields. Switch to JSON for manual input or use master
+                                        data mappings.
+                                    </p>
+                                )
+                            ) : (
+                                <JsonInputEditor
+                                    key={selectedTemplateId}
+                                    value={inputJson}
+                                    onChange={(next) => setInputJsonOverride(next)}
+                                    onValidationChange={setJsonError}
+                                />
+                            )}
                         </div>
                     </div>
-                    {templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading ? (
-                        <LoadingSpinner label="Loading template schema…" />
-                    ) : !selectedTemplateId ? (
-                        <p className="text-sm text-muted-foreground">Select a template to generate the input form.</p>
-                    ) : inputMode === 'form' ? (
-                        schemaReady && inputFieldCount > 0 ? (
-                            <DynamicInputForm
-                                key={selectedTemplateId}
-                                fields={schemaFields}
-                                value={formData}
-                                onChange={(next) => setFormDataOverride(next)}
-                            />
-                        ) : (
-                            <p className="text-sm text-muted-foreground">
-                                This template has no INPUT fields. Switch to JSON for manual input or use master data mappings.
-                            </p>
-                        )
-                    ) : (
-                        <JsonInputEditor
-                            key={selectedTemplateId}
-                            value={inputJson}
-                            onChange={(next) => setInputJsonOverride(next)}
-                            onValidationChange={setJsonError}
-                        />
-                    )}
-                </div>
-                <PreviewPanel
-                    xml={outputXml}
-                    validationErrors={validationErrors}
-                    loading={previewMutation.isPending || exportMutation.isPending}
-                    source={outputSource}
-                />
-            </section>
+                </ResizableSidebarLayout>
+            </div>
 
-            <section className="flex flex-wrap gap-3 border-t border-border pt-4">
-                <PreviewToolbar
-                    disabled={executionDisabled}
-                    loading={previewMutation.isPending}
-                    onPreview={() => void handlePreview()}
-                />
-                <ExportToolbar
-                    disabled={executionDisabled}
-                    loading={exportMutation.isPending}
-                    onExport={() => void handleExport()}
-                />
-                {selectedTemplate ? (
-                    <p className="self-center text-sm text-muted-foreground">
-                        Target: {selectedTemplate.code} — {selectedTemplate.name}
-                        {inputFieldCount > 0 ? ` · ${inputFieldCount} input fields` : null}
-                    </p>
-                ) : null}
-            </section>
+            <XmlPreviewDialog
+                open={previewDialogOpen}
+                onOpenChange={setPreviewDialogOpen}
+                xml={outputXml}
+                validationErrors={validationErrors}
+                loading={previewMutation.isPending}
+            />
+
+            <ExportSuccessDialog
+                open={exportSuccessDialogOpen}
+                onOpenChange={setExportSuccessDialogOpen}
+                filename={exportedFilename}
+                xml={outputXml ?? ''}
+            />
 
             <ConfirmDialog
                 open={showSwitchDialog}

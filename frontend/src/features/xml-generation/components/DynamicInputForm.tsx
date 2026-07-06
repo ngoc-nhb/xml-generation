@@ -2,15 +2,20 @@ import { Plus } from 'lucide-react';
 import { useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { CollapsibleSection } from '@/components/collapsible-section';
 import { Input } from '@/components/ui/input';
 import type { FieldTreeNode, TemplateField } from '@/features/templates/types/template.types';
 import { buildFieldTree } from '@/features/templates/utils/schemaTree';
 import {
+    buildInputGroupOpenState,
+    collectInputGroupKeys,
+    isInputGroupContainer,
+    isInputRepeatableGroup,
+} from '@/features/xml-generation/utils/inputGroupCollapse';
+import {
     createRepeatableItemDefault,
     formatOccurrenceHint,
     isFormInputField,
-    isRepeatableOccurrence,
-    isSchemaContainerField,
     listInputFields,
     normalizeRepeatableItems,
     type FormObject,
@@ -22,9 +27,17 @@ interface DynamicInputFormProps {
     fields: TemplateField[];
     value: FormObject;
     onChange: (value: FormObject) => void;
+    groupOpenState: Record<string, boolean>;
+    onGroupOpenChange: (groupKey: string, open: boolean) => void;
 }
 
-export function DynamicInputForm({ fields, value, onChange }: DynamicInputFormProps) {
+export function DynamicInputForm({
+    fields,
+    value,
+    onChange,
+    groupOpenState,
+    onGroupOpenChange,
+}: DynamicInputFormProps) {
     const tree = useMemo(() => buildFieldTree(fields), [fields]);
     const inputFields = useMemo(() => listInputFields(fields), [fields]);
 
@@ -41,15 +54,18 @@ export function DynamicInputForm({ fields, value, onChange }: DynamicInputFormPr
     }
 
     return (
-        <div className="max-h-[520px] space-y-4 overflow-y-auto rounded-md border border-border p-4">
+        <div className="space-y-4">
             {tree.map((root) => {
-                if (isSchemaContainerField(root.field, fields)) {
+                if (isInputGroupContainer(root, fields)) {
                     return root.children.map((child) => (
                         <FormFieldNode
                             key={child.field.fieldName}
                             node={child}
                             fields={fields}
+                            groupKey={child.field.fieldName}
                             value={value[child.field.fieldName]}
+                            groupOpenState={groupOpenState}
+                            onGroupOpenChange={onGroupOpenChange}
                             onChange={(next) => updateRootField(child.field.fieldName, next)}
                         />
                     ));
@@ -60,7 +76,10 @@ export function DynamicInputForm({ fields, value, onChange }: DynamicInputFormPr
                         key={root.field.fieldName}
                         node={root}
                         fields={fields}
+                        groupKey={root.field.fieldName}
                         value={value[root.field.fieldName]}
+                        groupOpenState={groupOpenState}
+                        onGroupOpenChange={onGroupOpenChange}
                         onChange={(next) => updateRootField(root.field.fieldName, next)}
                     />
                 );
@@ -69,24 +88,50 @@ export function DynamicInputForm({ fields, value, onChange }: DynamicInputFormPr
     );
 }
 
+interface FormFieldNodeProps {
+    node: FieldTreeNode;
+    fields: TemplateField[];
+    groupKey: string;
+    value: FormValue | undefined;
+    groupOpenState: Record<string, boolean>;
+    onGroupOpenChange: (groupKey: string, open: boolean) => void;
+    onChange: (value: FormValue) => void;
+}
+
 function FormFieldNode({
     node,
     fields,
+    groupKey,
     value,
+    groupOpenState,
+    onGroupOpenChange,
     onChange,
-}: {
-    node: FieldTreeNode;
-    fields: TemplateField[];
-    value: FormValue | undefined;
-    onChange: (value: FormValue) => void;
-}) {
-    const isContainer = isSchemaContainerField(node.field, fields) || node.children.length > 0;
-
-    if (isContainer) {
-        if (isRepeatableOccurrence(node.field.occurrenceRule)) {
-            return <RepeatableGroupForm node={node} fields={fields} value={value} onChange={onChange} />;
+}: FormFieldNodeProps) {
+    if (isInputGroupContainer(node, fields)) {
+        if (isInputRepeatableGroup(node)) {
+            return (
+                <RepeatableGroupForm
+                    node={node}
+                    fields={fields}
+                    groupKey={groupKey}
+                    value={value}
+                    groupOpenState={groupOpenState}
+                    onGroupOpenChange={onGroupOpenChange}
+                    onChange={onChange}
+                />
+            );
         }
-        return <SingleGroupForm node={node} fields={fields} value={value} onChange={onChange} />;
+        return (
+            <SingleGroupForm
+                node={node}
+                fields={fields}
+                groupKey={groupKey}
+                value={value}
+                groupOpenState={groupOpenState}
+                onGroupOpenChange={onGroupOpenChange}
+                onChange={onChange}
+            />
+        );
     }
 
     if (!isFormInputField(node.field)) {
@@ -105,12 +150,18 @@ function FormFieldNode({
 function RepeatableGroupForm({
     node,
     fields,
+    groupKey,
     value,
+    groupOpenState,
+    onGroupOpenChange,
     onChange,
 }: {
     node: FieldTreeNode;
     fields: TemplateField[];
+    groupKey: string;
     value: FormValue | undefined;
+    groupOpenState: Record<string, boolean>;
+    onGroupOpenChange: (groupKey: string, open: boolean) => void;
     onChange: (value: FormValue) => void;
 }) {
     const items = normalizeRepeatableItems(node, value);
@@ -138,14 +189,20 @@ function RepeatableGroupForm({
     }
 
     return (
-        <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-sm font-semibold text-foreground">
+        <CollapsibleSection
+            title={
+                <>
                     {label}
-                    {occurrenceHint ? <span className="ml-1 font-normal text-muted-foreground">{occurrenceHint}</span> : null}
-                </h3>
-            </div>
-
+                    {occurrenceHint ? (
+                        <span className="ml-1 font-normal text-muted-foreground">{occurrenceHint}</span>
+                    ) : null}
+                </>
+            }
+            open={groupOpenState[groupKey] ?? true}
+            onOpenChange={(open) => onGroupOpenChange(groupKey, open)}
+            headerClassName="text-sm font-semibold"
+            contentClassName="space-y-3"
+        >
             {items.map((item, index) => (
                 <div key={`${node.field.fieldName}-${index}`} className="space-y-3 rounded-md border border-border bg-muted/20 p-4">
                     <div className="flex items-center justify-between gap-3 border-b border-border pb-2">
@@ -163,20 +220,26 @@ function RepeatableGroupForm({
                         </Button>
                     </div>
                     <div className="space-y-3">
-                        {node.children.map((child) => (
-                            <FormFieldNode
-                                key={child.field.fieldName}
-                                node={child}
-                                fields={fields}
-                                value={item[child.field.fieldName]}
-                                onChange={(next) =>
-                                    updateItem(index, {
-                                        ...item,
-                                        [child.field.fieldName]: next,
-                                    })
-                                }
-                            />
-                        ))}
+                        {node.children.map((child) => {
+                            const childKey = `${groupKey}.${child.field.fieldName}`;
+                            return (
+                                <FormFieldNode
+                                    key={child.field.fieldName}
+                                    node={child}
+                                    fields={fields}
+                                    groupKey={childKey}
+                                    value={item[child.field.fieldName]}
+                                    groupOpenState={groupOpenState}
+                                    onGroupOpenChange={onGroupOpenChange}
+                                    onChange={(next) =>
+                                        updateItem(index, {
+                                            ...item,
+                                            [child.field.fieldName]: next,
+                                        })
+                                    }
+                                />
+                            );
+                        })}
                     </div>
                 </div>
             ))}
@@ -185,19 +248,25 @@ function RepeatableGroupForm({
                 <Plus className="h-4 w-4" />
                 Add {label}
             </Button>
-        </div>
+        </CollapsibleSection>
     );
 }
 
 function SingleGroupForm({
     node,
     fields,
+    groupKey,
     value,
+    groupOpenState,
+    onGroupOpenChange,
     onChange,
 }: {
     node: FieldTreeNode;
     fields: TemplateField[];
+    groupKey: string;
     value: FormValue | undefined;
+    groupOpenState: Record<string, boolean>;
+    onGroupOpenChange: (groupKey: string, open: boolean) => void;
     onChange: (value: FormValue) => void;
 }) {
     const objectValue =
@@ -209,20 +278,28 @@ function SingleGroupForm({
     }
 
     return (
-        <div className="space-y-3 rounded-md border border-border/70 p-3">
-            <p className="text-sm font-medium text-foreground">{label}</p>
-            <div className="space-y-3 pl-2">
-                {node.children.map((child) => (
+        <CollapsibleSection
+            title={label}
+            open={groupOpenState[groupKey] ?? true}
+            onOpenChange={(open) => onGroupOpenChange(groupKey, open)}
+            contentClassName="space-y-3 pl-2"
+        >
+            {node.children.map((child) => {
+                const childKey = `${groupKey}.${child.field.fieldName}`;
+                return (
                     <FormFieldNode
                         key={child.field.fieldName}
                         node={child}
                         fields={fields}
+                        groupKey={childKey}
                         value={objectValue[child.field.fieldName]}
+                        groupOpenState={groupOpenState}
+                        onGroupOpenChange={onGroupOpenChange}
                         onChange={(next) => updateChild(child.field.fieldName, next)}
                     />
-                ))}
-            </div>
-        </div>
+                );
+            })}
+        </CollapsibleSection>
     );
 }
 
@@ -236,8 +313,8 @@ function InputFieldRow({
     onChange: (value: FormScalar) => void;
 }) {
     return (
-        <div className="grid gap-2 sm:grid-cols-[minmax(0,40%)_minmax(0,1fr)] sm:items-center">
-            <label className="font-mono text-sm font-medium text-foreground">
+        <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[minmax(0,40%)_minmax(0,1fr)] sm:items-center sm:gap-x-3 sm:gap-y-0">
+            <label className="font-mono text-sm font-medium leading-tight text-foreground">
                 {field.fieldName}
                 {field.emptyHandling === 'REQUIRED' ? <span className="ml-1 text-destructive">*</span> : null}
             </label>
@@ -287,3 +364,5 @@ function FieldInput({
         />
     );
 }
+
+export { buildInputGroupOpenState, collectInputGroupKeys };

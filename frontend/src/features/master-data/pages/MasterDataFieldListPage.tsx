@@ -77,7 +77,7 @@ export function MasterDataFieldListPage() {
                     description: values.description || null,
                     defaultValue: values.defaultValue || null,
                     unique: values.unique,
-                    searchable: values.searchable,
+                    searchable: true,
                 });
                 toast.success('Field created');
             } else if (editFieldId) {
@@ -89,7 +89,7 @@ export function MasterDataFieldListPage() {
                     description: values.description || null,
                     defaultValue: values.defaultValue || null,
                     unique: values.unique,
-                    searchable: values.searchable,
+                    searchable: true,
                 });
                 toast.success('Field updated');
             }

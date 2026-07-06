@@ -4,8 +4,8 @@
  * Cross-feature imports must use this module only.
  *
  * Template integration (Phase 6.3.5):
- * SchemaMappingEditor uses useMasterDataFieldPickerOptions(), useMasterDataFieldDetail(),
- * and useMasterDataTypeDetail() via MasterDataFieldPicker.
+ * SchemaFieldEditor uses useMasterDataFieldList(), useMasterDataFieldDetail(),
+ * and useMasterDataTypeList() via MasterDataFieldPicker.
  */
 
 export { MasterDataFieldListPage } from '@/features/master-data/pages/MasterDataFieldListPage';

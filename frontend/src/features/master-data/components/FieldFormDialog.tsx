@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { HelpTooltip } from '@/components/help-tooltip';
 import {
     Dialog,
     DialogContent,
@@ -28,7 +29,6 @@ const schema = z.object({
     description: z.string().optional(),
     defaultValue: z.string().optional(),
     unique: z.boolean(),
-    searchable: z.boolean(),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -63,7 +63,6 @@ export function FieldFormDialog({
             description: '',
             defaultValue: '',
             unique: false,
-            searchable: false,
         },
     });
 
@@ -81,7 +80,6 @@ export function FieldFormDialog({
                 description: initial.description ?? '',
                 defaultValue: initial.defaultValue ?? '',
                 unique: initial.unique,
-                searchable: initial.searchable,
             });
         } else {
             form.reset({
@@ -93,7 +91,6 @@ export function FieldFormDialog({
                 description: '',
                 defaultValue: '',
                 unique: false,
-                searchable: false,
             });
         }
     }, [open, mode, initial, nextDisplayOrder, form]);
@@ -175,11 +172,24 @@ export function FieldFormDialog({
                             control={form.control}
                             name="required"
                             render={({ field }) => (
-                                <FormItem className="flex items-center gap-2">
+                                <FormItem className="flex items-center gap-3">
                                     <FormControl>
-                                        <input type="checkbox" checked={field.value} onChange={field.onChange} />
+                                        <input
+                                            type="checkbox"
+                                            className="h-5 w-5 rounded border-input accent-primary"
+                                            checked={field.value}
+                                            onChange={field.onChange}
+                                        />
                                     </FormControl>
-                                    <FormLabel className="!mt-0">Required</FormLabel>
+                                    <FormLabel className="!mt-0">
+                                        <HelpTooltip label="Required">
+                                            <div className="space-y-2">
+                                                <p className="font-medium">Required</p>
+                                                <p>The field must have a value.</p>
+                                                <p>Validation will fail if no value is provided.</p>
+                                            </div>
+                                        </HelpTooltip>
+                                    </FormLabel>
                                 </FormItem>
                             )}
                         />
@@ -187,23 +197,24 @@ export function FieldFormDialog({
                             control={form.control}
                             name="unique"
                             render={({ field }) => (
-                                <FormItem className="flex items-center gap-2">
+                                <FormItem className="flex items-center gap-3">
                                     <FormControl>
-                                        <input type="checkbox" checked={field.value} onChange={field.onChange} />
+                                        <input
+                                            type="checkbox"
+                                            className="h-5 w-5 rounded border-input accent-primary"
+                                            checked={field.value}
+                                            onChange={field.onChange}
+                                        />
                                     </FormControl>
-                                    <FormLabel className="!mt-0">Unique</FormLabel>
-                                </FormItem>
-                            )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="searchable"
-                            render={({ field }) => (
-                                <FormItem className="flex items-center gap-2">
-                                    <FormControl>
-                                        <input type="checkbox" checked={field.value} onChange={field.onChange} />
-                                    </FormControl>
-                                    <FormLabel className="!mt-0">Searchable</FormLabel>
+                                    <FormLabel className="!mt-0">
+                                        <HelpTooltip label="Unique">
+                                            <div className="space-y-2">
+                                                <p className="font-medium">Unique</p>
+                                                <p>The value must be unique among all records in this Master Data Type.</p>
+                                                <p>Duplicate values are not allowed when creating or editing records.</p>
+                                            </div>
+                                        </HelpTooltip>
+                                    </FormLabel>
                                 </FormItem>
                             )}
                         />

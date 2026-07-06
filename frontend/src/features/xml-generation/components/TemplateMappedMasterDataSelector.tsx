@@ -1,5 +1,5 @@
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { MasterDataSelector } from '@/features/xml-generation/components/MasterDataSelector';
+import { MasterDataTypeRecordPicker } from '@/features/xml-generation/components/MasterDataTypeRecordPicker';
 import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useResolvedMasterDataTypes';
 import type { TemplateMapping } from '@/features/templates/types/template.types';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
@@ -15,14 +15,11 @@ export function TemplateMappedMasterDataSelector({
     selections,
     onChange,
 }: TemplateMappedMasterDataSelectorProps) {
-    const { mappedFieldIds, requiredTypeIds, isLoading } = useResolvedMasterDataTypes(mappings);
+    const { mappedFieldIds, orderedRequiredTypes, isLoading } = useResolvedMasterDataTypes(mappings);
 
     if (mappedFieldIds.length === 0) {
         return (
-            <div className="space-y-2 rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
-                <p className="font-medium text-foreground">Master data</p>
-                <p>No master data mappings are defined for this template.</p>
-            </div>
+            <p className="text-sm text-muted-foreground">No master data mappings are defined for this template.</p>
         );
     }
 
@@ -30,17 +27,42 @@ export function TemplateMappedMasterDataSelector({
         return <LoadingSpinner label="Loading master data requirements…" />;
     }
 
+    function updateSelection(typeId: number, recordId: number, recordLabel: string) {
+        onChange(
+            selections.map((entry) =>
+                entry.typeId === typeId ? { ...entry, recordId, recordLabel } : entry,
+            ),
+        );
+    }
+
+    if (orderedRequiredTypes.length === 0) {
+        return <p className="text-sm text-muted-foreground">No master data types are required for this template.</p>;
+    }
+
     return (
-        <div className="space-y-2">
-            <p className="text-sm font-medium text-foreground">Master data (from template mappings)</p>
-            <MasterDataSelector
-                selections={selections}
-                onChange={onChange}
-                allowedTypeIds={requiredTypeIds}
-                hideAddControl
-                hideRemoveControl
-                hideHeader
-            />
-        </div>
+        <ul className="space-y-4">
+            {orderedRequiredTypes.map((type) => {
+                const entry =
+                    selections.find((selection) => selection.typeId === type.id) ??
+                    ({
+                        typeId: type.id,
+                        typeCode: type.code,
+                        typeName: type.name,
+                        recordId: 0,
+                        recordLabel: '',
+                    } satisfies SelectedMasterDataEntry);
+
+                return (
+                    <li key={type.id} className="space-y-0.5">
+                        <p className="text-sm font-medium leading-tight text-foreground">{type.name}</p>
+                        <MasterDataTypeRecordPicker
+                            typeId={type.id}
+                            value={entry.recordId > 0 ? entry.recordId : null}
+                            onChange={(recordId, recordLabel) => updateSelection(type.id, recordId, recordLabel)}
+                        />
+                    </li>
+                );
+            })}
+        </ul>
     );
 }

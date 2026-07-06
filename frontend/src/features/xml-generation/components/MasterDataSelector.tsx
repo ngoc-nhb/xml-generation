@@ -3,7 +3,8 @@ import { X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
-import { useMasterDataRecordList, useMasterDataTypeList } from '@/features/master-data';
+import { useMasterDataFieldsForType, useMasterDataRecordList, useMasterDataTypeList } from '@/features/master-data';
+import { formatMasterDataRecordLabel } from '@/features/xml-generation/utils/masterDataRecordLabel';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
 
 interface MasterDataSelectorProps {
@@ -106,9 +107,7 @@ export function MasterDataSelector({
                         <li key={entry.typeId} className="rounded-md border border-border p-3">
                             <div className="mb-2 flex items-start justify-between gap-2">
                                 <div>
-                                    <p className="text-sm font-medium text-foreground">
-                                        {entry.typeCode} — {entry.typeName}
-                                    </p>
+                                    <p className="text-sm font-medium text-foreground">{entry.typeName}</p>
                                 </div>
                                 {!hideRemoveControl ? (
                                     <Button type="button" variant="ghost" size="sm" onClick={() => removeType(entry.typeId)}>
@@ -138,9 +137,15 @@ function MasterDataRecordPicker({
     value: number | null;
     onChange: (recordId: number, recordLabel: string) => void;
 }) {
-    const { data, isLoading } = useMasterDataRecordList({ typeId, page: 1, pageSize: 100 });
+    const { data: fieldsData, isLoading: fieldsLoading } = useMasterDataFieldsForType(typeId);
+    const { data, isLoading: recordsLoading } = useMasterDataRecordList({ typeId, page: 1, pageSize: 500 });
 
+    const fields = useMemo(
+        () => (fieldsData?.items ?? []).slice().sort((left, right) => left.displayOrder - right.displayOrder),
+        [fieldsData?.items],
+    );
     const records = data?.items ?? [];
+    const isLoading = fieldsLoading || recordsLoading;
 
     return (
         <Select
@@ -149,26 +154,18 @@ function MasterDataRecordPicker({
             onChange={(event) => {
                 const recordId = Number(event.target.value);
                 const record = records.find((item) => item.id === recordId);
-                const label = record ? formatRecordLabel(record.data) : '';
+                const label = record ? formatMasterDataRecordLabel(fields, record.data) : '';
                 onChange(recordId, label);
             }}
         >
-            <option value="">Select a record…</option>
+            <option value="">{isLoading ? 'Loading records…' : 'Select a record…'}</option>
             {records.map((record) => (
                 <option key={record.id} value={record.id}>
-                    {formatRecordLabel(record.data)}
+                    {formatMasterDataRecordLabel(fields, record.data)}
                 </option>
             ))}
         </Select>
     );
-}
-
-function formatRecordLabel(data: Record<string, unknown>): string {
-    const values = Object.values(data)
-        .filter((value) => value !== null && value !== undefined && value !== '')
-        .slice(0, 3)
-        .map(String);
-    return values.length > 0 ? values.join(' · ') : 'Record';
 }
 
 export function toSelectedMasterDataPayload(

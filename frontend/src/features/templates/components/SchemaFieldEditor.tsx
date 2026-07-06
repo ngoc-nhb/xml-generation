@@ -3,17 +3,34 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/select';
+import { MasterDataFieldPicker } from '@/features/templates/components/MasterDataFieldPicker';
 import { SchemaHelpTooltip } from '@/features/templates/components/SchemaHelpTooltip';
 import type { DraftTemplateField } from '@/features/templates/types/template.types';
 import { normalizeDraftFieldMetadata, applyValueNodeDefaults } from '@/features/templates/utils/schemaTree';
 
+type SourceDataMode = 'manual' | 'master-data';
+
 interface SchemaFieldEditorProps {
     field: DraftTemplateField | null;
     parentOptions: DraftTemplateField[];
+    masterDataFieldId: number | null;
+    masterDataMappingError?: string | null;
     onChange: (field: DraftTemplateField) => void;
+    onMasterDataFieldIdChange: (masterDataFieldId: number | null) => void;
 }
 
-export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFieldEditorProps) {
+function toSourceDataMode(sourceType: DraftTemplateField['sourceType']): SourceDataMode {
+    return sourceType === 'MASTER_DATA' ? 'master-data' : 'manual';
+}
+
+export function SchemaFieldEditor({
+    field,
+    parentOptions,
+    masterDataFieldId,
+    masterDataMappingError,
+    onChange,
+    onMasterDataFieldIdChange,
+}: SchemaFieldEditorProps) {
     if (!field) {
         return (
             <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
@@ -140,32 +157,55 @@ export function SchemaFieldEditor({ field, parentOptions, onChange }: SchemaFiel
                     <option value="ZERO_IF_EMPTY">ZERO_IF_EMPTY</option>
                 </Select>
             </div>
-            <div className="space-y-2">
-                <Label htmlFor="sourceType">Source type</Label>
-                <Select
-                    id="sourceType"
-                    value={currentField.nodeType === 'GROUP' ? '' : (currentField.sourceType ?? '')}
-                    disabled={currentField.nodeType === 'GROUP'}
-                    onChange={(event) => {
-                        const nextSourceType = (event.target.value || null) as DraftTemplateField['sourceType'];
-                        if (!nextSourceType && currentField.nodeType !== 'GROUP') {
-                            onChange(normalizeDraftFieldMetadata({ ...currentField, nodeType: 'GROUP' }));
-                            return;
-                        }
-                        onChange(
-                            normalizeDraftFieldMetadata({
-                                ...currentField,
-                                sourceType: nextSourceType,
-                            }),
-                        );
-                    }}
-                >
-                    {currentField.nodeType !== 'GROUP' ? <option value="">None (container)</option> : null}
-                    <option value="INPUT">INPUT</option>
-                    <option value="MASTER_DATA">MASTER_DATA</option>
-                    <option value="STATIC">STATIC</option>
-                </Select>
-            </div>
+            {currentField.nodeType !== 'GROUP' ? (
+                <div className="space-y-3">
+                    <Label>Source data</Label>
+                    <div className="space-y-2">
+                        <label className="flex items-center gap-2 text-sm">
+                            <input
+                                type="radio"
+                                name={`source-data-${currentField.clientId}`}
+                                checked={toSourceDataMode(currentField.sourceType) === 'manual'}
+                                onChange={() => {
+                                    onMasterDataFieldIdChange(null);
+                                    onChange(
+                                        normalizeDraftFieldMetadata({
+                                            ...currentField,
+                                            sourceType: currentField.sourceType === 'STATIC' ? 'STATIC' : 'INPUT',
+                                        }),
+                                    );
+                                }}
+                            />
+                            Manual input
+                        </label>
+                        <label className="flex items-center gap-2 text-sm">
+                            <input
+                                type="radio"
+                                name={`source-data-${currentField.clientId}`}
+                                checked={toSourceDataMode(currentField.sourceType) === 'master-data'}
+                                onChange={() => {
+                                    onChange(
+                                        normalizeDraftFieldMetadata({
+                                            ...currentField,
+                                            sourceType: 'MASTER_DATA',
+                                        }),
+                                    );
+                                }}
+                            />
+                            Master data
+                        </label>
+                    </div>
+                    {toSourceDataMode(currentField.sourceType) === 'master-data' ? (
+                        <div className="space-y-2">
+                            <Label htmlFor="masterDataType">Master data</Label>
+                            <MasterDataFieldPicker value={masterDataFieldId} onChange={onMasterDataFieldIdChange} />
+                            {masterDataMappingError ? (
+                                <p className="text-sm text-destructive">{masterDataMappingError}</p>
+                            ) : null}
+                        </div>
+                    ) : null}
+                </div>
+            ) : null}
             <div className="space-y-2">
                 <Label htmlFor="valueType">Value type</Label>
                 <Select

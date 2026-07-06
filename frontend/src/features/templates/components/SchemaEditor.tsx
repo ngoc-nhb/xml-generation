@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/features/templates/components/ConfirmDialog';
 import { SchemaFieldEditor } from '@/features/templates/components/SchemaFieldEditor';
 import { SchemaFieldTree } from '@/features/templates/components/SchemaFieldTree';
-import { SchemaMappingEditor } from '@/features/templates/components/SchemaMappingEditor';
 import { useUnsavedChangesBlocker } from '@/features/templates/hooks/useUnsavedChangesBlocker';
 import type { DraftTemplateField, TemplateMapping, TemplateSchema } from '@/features/templates/types/template.types';
 import {
@@ -69,6 +68,7 @@ export function SchemaEditor({ initialSchema, importMode, saving, onSave, onSave
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
     const [baselineSerialized, setBaselineSerialized] = useState(() => serializeSchemaState(draft.fields, draft.mappings));
     const [allowNavigation, setAllowNavigation] = useState(false);
+    const [mappingValidationErrors, setMappingValidationErrors] = useState<Record<string, string>>({});
 
     const isDirty = serializeSchemaState(draft.fields, draft.mappings) !== baselineSerialized;
     const blocker = useUnsavedChangesBlocker({ when: isDirty && !allowNavigation });
@@ -76,13 +76,55 @@ export function SchemaEditor({ initialSchema, importMode, saving, onSave, onSave
 
     const tree = useMemo(() => buildDraftFieldTree(draft.fields), [draft.fields]);
     const selectedField = draft.fields.find((field) => field.clientId === selectedClientId) ?? null;
+    const selectedFieldMapping = selectedField
+        ? draft.mappings.find((mapping) => mapping.fieldName === selectedField.fieldName) ?? null
+        : null;
+
+    function upsertFieldMapping(fieldName: string, masterDataFieldId: number | null) {
+        setMappingValidationErrors((current) => {
+            if (!(fieldName in current)) {
+                return current;
+            }
+            const next = { ...current };
+            delete next[fieldName];
+            return next;
+        });
+
+        setDraft((current) => {
+            const existingIndex = current.mappings.findIndex((mapping) => mapping.fieldName === fieldName);
+            if (masterDataFieldId === null) {
+                if (existingIndex < 0) {
+                    return current;
+                }
+                return {
+                    ...current,
+                    mappings: current.mappings.filter((mapping) => mapping.fieldName !== fieldName),
+                };
+            }
+
+            if (existingIndex >= 0) {
+                const nextMappings = current.mappings.map((mapping, index) =>
+                    index === existingIndex ? { ...mapping, masterDataFieldId } : mapping,
+                );
+                return { ...current, mappings: nextMappings };
+            }
+
+            return {
+                ...current,
+                mappings: [...current.mappings, { fieldName, masterDataFieldId }],
+            };
+        });
+    }
+
+    function handleMasterDataMappingChange(masterDataFieldId: number | null) {
+        if (!selectedField) {
+            return;
+        }
+        upsertFieldMapping(selectedField.fieldName, masterDataFieldId);
+    }
 
     function updateFields(nextFields: DraftTemplateField[]) {
         setDraft((current) => ({ ...current, fields: normalizeDraftSchemaFields(nextFields) }));
-    }
-
-    function updateMappings(nextMappings: TemplateMapping[]) {
-        setDraft((current) => ({ ...current, mappings: nextMappings }));
     }
 
     function handleAddRoot() {
@@ -188,6 +230,25 @@ export function SchemaEditor({ initialSchema, importMode, saving, onSave, onSave
             return;
         }
 
+        const nextMappingErrors: Record<string, string> = {};
+        for (const field of normalizedFields) {
+            if (field.sourceType !== 'MASTER_DATA') {
+                continue;
+            }
+            const mapping = draft.mappings.find((item) => item.fieldName === field.fieldName);
+            if (!mapping?.masterDataFieldId) {
+                nextMappingErrors[field.fieldName] = 'Please select a Master Data field.';
+            }
+        }
+
+        if (Object.keys(nextMappingErrors).length > 0) {
+            setMappingValidationErrors(nextMappingErrors);
+            toast.error('Please select a Master Data field for all master data fields.');
+            return;
+        }
+
+        setMappingValidationErrors({});
+
         const payload = { fields: toApiFields(normalizedFields), mappings: draft.mappings };
         const savedSerialized = serializeSchemaState(normalizedFields, draft.mappings);
 
@@ -226,10 +287,17 @@ export function SchemaEditor({ initialSchema, importMode, saving, onSave, onSave
                     onDuplicate={handleDuplicateField}
                     onDelete={setDeleteTargetClientId}
                 />
-                <SchemaFieldEditor field={selectedField} parentOptions={draft.fields} onChange={handleFieldChange} />
+                <SchemaFieldEditor
+                    field={selectedField}
+                    parentOptions={draft.fields}
+                    masterDataFieldId={selectedFieldMapping?.masterDataFieldId ?? null}
+                    masterDataMappingError={
+                        selectedField ? mappingValidationErrors[selectedField.fieldName] ?? null : null
+                    }
+                    onChange={handleFieldChange}
+                    onMasterDataFieldIdChange={handleMasterDataMappingChange}
+                />
             </div>
-
-            <SchemaMappingEditor fields={toApiFields(draft.fields)} mappings={draft.mappings} onChange={updateMappings} />
 
             <div className="flex gap-3 border-t border-border pt-4">
                 <Button onClick={() => void handleSave()} disabled={saving}>
