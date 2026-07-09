@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -16,6 +17,8 @@ interface RecordFormDialogProps {
     open: boolean;
     mode: 'create' | 'edit';
     loading?: boolean;
+    typeName?: string;
+    typeCode?: string;
     fields: MasterDataFieldListItem[];
     initialData?: Record<string, unknown>;
     onSubmit: (data: Record<string, unknown>) => void;
@@ -23,7 +26,7 @@ interface RecordFormDialogProps {
 }
 
 export function RecordFormDialog(props: RecordFormDialogProps) {
-    const { open, mode, onClose } = props;
+    const { open, mode, typeName, typeCode, onClose } = props;
     const formKey = `${mode}-${props.initialData ? JSON.stringify(Object.keys(props.initialData)) : 'new'}-${props.fields.length}`;
 
     return (
@@ -31,6 +34,12 @@ export function RecordFormDialog(props: RecordFormDialogProps) {
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
                     <DialogTitle>{mode === 'create' ? 'Create record' : 'Edit record'}</DialogTitle>
+                    {typeName ? (
+                        <DialogDescription>
+                            Master Data Type: {typeName}
+                            {typeCode ? ` (${typeCode})` : ''}
+                        </DialogDescription>
+                    ) : null}
                 </DialogHeader>
                 {open ? <RecordFormContent key={formKey} {...props} /> : null}
             </DialogContent>

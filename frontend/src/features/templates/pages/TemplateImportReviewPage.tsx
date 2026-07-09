@@ -15,6 +15,7 @@ import { useCreateTemplate } from '@/features/templates/hooks/useTemplates';
 import type { TemplateField, TemplateImportDraft, TemplateMapping } from '@/features/templates/types/template.types';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import { toast } from '@/providers/ToastProvider';
 
 const metadataSchema = z.object({
@@ -58,6 +59,15 @@ export function TemplateImportReviewPage() {
                   }
                 : null,
         [draft],
+    );
+
+    useSetPageMeta(
+        draft
+            ? {
+                  title: 'Review Imported Template',
+                  description: `Draft generated from ${draft.sourceFileName}. Configure metadata, then review fields before saving.`,
+              }
+            : null,
     );
 
     if (!draft || !initialSchema) {
@@ -108,8 +118,6 @@ export function TemplateImportReviewPage() {
     return (
         <div className="space-y-6">
             <TemplatePageHeader
-                title="Review imported template"
-                description={`Draft generated from ${importDraft.sourceFileName}. Configure metadata, then review fields before saving.`}
                 backTo="/templates"
                 backLabel="Back to templates"
             />

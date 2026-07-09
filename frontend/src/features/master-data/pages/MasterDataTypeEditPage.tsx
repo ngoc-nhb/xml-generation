@@ -9,6 +9,7 @@ import { MasterDataPageHeader } from '@/features/master-data/components/MasterDa
 import { useMasterDataTypeDetail, useUpdateMasterDataType } from '@/features/master-data/hooks/useMasterDataTypes';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import { toast } from '@/providers/ToastProvider';
 
 export function MasterDataTypeEditPage() {
@@ -17,6 +18,8 @@ export function MasterDataTypeEditPage() {
     const id = Number(typeId);
     const { data, isLoading, isError, error, refetch } = useMasterDataTypeDetail(id);
     const updateMutation = useUpdateMasterDataType(id);
+
+    useSetPageMeta(data ? { title: 'Edit Master Type', description: `Update metadata for ${data.code}.` } : null);
 
     const initialValues = useMemo(
         () =>
@@ -65,8 +68,6 @@ export function MasterDataTypeEditPage() {
     return (
         <div className="space-y-6">
             <MasterDataPageHeader
-                title="Edit master data type"
-                description={`Update metadata for ${data.code}`}
                 backTo={`/master-data/types/${id}`}
                 backLabel="Back to detail"
             />

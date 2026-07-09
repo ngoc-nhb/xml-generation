@@ -8,6 +8,7 @@ import { HelpTooltip } from '@/components/help-tooltip';
 import {
     Dialog,
     DialogContent,
+    DialogDescription,
     DialogFooter,
     DialogHeader,
     DialogTitle,
@@ -37,6 +38,8 @@ interface FieldFormDialogProps {
     open: boolean;
     mode: 'create' | 'edit';
     loading?: boolean;
+    typeName?: string;
+    typeCode?: string;
     initial?: MasterDataFieldDetail | null;
     nextDisplayOrder?: number;
     onSubmit: (values: FormValues) => void;
@@ -47,6 +50,8 @@ export function FieldFormDialog({
     open,
     mode,
     loading,
+    typeName,
+    typeCode,
     initial,
     nextDisplayOrder = 1,
     onSubmit,
@@ -99,7 +104,13 @@ export function FieldFormDialog({
         <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
                 <DialogHeader>
-                    <DialogTitle>{mode === 'create' ? 'Create field' : 'Edit field'}</DialogTitle>
+                    <DialogTitle>{mode === 'create' ? 'Create data field' : 'Edit data field'}</DialogTitle>
+                    {typeName ? (
+                        <DialogDescription>
+                            Master Data Type: {typeName}
+                            {typeCode ? ` (${typeCode})` : ''}
+                        </DialogDescription>
+                    ) : null}
                 </DialogHeader>
                 <Form {...form}>
                     <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>

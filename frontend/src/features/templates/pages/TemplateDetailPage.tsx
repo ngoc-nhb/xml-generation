@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { TemplateDetailView } from '@/features/templates/components/TemplateDetailView';
 import { TemplatePageHeader } from '@/features/templates/components/TemplatePageHeader';
 import { useTemplateDetail } from '@/features/templates/hooks/useTemplates';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 
@@ -14,6 +15,8 @@ export function TemplateDetailPage() {
     const { id } = useParams();
     const templateId = Number(id);
     const { data, isLoading, isError, error, refetch } = useTemplateDetail(templateId);
+
+    useSetPageMeta(data ? { title: data.name, description: `Template ${data.code}` } : null);
 
     if (Number.isNaN(templateId)) {
         return <FullPageError title="Invalid template" description="The template ID is not valid." />;
@@ -36,8 +39,6 @@ export function TemplateDetailPage() {
     return (
         <div className="space-y-6">
             <TemplatePageHeader
-                title={data.name}
-                description={`Template ${data.code}`}
                 backTo="/templates"
                 backLabel="Back to templates"
                 actions={

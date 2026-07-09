@@ -3,6 +3,7 @@ import { Database, FileCode2, History, LogOut, Settings, Shapes } from 'lucide-r
 
 import { Button } from '@/components/ui/button';
 import { WorkspaceSwitcher } from '@/features/workspace';
+import { usePageMetaContext, PageMetaProvider } from '@/providers/PageMetaProvider';
 import { useAuth } from '@/providers/AuthProvider';
 import { cn } from '@/utils/cn';
 
@@ -14,8 +15,9 @@ const navItems = [
     { to: '/settings', label: 'Settings', icon: Settings, adminOnly: false },
 ];
 
-export function AppShell() {
+function AppShellContent() {
     const { user, logout } = useAuth();
+    const { meta } = usePageMetaContext();
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -46,22 +48,34 @@ export function AppShell() {
                             </NavLink>
                         ))}
                 </nav>
-            </aside>
-            <div className="flex min-h-screen flex-1 flex-col">
-                <header className="flex h-16 items-center justify-between border-b border-border bg-card px-6">
-                    <div>
-                        <p className="text-sm text-muted-foreground">Signed in as</p>
-                        <p className="font-medium text-foreground">{user?.username ?? 'Unknown'}</p>
+                <div className="border-t border-border p-4">
+                    <div className="mb-3 space-y-0.5">
+                        <p className="text-sm font-medium text-foreground">{user?.username ?? 'Unknown'}</p>
+                        {user?.isAdmin ? <p className="text-xs text-muted-foreground">Administrator</p> : null}
                     </div>
-                    <Button variant="outline" size="sm" onClick={() => void logout()}>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => void logout()}>
                         <LogOut className="h-4 w-4" />
                         Logout
                     </Button>
+                </div>
+            </aside>
+            <div className="flex min-h-screen flex-1 flex-col">
+                <header className="shrink-0 border-b border-border bg-card px-6 py-4">
+                    <h1 className="text-xl font-semibold text-foreground">{meta.title}</h1>
+                    <p className="mt-1 text-sm text-muted-foreground">{meta.description}</p>
                 </header>
                 <main className="flex-1 overflow-auto p-6">
                     <Outlet />
                 </main>
             </div>
         </div>
+    );
+}
+
+export function AppShell() {
+    return (
+        <PageMetaProvider>
+            <AppShellContent />
+        </PageMetaProvider>
     );
 }

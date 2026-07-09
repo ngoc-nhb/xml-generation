@@ -11,6 +11,7 @@ import { useTemplateDetail, useUpdateTemplate } from '@/features/templates/hooks
 import { useUnsavedChangesBlocker } from '@/features/templates/hooks/useUnsavedChangesBlocker';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import { toast } from '@/providers/ToastProvider';
 
 export function TemplateEditPage() {
@@ -19,6 +20,9 @@ export function TemplateEditPage() {
     const templateId = Number(id);
     const { data, isLoading, isError, error, refetch } = useTemplateDetail(templateId);
     const updateMutation = useUpdateTemplate(templateId);
+
+    useSetPageMeta(data ? { title: 'Edit Template', description: `Update metadata for ${data.code}.` } : null);
+
     const [isDirty, setIsDirty] = useState(false);
     const [showDiscardDialog, setShowDiscardDialog] = useState(false);
 
@@ -81,8 +85,6 @@ export function TemplateEditPage() {
     return (
         <div className="space-y-6">
             <TemplatePageHeader
-                title="Edit template"
-                description={`Update metadata for ${data.code}`}
                 backTo={`/templates/${templateId}`}
                 backLabel="Back to detail"
             />

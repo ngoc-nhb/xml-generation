@@ -6,7 +6,12 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { MasterDataPageHeader } from '@/features/master-data/components/MasterDataPageHeader';
 import { MasterDataStatusBadge } from '@/features/master-data/components/MasterDataStatusBadge';
+import { MasterDataWorkflowSteps } from '@/features/master-data/components/MasterDataWorkflowSteps';
+import { WorkflowContinuationLinkBanner } from '@/features/master-data/components/WorkflowContinuationBanner';
+import { useMasterDataFieldsForType } from '@/features/master-data/hooks/useMasterDataFields';
+import { useMasterDataRecordList } from '@/features/master-data/hooks/useMasterDataRecords';
 import { useMasterDataTypeDetail } from '@/features/master-data/hooks/useMasterDataTypes';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 
@@ -14,12 +19,23 @@ export function MasterDataTypeDetailPage() {
     const { typeId } = useParams();
     const id = Number(typeId);
     const { data, isLoading, isError, error, refetch } = useMasterDataTypeDetail(id);
+    const fieldsQuery = useMasterDataFieldsForType(id);
+    const recordsQuery = useMasterDataRecordList({ typeId: id, page: 1, pageSize: 1 });
+
+    useSetPageMeta(
+        data
+            ? {
+                  title: data.name,
+                  description: `Master data type ${data.code}. Continue the workflow to add data fields and records.`,
+              }
+            : null,
+    );
 
     if (Number.isNaN(id)) {
         return <FullPageError title="Invalid type" description="The master data type ID is not valid." />;
     }
 
-    if (isLoading) {
+    if (isLoading || fieldsQuery.isLoading || recordsQuery.isLoading) {
         return <LoadingSpinner label="Loading type…" />;
     }
 
@@ -33,11 +49,12 @@ export function MasterDataTypeDetailPage() {
         );
     }
 
+    const hasFields = (fieldsQuery.data?.items.length ?? 0) > 0;
+    const hasRecords = (recordsQuery.data?.meta.totalRecords ?? 0) > 0;
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <MasterDataPageHeader
-                title={data.name}
-                description={`Master data type ${data.code}`}
                 backTo="/master-data"
                 backLabel="Back to types"
                 actions={
@@ -45,15 +62,42 @@ export function MasterDataTypeDetailPage() {
                         <Button asChild variant="outline">
                             <Link to={`/master-data/types/${data.id}/edit`}>Edit metadata</Link>
                         </Button>
-                        <Button asChild>
-                            <Link to={`/master-data/types/${data.id}/fields`}>Manage fields</Link>
+                        <Button asChild variant={hasFields ? 'outline' : 'default'}>
+                            <Link to={`/master-data/types/${data.id}/fields`}>Create Data Field</Link>
                         </Button>
-                        <Button asChild variant="secondary">
-                            <Link to={`/master-data/types/${data.id}/records`}>Manage records</Link>
+                        <Button asChild variant={hasFields ? 'default' : 'secondary'}>
+                            <Link
+                                to={`/master-data/types/${data.id}/records`}
+                                className={!hasFields ? 'pointer-events-none opacity-50' : undefined}
+                                tabIndex={hasFields ? 0 : -1}
+                                aria-disabled={!hasFields}
+                            >
+                                Create Records
+                            </Link>
                         </Button>
                     </>
                 }
             />
+            <MasterDataWorkflowSteps
+                activeStep={hasFields ? (hasRecords ? 'records' : 'dataFile') : 'dataFile'}
+                typeId={data.id}
+                hasTypes
+                hasFields={hasFields}
+                hasRecords={hasRecords}
+            />
+            {!hasFields ? (
+                <WorkflowContinuationLinkBanner
+                    message="Master Type created successfully. Continue by creating a Data Field."
+                    actionLabel="Create Data Field"
+                    actionTo={`/master-data/types/${data.id}/fields`}
+                />
+            ) : !hasRecords ? (
+                <WorkflowContinuationLinkBanner
+                    message="Data Field is ready. Next, create Records."
+                    actionLabel="Create Records"
+                    actionTo={`/master-data/types/${data.id}/records`}
+                />
+            ) : null}
             <Card>
                 <CardHeader>
                     <CardTitle>Type metadata</CardTitle>

@@ -44,8 +44,6 @@ export function WorkspaceEditPage() {
     return (
         <div className="space-y-6">
             <WorkspacePageHeader
-                title="Edit Workspace"
-                description="Update workspace metadata and status."
                 backTo="/workspaces"
                 backLabel="Back to workspaces"
             />

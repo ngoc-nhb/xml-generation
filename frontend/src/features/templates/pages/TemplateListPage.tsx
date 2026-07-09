@@ -76,8 +76,6 @@ export function TemplateListPage() {
     return (
         <div className="space-y-6">
             <TemplatePageHeader
-                title="Templates"
-                description="Manage XML template metadata and schemas."
                 actions={
                     <div className="flex flex-wrap gap-2">
                         <Button variant="outline" onClick={() => setImportOpen(true)}>

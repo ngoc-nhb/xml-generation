@@ -32,8 +32,6 @@ export function WorkspaceCreatePage() {
     return (
         <div className="space-y-6">
             <WorkspacePageHeader
-                title="Create Workspace"
-                description="Define a new workspace for templates and master data."
                 backTo="/workspaces"
                 backLabel="Back to workspaces"
             />

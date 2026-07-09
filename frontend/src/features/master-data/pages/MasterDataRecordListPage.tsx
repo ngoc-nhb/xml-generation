@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { Plus } from 'lucide-react';
 
 import { EmptyPlaceholder } from '@/components/empty-placeholder';
@@ -8,7 +8,9 @@ import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/features/master-data/components/ConfirmDialog';
 import { MasterDataPageHeader } from '@/features/master-data/components/MasterDataPageHeader';
+import { MasterDataTypeContext } from '@/features/master-data/components/MasterDataTypeContext';
 import { MasterDataPagination } from '@/features/master-data/components/MasterDataPagination';
+import { MasterDataWorkflowSteps } from '@/features/master-data/components/MasterDataWorkflowSteps';
 import { RecordFormDialog } from '@/features/master-data/components/RecordFormDialog';
 import { RecordListTable } from '@/features/master-data/components/RecordListTable';
 import { SearchToolbar } from '@/features/master-data/components/SearchToolbar';
@@ -20,6 +22,7 @@ import {
     useUpdateMasterDataRecord,
 } from '@/features/master-data/hooks/useMasterDataRecords';
 import { useMasterDataTypeDetail } from '@/features/master-data/hooks/useMasterDataTypes';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import type { MasterDataRecordListItem } from '@/features/master-data/types/master-data.types';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
@@ -49,6 +52,17 @@ export function MasterDataRecordListPage() {
     const deleteMutation = useDeleteMasterDataRecord();
 
     const fields = fieldsQuery.data?.items ?? [];
+    const hasFields = fields.length > 0;
+    const hasRecords = (data?.meta.totalRecords ?? 0) > 0;
+
+    useSetPageMeta(
+        typeQuery.data
+            ? {
+                  title: `${typeQuery.data.name} — Records`,
+                  description: `Create and manage records for master data type ${typeQuery.data.code}.`,
+              }
+            : null,
+    );
 
     function applySearch() {
         const next = new URLSearchParams(searchParams);
@@ -114,23 +128,34 @@ export function MasterDataRecordListPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <MasterDataPageHeader
-                title="Records"
-                description={`Records for ${typeQuery.data.code}`}
                 backTo={`/master-data/types/${id}`}
                 backLabel="Back to type detail"
                 actions={
-                    <Button onClick={() => setDialogMode('create')} disabled={fields.length === 0}>
+                    <Button onClick={() => setDialogMode('create')} disabled={!hasFields} variant={hasFields ? 'default' : 'secondary'}>
                         <Plus className="h-4 w-4" />
-                        Create record
+                        Create Record
                     </Button>
                 }
             />
-            {fields.length === 0 ? (
+            <MasterDataTypeContext name={typeQuery.data.name} code={typeQuery.data.code} />
+            <MasterDataWorkflowSteps
+                activeStep="records"
+                typeId={id}
+                hasTypes
+                hasFields={hasFields}
+                hasRecords={hasRecords}
+            />
+            {!hasFields ? (
                 <EmptyPlaceholder
-                    title="No fields configured"
-                    description="Define fields before creating records."
+                    title="No data fields available"
+                    description={`Create a data field for ${typeQuery.data.name} before adding records.`}
+                    action={
+                        <Button asChild>
+                            <Link to={`/master-data/types/${id}/fields`}>Create Data Field</Link>
+                        </Button>
+                    }
                 />
             ) : (
                 <>
@@ -153,12 +178,12 @@ export function MasterDataRecordListPage() {
                     {!isLoading && !isError && data ? (
                         data.items.length === 0 ? (
                             <EmptyPlaceholder
-                                title="No records"
-                                description="Create the first record for this master data type."
+                                title="No Records found"
+                                description={`Create records to populate ${typeQuery.data.name}.`}
                                 action={
                                     <Button onClick={() => setDialogMode('create')}>
                                         <Plus className="h-4 w-4" />
-                                        Create record
+                                        Create Record
                                     </Button>
                                 }
                             />
@@ -183,6 +208,8 @@ export function MasterDataRecordListPage() {
                 open={dialogMode !== null}
                 mode={dialogMode ?? 'create'}
                 loading={createMutation.isPending || updateMutation.isPending}
+                typeName={typeQuery.data.name}
+                typeCode={typeQuery.data.code}
                 fields={fields}
                 initialData={editRecord?.data}
                 onSubmit={(recordData) => void handleSubmit(recordData)}

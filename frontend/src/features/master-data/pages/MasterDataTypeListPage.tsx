@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/features/master-data/components/ConfirmDialog';
 import { MasterDataPageHeader } from '@/features/master-data/components/MasterDataPageHeader';
 import { MasterDataPagination } from '@/features/master-data/components/MasterDataPagination';
+import { MasterDataWorkflowSteps } from '@/features/master-data/components/MasterDataWorkflowSteps';
 import { SearchToolbar } from '@/features/master-data/components/SearchToolbar';
 import { TypeCreateDialog } from '@/features/master-data/components/TypeForm';
 import { TypeListTable } from '@/features/master-data/components/TypeListTable';
@@ -37,6 +38,8 @@ export function MasterDataTypeListPage() {
     const createMutation = useCreateMasterDataType();
     const deleteMutation = useDeleteMasterDataType();
 
+    const hasTypes = (data?.items.length ?? 0) > 0;
+
     function applySearch() {
         const next = new URLSearchParams(searchParams);
         if (keywordInput.trim()) next.set('keyword', keywordInput.trim());
@@ -59,7 +62,7 @@ export function MasterDataTypeListPage() {
                 description: values.description || null,
                 status: values.status,
             });
-            toast.success('Master data type created');
+            toast.success('Master Type created successfully.');
             setCreateOpen(false);
             navigate(`/master-data/types/${response.id}`);
         } catch (createError) {
@@ -79,16 +82,20 @@ export function MasterDataTypeListPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <MasterDataPageHeader
-                title="Master Data"
-                description="Manage reusable reference data types, fields, and records."
                 actions={
                     <Button onClick={() => setCreateOpen(true)}>
                         <Plus className="h-4 w-4" />
-                        Create type
+                        Create Master Type
                     </Button>
                 }
+            />
+            <MasterDataWorkflowSteps
+                activeStep="type"
+                hasTypes={hasTypes}
+                hasFields={false}
+                hasRecords={false}
             />
             <SearchToolbar
                 value={keywordInput}
@@ -107,12 +114,12 @@ export function MasterDataTypeListPage() {
             {!isLoading && !isError && data ? (
                 data.items.length === 0 ? (
                     <EmptyPlaceholder
-                        title="No master data types"
-                        description={keyword ? 'Try a different search term.' : 'Create your first master data type.'}
+                        title="No Master Types found"
+                        description="Create a Master Type to begin managing reusable data."
                         action={
                             <Button onClick={() => setCreateOpen(true)}>
                                 <Plus className="h-4 w-4" />
-                                Create type
+                                Create Master Type
                             </Button>
                         }
                     />

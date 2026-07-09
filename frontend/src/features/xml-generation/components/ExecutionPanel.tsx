@@ -66,7 +66,7 @@ export function ExecutionPanel() {
         template: TemplateListItem | null;
     } | null>(null);
     const [showSwitchDialog, setShowSwitchDialog] = useState(false);
-    const [masterDataSidebarCollapsed, setMasterDataSidebarCollapsed] = useState(false);
+    const [configPanelCollapsed, setConfigPanelCollapsed] = useState(false);
     const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
     const [exportSuccessDialogOpen, setExportSuccessDialogOpen] = useState(false);
     const [exportedFilename, setExportedFilename] = useState('');
@@ -343,128 +343,151 @@ export function ExecutionPanel() {
         <p className="text-sm text-muted-foreground">Select a template to load master data selectors.</p>
     );
 
-    return (
-        <div className="flex h-[calc(100vh-7rem)] min-h-[32rem] flex-col">
-            <div className="sticky top-0 z-10 shrink-0 space-y-4 border-b border-border bg-background pb-4">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                    <div>
-                        <h1 className="text-2xl font-semibold text-foreground">XML Generation</h1>
-                        <p className="text-sm text-muted-foreground">
-                            Select a template, provide input JSON and master data, then preview or export XML.
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        <PreviewToolbar
-                            disabled={executionDisabled}
-                            loading={previewMutation.isPending}
-                            onPreview={() => void handlePreview()}
-                        />
-                        <ExportToolbar
-                            disabled={executionDisabled}
-                            loading={exportMutation.isPending}
-                            onExport={() => void handleExport()}
-                        />
-                    </div>
-                </div>
-                <div className="max-w-md">
-                    <TemplateSelector value={selectedTemplateId} onChange={handleTemplateChange} />
-                </div>
-                {selectedTemplateId && hasSampleData ? (
-                    <div className="space-y-2">
-                        <p className="text-sm font-medium text-foreground">Initialization</p>
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant={initMode === 'empty' ? 'default' : 'outline'}
-                                onClick={() => handleInitModeChange('empty')}
-                            >
-                                New Empty Input
-                            </Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                variant={initMode === 'sample' ? 'default' : 'outline'}
-                                onClick={() => handleInitModeChange('sample')}
-                            >
-                                Load Sample Data
-                            </Button>
-                        </div>
-                    </div>
-                ) : null}
-            </div>
+    const configPanel = (
+        <div className="space-y-6">
+            <section className="space-y-2">
+                <TemplateSelector value={selectedTemplateId} onChange={handleTemplateChange} />
+            </section>
 
-            <div className="flex min-h-0 flex-1 flex-col py-4">
-                <ResizableSidebarLayout
-                    sidebarCollapsed={masterDataSidebarCollapsed}
-                    onSidebarCollapsedChange={setMasterDataSidebarCollapsed}
-                    sidebar={masterDataSidebar}
-                >
-                    <div className="flex min-h-0 flex-1 flex-col pl-4">
-                        <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
-                            <p className="text-sm font-medium text-foreground">Input data</p>
-                            <div className="flex flex-wrap items-center gap-2">
-                                {inputMode === 'form' && groupKeys.length > 0 ? (
-                                    <>
-                                        <Button type="button" size="sm" variant="outline" onClick={expandAllGroups}>
-                                            Expand all
-                                        </Button>
-                                        <Button type="button" size="sm" variant="outline" onClick={collapseAllGroups}>
-                                            Collapse all
-                                        </Button>
-                                    </>
-                                ) : null}
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={inputMode === 'form' ? 'default' : 'outline'}
-                                    onClick={() => handleInputModeChange('form')}
-                                >
-                                    Form
-                                </Button>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant={inputMode === 'json' ? 'default' : 'outline'}
-                                    onClick={() => handleInputModeChange('json')}
-                                >
-                                    JSON
-                                </Button>
-                            </div>
-                        </div>
-                        <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border p-4">
-                            {templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading ? (
-                                <LoadingSpinner label="Loading template schema…" />
-                            ) : !selectedTemplateId ? (
-                                <p className="text-sm text-muted-foreground">Select a template to generate the input form.</p>
-                            ) : inputMode === 'form' ? (
-                                schemaReady && inputFieldCount > 0 ? (
-                                    <DynamicInputForm
-                                        key={`${selectedTemplateId}-${initMode}`}
-                                        fields={schemaFields}
-                                        value={formData}
-                                        groupOpenState={groupOpenState}
-                                        onGroupOpenChange={handleGroupOpenChange}
-                                        onChange={(next) => setFormDataOverride(next)}
-                                    />
-                                ) : (
-                                    <p className="text-sm text-muted-foreground">
-                                        This template has no INPUT fields. Switch to JSON for manual input or use master
-                                        data mappings.
-                                    </p>
-                                )
-                            ) : (
-                                <JsonInputEditor
-                                    key={`${selectedTemplateId}-${initMode}`}
-                                    value={inputJson}
-                                    onChange={(next) => setInputJsonOverride(next)}
-                                    onValidationChange={setJsonError}
-                                />
-                            )}
+            {selectedTemplateId && hasSampleData ? (
+                <section className="space-y-2">
+                    <h2 className="text-sm font-medium text-foreground">Initialization</h2>
+                    <div className="flex flex-col gap-2">
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={initMode === 'empty' ? 'default' : 'outline'}
+                            onClick={() => handleInitModeChange('empty')}
+                        >
+                            New Empty Input
+                        </Button>
+                        <Button
+                            type="button"
+                            size="sm"
+                            variant={initMode === 'sample' ? 'default' : 'outline'}
+                            onClick={() => handleInitModeChange('sample')}
+                        >
+                            Load Sample Data
+                        </Button>
+                    </div>
+                </section>
+            ) : null}
+
+            <section className="space-y-2">
+                <h2 className="text-sm font-medium text-foreground">Master Data</h2>
+                {masterDataSidebar}
+            </section>
+
+            <section className="space-y-2 border-t border-border pt-4">
+                <h2 className="text-sm font-medium text-foreground">Actions</h2>
+                <div className="flex flex-col gap-2">
+                    <PreviewToolbar
+                        disabled={executionDisabled}
+                        loading={previewMutation.isPending}
+                        onPreview={() => void handlePreview()}
+                    />
+                    <ExportToolbar
+                        disabled={executionDisabled}
+                        loading={exportMutation.isPending}
+                        onExport={() => void handleExport()}
+                    />
+                </div>
+            </section>
+        </div>
+    );
+
+    return (
+        <div className="flex min-h-0 flex-1 flex-col">
+            <ResizableSidebarLayout
+                side="right"
+                storageKey="xmlgen-config-panel-percent"
+                sidebarTitle="Configuration"
+                sidebarCollapsed={configPanelCollapsed}
+                onSidebarCollapsedChange={setConfigPanelCollapsed}
+                sidebar={configPanel}
+            >
+                <div className="flex min-h-0 flex-1 flex-col pr-4">
+                    <div className="mb-3 flex shrink-0 flex-wrap items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-foreground">Input Data</p>
+                        <div className="flex flex-wrap items-center gap-2">
+                            {inputMode === 'form' && groupKeys.length > 0 ? (
+                                <>
+                                    <Button type="button" size="sm" variant="outline" onClick={expandAllGroups}>
+                                        Expand all
+                                    </Button>
+                                    <Button type="button" size="sm" variant="outline" onClick={collapseAllGroups}>
+                                        Collapse all
+                                    </Button>
+                                </>
+                            ) : null}
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={inputMode === 'form' ? 'default' : 'outline'}
+                                onClick={() => handleInputModeChange('form')}
+                            >
+                                Form
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={inputMode === 'json' ? 'default' : 'outline'}
+                                onClick={() => handleInputModeChange('json')}
+                            >
+                                JSON
+                            </Button>
                         </div>
                     </div>
-                </ResizableSidebarLayout>
-            </div>
+                    {validationErrors.length > 0 ? (
+                        <div className="mb-3 shrink-0 rounded-md border border-destructive/30 bg-destructive/5 p-3">
+                            <p className="text-sm font-medium text-destructive">Validation errors</p>
+                            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-destructive">
+                                {validationErrors.map((item, index) => (
+                                    <li key={`${item.code}-${index}`}>
+                                        {item.field ? `${item.field}: ` : ''}
+                                        {item.code}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ) : null}
+                    {jsonError ? (
+                        <div className="mb-3 shrink-0 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                            {jsonError}
+                        </div>
+                    ) : null}
+                    <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-border p-4">
+                        {templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading ? (
+                            <LoadingSpinner label="Loading template schema…" />
+                        ) : !selectedTemplateId ? (
+                            <p className="text-sm text-muted-foreground">Select a template to generate the input form.</p>
+                        ) : inputMode === 'form' ? (
+                            schemaReady && inputFieldCount > 0 ? (
+                                <DynamicInputForm
+                                    key={`${selectedTemplateId}-${initMode}`}
+                                    fields={schemaFields}
+                                    value={formData}
+                                    groupOpenState={groupOpenState}
+                                    onGroupOpenChange={handleGroupOpenChange}
+                                    onChange={(next) => setFormDataOverride(next)}
+                                />
+                            ) : (
+                                <p className="text-sm text-muted-foreground">
+                                    This template has no INPUT fields. Switch to JSON for manual input or use master data
+                                    mappings.
+                                </p>
+                            )
+                        ) : (
+                            <JsonInputEditor
+                                key={`${selectedTemplateId}-${initMode}`}
+                                value={inputJson}
+                                onChange={(next) => setInputJsonOverride(next)}
+                                onValidationChange={setJsonError}
+                            />
+                        )}
+                    </div>
+                </div>
+            </ResizableSidebarLayout>
 
             <XmlPreviewDialog
                 open={previewDialogOpen}

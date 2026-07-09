@@ -10,8 +10,11 @@ import { ConfirmDialog } from '@/features/master-data/components/ConfirmDialog';
 import { FieldFormDialog, type FieldFormValues } from '@/features/master-data/components/FieldFormDialog';
 import { FieldListTable } from '@/features/master-data/components/FieldListTable';
 import { MasterDataPageHeader } from '@/features/master-data/components/MasterDataPageHeader';
+import { MasterDataTypeContext } from '@/features/master-data/components/MasterDataTypeContext';
 import { MasterDataPagination } from '@/features/master-data/components/MasterDataPagination';
+import { MasterDataWorkflowSteps } from '@/features/master-data/components/MasterDataWorkflowSteps';
 import { SearchToolbar } from '@/features/master-data/components/SearchToolbar';
+import { WorkflowContinuationLinkBanner } from '@/features/master-data/components/WorkflowContinuationBanner';
 import {
     useCreateMasterDataField,
     useDeleteMasterDataField,
@@ -19,7 +22,9 @@ import {
     useMasterDataFieldList,
     useUpdateMasterDataField,
 } from '@/features/master-data/hooks/useMasterDataFields';
+import { useMasterDataRecordList } from '@/features/master-data/hooks/useMasterDataRecords';
 import { useMasterDataTypeDetail } from '@/features/master-data/hooks/useMasterDataTypes';
+import { useSetPageMeta } from '@/providers/PageMetaProvider';
 import type { MasterDataFieldListItem } from '@/features/master-data/types/master-data.types';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
@@ -43,12 +48,24 @@ export function MasterDataFieldListPage() {
         [id, page, keyword],
     );
     const { data, isLoading, isError, error, refetch } = useMasterDataFieldList(listParams);
+    const recordsQuery = useMasterDataRecordList({ typeId: id, page: 1, pageSize: 1 });
     const fieldDetailQuery = useMasterDataFieldDetail(editFieldId ?? undefined);
     const createMutation = useCreateMasterDataField();
     const updateMutation = useUpdateMasterDataField(editFieldId ?? 0);
     const deleteMutation = useDeleteMasterDataField();
 
     const nextDisplayOrder = (data?.items.length ?? 0) + 1;
+    const hasFields = (data?.items.length ?? 0) > 0;
+    const hasRecords = (recordsQuery.data?.meta.totalRecords ?? 0) > 0;
+
+    useSetPageMeta(
+        typeQuery.data
+            ? {
+                  title: `${typeQuery.data.name} — Data Field`,
+                  description: `Define the field schema for master data type ${typeQuery.data.code}.`,
+              }
+            : null,
+    );
 
     function applySearch() {
         const next = new URLSearchParams(searchParams);
@@ -79,7 +96,7 @@ export function MasterDataFieldListPage() {
                     unique: values.unique,
                     searchable: true,
                 });
-                toast.success('Field created');
+                toast.success('Data field created successfully.');
             } else if (editFieldId) {
                 await updateMutation.mutateAsync({
                     name: values.name,
@@ -134,19 +151,32 @@ export function MasterDataFieldListPage() {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-8">
             <MasterDataPageHeader
-                title="Fields"
-                description={`Field definitions for ${typeQuery.data.code}`}
                 backTo={`/master-data/types/${id}`}
                 backLabel="Back to type detail"
                 actions={
                     <Button onClick={() => setDialogMode('create')}>
                         <Plus className="h-4 w-4" />
-                        Create field
+                        Create Data Field
                     </Button>
                 }
             />
+            <MasterDataTypeContext name={typeQuery.data.name} code={typeQuery.data.code} />
+            <MasterDataWorkflowSteps
+                activeStep="dataFile"
+                typeId={id}
+                hasTypes
+                hasFields={hasFields}
+                hasRecords={hasRecords}
+            />
+            {hasFields && !hasRecords ? (
+                <WorkflowContinuationLinkBanner
+                    message="Data field created successfully. Next, create Records."
+                    actionLabel="Create Records"
+                    actionTo={`/master-data/types/${id}/records`}
+                />
+            ) : null}
             <SearchToolbar
                 value={keywordInput}
                 placeholder="Search fields"
@@ -164,12 +194,12 @@ export function MasterDataFieldListPage() {
             {!isLoading && !isError && data ? (
                 data.items.length === 0 ? (
                     <EmptyPlaceholder
-                        title="No fields defined"
-                        description="Create fields to define the record schema for this type."
+                        title="No data fields available"
+                        description={`Create a data field for ${typeQuery.data.name}.`}
                         action={
                             <Button onClick={() => setDialogMode('create')}>
                                 <Plus className="h-4 w-4" />
-                                Create field
+                                Create Data Field
                             </Button>
                         }
                     />
@@ -191,6 +221,8 @@ export function MasterDataFieldListPage() {
                 open={dialogMode !== null}
                 mode={dialogMode ?? 'create'}
                 loading={createMutation.isPending || updateMutation.isPending}
+                typeName={typeQuery.data.name}
+                typeCode={typeQuery.data.code}
                 initial={fieldDetailQuery.data ?? null}
                 nextDisplayOrder={nextDisplayOrder}
                 onSubmit={(values) => void handleSubmit(values)}

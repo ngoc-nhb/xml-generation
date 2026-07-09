@@ -74,8 +74,6 @@ export function WorkspaceListPage() {
     return (
         <div className="space-y-6">
             <WorkspacePageHeader
-                title="Workspaces"
-                description="Create and manage workspaces for templates, master data, and XML generation."
                 actions={
                     <Button asChild>
                         <Link to="/workspaces/new">

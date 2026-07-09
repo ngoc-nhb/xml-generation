@@ -87,21 +87,11 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: 'export-history',
-                        element: (
-                            <PlaceholderPage
-                                title="Export History"
-                                description="Export history UI will be implemented in a later phase."
-                            />
-                        ),
+                        element: <PlaceholderPage />,
                     },
                     {
                         path: 'settings',
-                        element: (
-                            <PlaceholderPage
-                                title="Settings"
-                                description="Account and session settings placeholder."
-                            />
-                        ),
+                        element: <PlaceholderPage />,
                     },
                     { path: 'workspace-required', element: <WorkspaceRequiredPage /> },
                     { path: 'access-denied', element: <AccessDeniedPage /> },

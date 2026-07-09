@@ -31,8 +31,6 @@ export function TemplateCreatePage() {
     return (
         <div className="space-y-6">
             <TemplatePageHeader
-                title="Create template"
-                description="Define template metadata. Schema editing comes next."
                 backTo="/templates"
                 backLabel="Back to templates"
             />
