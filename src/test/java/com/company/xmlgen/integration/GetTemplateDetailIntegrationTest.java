@@ -81,7 +81,7 @@ class GetTemplateDetailIntegrationTest {
     void findById_withoutMetadata_returnsNullSchema() {
         String code = "GET_NO_METADATA_" + UUID.randomUUID();
         Long templateId = templateService
-                .create(new CreateTemplateRequest(code, "Template", "description", null))
+                .create(new CreateTemplateRequest(code, "Template", "description", null, null))
                 .id();
 
         TemplateResponse response = templateService.findById(templateId);
@@ -154,7 +154,7 @@ class GetTemplateDetailIntegrationTest {
                 List.of(new CreateTemplateMappingRequest("GameKindId", masterDataFieldId)));
 
         Long templateId = templateService
-                .create(new CreateTemplateRequest(code, "Template", "description", schema))
+                .create(new CreateTemplateRequest(code, "Template", "description", schema, null))
                 .id();
 
         TemplateResponse response = templateService.findById(templateId);

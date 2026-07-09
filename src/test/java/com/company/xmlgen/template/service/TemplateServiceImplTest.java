@@ -124,7 +124,7 @@ class TemplateServiceImplTest {
 
     @Test
     void create_withoutSchema() {
-        CreateTemplateRequest request = new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, null);
+        CreateTemplateRequest request = new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, null, null);
         when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
@@ -187,7 +187,7 @@ class TemplateServiceImplTest {
         CreateTemplateSchemaRequest schema =
                 new CreateTemplateSchemaRequest(List.of(rootField, childField), List.of());
         CreateTemplateRequest request =
-                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
+                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema, null);
         when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
@@ -238,7 +238,7 @@ class TemplateServiceImplTest {
         CreateTemplateSchemaRequest schema =
                 new CreateTemplateSchemaRequest(List.of(field), List.of(mapping));
         CreateTemplateRequest request =
-                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
+                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema, null);
         when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         MasterDataFieldEntity masterDataField = mock(MasterDataFieldEntity.class);
         when(masterDataField.getMasterDataTypeId()).thenReturn(1L);
@@ -263,7 +263,7 @@ class TemplateServiceImplTest {
     void create_withEmptySchema() {
         CreateTemplateSchemaRequest schema = new CreateTemplateSchemaRequest(List.of(), List.of());
         CreateTemplateRequest request =
-                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
+                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema, null);
         when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
@@ -302,7 +302,7 @@ class TemplateServiceImplTest {
                 null);
         CreateTemplateSchemaRequest schema = new CreateTemplateSchemaRequest(List.of(field), List.of());
         CreateTemplateRequest request =
-                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema);
+                new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, schema, null);
         when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(false);
         TemplateEntity persisted = mock(TemplateEntity.class);
         when(persisted.getId()).thenReturn(10L);
@@ -321,7 +321,7 @@ class TemplateServiceImplTest {
 
     @Test
     void create_duplicateTemplateCode() {
-        CreateTemplateRequest request = new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, null);
+        CreateTemplateRequest request = new CreateTemplateRequest(TEMPLATE_CODE, TEMPLATE_NAME, DESCRIPTION, null, null);
         TemplateEntity existing =
                 new TemplateEntity(TEMPLATE_CODE, TEMPLATE_NAME, TemplateStatus.ACTIVE, USER_ID);
         when(templateRepository.existsByWorkspaceIdAndCode(WORKSPACE_ID, TEMPLATE_CODE)).thenReturn(true);

@@ -24,6 +24,27 @@ class XmlImportParserImplTest {
     }
 
     @Test
+    void parse_preservesRepeatedSiblingElements() {
+        String xml =
+                """
+                <ScheduleInfo>
+                  <Schedule No="1">
+                    <Name>First</Name>
+                  </Schedule>
+                  <Schedule No="2">
+                    <Name>Second</Name>
+                  </Schedule>
+                </ScheduleInfo>
+                """;
+
+        XmlImportNode root = parser.parse(xml.getBytes(StandardCharsets.UTF_8));
+
+        XmlImportNode scheduleInfo = root;
+        assertThat(scheduleInfo.getChildren()).hasSize(2);
+        assertThat(scheduleInfo.getChildren()).extracting(XmlImportNode::getNodeName).containsExactly("Schedule", "Schedule");
+    }
+
+    @Test
     void parse_preservesHierarchyAttributesOrderAndValues() {
         String xml =
                 """
@@ -78,6 +99,32 @@ class TemplateDraftBuilderImplTest {
 
     private final TemplateDraftBuilder builder = new TemplateDraftBuilderImpl();
     private final XmlImportParser parser = new XmlImportParserImpl();
+
+    @Test
+    void build_marksRepeatedSiblingGroupsAsOneOrMore() {
+        String xml =
+                """
+                <ScheduleInfo>
+                  <Schedule No="1">
+                    <Name>First</Name>
+                  </Schedule>
+                  <Schedule No="2">
+                    <Name>Second</Name>
+                  </Schedule>
+                </ScheduleInfo>
+                """;
+
+        XmlImportNode root = parser.parse(xml.getBytes(StandardCharsets.UTF_8));
+        List<TemplateImportDraftFieldResponse> fields = builder.build(root);
+
+        TemplateImportDraftFieldResponse schedule = fields.stream()
+                .filter(field -> "Schedule".equals(field.xmlName()) && "ScheduleInfo".equals(field.parentFieldName()))
+                .findFirst()
+                .orElseThrow();
+
+        assertThat(schedule.nodeType()).isEqualTo(TemplateFieldNodeType.GROUP);
+        assertThat(schedule.occurrenceRule()).isEqualTo(com.company.xmlgen.template.entity.TemplateFieldOccurrenceRule.ONE_OR_MORE);
+    }
 
     @Test
     void build_populatesDefaultValuesAndMetadata() {
@@ -226,13 +273,63 @@ class TemplateDraftBuilderImplTest {
     }
 }
 
+class TemplateImportSampleInputBuilderTest {
+
+    private final XmlImportParser parser = new XmlImportParserImpl();
+    private final TemplateDraftBuilder builder = new TemplateDraftBuilderImpl();
+    private final TemplateImportSampleInputBuilder sampleInputBuilder =
+            new TemplateImportSampleInputBuilder(new com.fasterxml.jackson.databind.ObjectMapper());
+
+    @Test
+    void build_restoresRepeatedSiblingGroupsAsArrays() {
+        String xml =
+                """
+                <ScheduleInfo>
+                  <Schedule No="1">
+                    <Name>First</Name>
+                  </Schedule>
+                  <Schedule No="2">
+                    <Name>Second</Name>
+                  </Schedule>
+                </ScheduleInfo>
+                """;
+
+        XmlImportNode root = parser.parse(xml.getBytes(StandardCharsets.UTF_8));
+        List<TemplateImportDraftFieldResponse> fields = builder.build(root);
+        var sample = sampleInputBuilder.build(root, fields);
+
+        assertThat(sample.get("Schedule").isArray()).isTrue();
+        assertThat(sample.get("Schedule")).hasSize(2);
+        assertThat(sample.get("Schedule").get(0).get("No").asText()).isEqualTo("1");
+        assertThat(sample.get("Schedule").get(0).get("Name").asText()).isEqualTo("First");
+        assertThat(sample.get("Schedule").get(1).get("No").asText()).isEqualTo("2");
+        assertThat(sample.get("Schedule").get(1).get("Name").asText()).isEqualTo("Second");
+    }
+
+    @Test
+    void build_liveGameXml_restoresTeamInfoArray() throws Exception {
+        byte[] xml = java.nio.file.Files.readAllBytes(java.nio.file.Path.of("test_data/live_game.xml"));
+        XmlImportNode root = parser.parse(xml);
+        List<TemplateImportDraftFieldResponse> fields = builder.build(root);
+        var sample = sampleInputBuilder.build(root, fields);
+
+        assertThat(sample.get("GameReport").get("TeamInfo").isArray()).isTrue();
+        assertThat(sample.get("GameReport").get("TeamInfo")).hasSize(2);
+        assertThat(sample.get("GameReport").get("TeamInfo").get(0).get("TeamInfo_HV").asText()).isEqualTo("1");
+        assertThat(sample.get("GameReport").get("TeamInfo").get(1).get("TeamInfo_HV").asText()).isEqualTo("2");
+    }
+}
+
 class TemplateImportServiceImplTest {
 
     private TemplateImportService service;
 
     @BeforeEach
     void setUp() {
-        service = new TemplateImportServiceImpl(new XmlImportParserImpl(), new TemplateDraftBuilderImpl());
+        TemplateImportSampleInputBuilder sampleInputBuilder =
+                new TemplateImportSampleInputBuilder(new com.fasterxml.jackson.databind.ObjectMapper());
+        service = new TemplateImportServiceImpl(
+                new XmlImportParserImpl(), new TemplateDraftBuilderImpl(), sampleInputBuilder);
     }
 
     @Test
@@ -246,5 +343,7 @@ class TemplateImportServiceImplTest {
         assertThat(draft.suggestedName()).isEqualTo("live_game");
         assertThat(draft.suggestedCode()).isEqualTo("LIVE_GAME");
         assertThat(draft.fields()).isNotEmpty();
+        assertThat(draft.sampleInputJson()).isNotNull();
+        assertThat(draft.sampleInputJson().get("GameKindID").asText()).isEqualTo("2");
     }
 }

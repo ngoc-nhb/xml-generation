@@ -49,6 +49,10 @@ public class TemplateEntity extends BaseEntity {
     @Column(name = "compiled_schema_json", columnDefinition = "jsonb")
     private JsonNode compiledSchemaJson;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "sample_input_json", columnDefinition = "jsonb")
+    private JsonNode sampleInputJson;
+
     @Column(name = "created_by", nullable = false)
     private Long createdById;
 
@@ -108,6 +112,14 @@ public class TemplateEntity extends BaseEntity {
 
     public void setCompiledSchemaJson(JsonNode compiledSchemaJson) {
         this.compiledSchemaJson = compiledSchemaJson;
+    }
+
+    public JsonNode getSampleInputJson() {
+        return sampleInputJson;
+    }
+
+    public void setSampleInputJson(JsonNode sampleInputJson) {
+        this.sampleInputJson = sampleInputJson;
     }
 
     public Long getCreatedById() {

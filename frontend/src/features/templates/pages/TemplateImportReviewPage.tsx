@@ -70,6 +70,8 @@ export function TemplateImportReviewPage() {
         );
     }
 
+    const importDraft = draft;
+
     async function handleSaveSchema(schema: { fields: TemplateField[]; mappings: TemplateMapping[] }) {
         const metadataValid = await form.trigger();
         if (!metadataValid) {
@@ -83,6 +85,7 @@ export function TemplateImportReviewPage() {
                 code: metadata.code,
                 name: metadata.name,
                 description: metadata.description || null,
+                sampleInputJson: importDraft.sampleInputJson,
                 schema: {
                     version: null,
                     fields: schema.fields,
@@ -106,7 +109,7 @@ export function TemplateImportReviewPage() {
         <div className="space-y-6">
             <TemplatePageHeader
                 title="Review imported template"
-                description={`Draft generated from ${draft.sourceFileName}. Configure metadata, then review fields before saving.`}
+                description={`Draft generated from ${importDraft.sourceFileName}. Configure metadata, then review fields before saving.`}
                 backTo="/templates"
                 backLabel="Back to templates"
             />

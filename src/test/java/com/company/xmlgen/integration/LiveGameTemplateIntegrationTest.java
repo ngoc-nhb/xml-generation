@@ -85,7 +85,8 @@ class LiveGameTemplateIntegrationTest {
                         code,
                         createPayload.get("name").asText(),
                         createPayload.get("description").asText(),
-                        schema))
+                        schema,
+                        null))
                 .id();
 
         var template = templateRepository.findById(templateId).orElseThrow();

@@ -65,7 +65,7 @@ class WorkspaceIsolationIntegrationTest {
     void templateInAnotherWorkspaceIsNotAccessible() {
         String code = "ISO_" + UUID.randomUUID().toString().substring(0, 8);
         Long templateId = templateService
-                .create(new CreateTemplateRequest(code, "Workspace A Template", null, null))
+                .create(new CreateTemplateRequest(code, "Workspace A Template", null, null, null))
                 .id();
 
         var otherWorkspace = workspaceService.create(new CreateWorkspaceRequest(

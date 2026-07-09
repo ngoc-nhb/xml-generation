@@ -1,10 +1,6 @@
 package com.company.xmlgen.template.importing.dto.response;
 
-import com.company.xmlgen.template.entity.TemplateFieldEmptyHandling;
-import com.company.xmlgen.template.entity.TemplateFieldNodeType;
-import com.company.xmlgen.template.entity.TemplateFieldOccurrenceRule;
-import com.company.xmlgen.template.entity.TemplateFieldSourceType;
-import com.company.xmlgen.template.entity.TemplateFieldValueType;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 
 /**
@@ -14,4 +10,5 @@ public record TemplateImportDraftResponse(
         String suggestedCode,
         String suggestedName,
         String sourceFileName,
-        List<TemplateImportDraftFieldResponse> fields) {}
+        List<TemplateImportDraftFieldResponse> fields,
+        JsonNode sampleInputJson) {}

@@ -8,7 +8,6 @@ import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -124,12 +123,7 @@ public class XmlImportParserImpl implements XmlImportParser {
             displayOrderSeed++;
         }
 
-        Map<String, Element> firstChildByName = new LinkedHashMap<>();
         for (Element childElement : childElements) {
-            firstChildByName.putIfAbsent(childElement.getTagName(), childElement);
-        }
-
-        for (Element childElement : firstChildByName.values()) {
             group.addChild(convertElement(childElement, group));
             displayOrderSeed++;
         }

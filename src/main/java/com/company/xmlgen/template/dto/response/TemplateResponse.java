@@ -1,6 +1,7 @@
 package com.company.xmlgen.template.dto.response;
 
 import com.company.xmlgen.template.entity.TemplateStatus;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.time.Instant;
 
 /**
@@ -16,5 +17,6 @@ public record TemplateResponse(
         TemplateStatus status,
         Instant createdAt,
         Instant updatedAt,
-        TemplateSchemaResponse schema) {
+        TemplateSchemaResponse schema,
+        JsonNode sampleInputJson) {
 }

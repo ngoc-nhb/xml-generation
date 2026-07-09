@@ -44,11 +44,17 @@ import { toast } from '@/providers/ToastProvider';
 import { useQueryClient } from '@tanstack/react-query';
 
 type InputMode = 'form' | 'json';
+type InitMode = 'empty' | 'sample';
+
+function hasSampleInputData(sample: Record<string, unknown> | null | undefined): boolean {
+    return sample != null && typeof sample === 'object' && Object.keys(sample).length > 0;
+}
 
 export function ExecutionPanel() {
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateListItem | null>(null);
     const [inputMode, setInputMode] = useState<InputMode>('form');
+    const [initMode, setInitMode] = useState<InitMode>('empty');
     const [formDataOverride, setFormDataOverride] = useState<FormObject | null>(null);
     const [masterDataOverride, setMasterDataOverride] = useState<SelectedMasterDataEntry[] | null>(null);
     const [inputJsonOverride, setInputJsonOverride] = useState<string | null>(null);
@@ -92,7 +98,12 @@ export function ExecutionPanel() {
         [schemaFields],
     );
 
-    const initialFormData = useMemo(() => {
+    const hasSampleData = useMemo(
+        () => hasSampleInputData(templateDetail?.sampleInputJson),
+        [templateDetail?.sampleInputJson],
+    );
+
+    const emptyInitFormData = useMemo(() => {
         if (schemaFields.length === 0) {
             return {};
         }
@@ -101,6 +112,20 @@ export function ExecutionPanel() {
         }
         return mergeSavedInputIntoFormData(defaultFormData, savedInputQuery.data.inputData);
     }, [schemaFields, defaultFormData, savedInputQuery.data]);
+
+    const sampleInitFormData = useMemo(() => {
+        if (schemaFields.length === 0 || !hasSampleData || !templateDetail?.sampleInputJson) {
+            return defaultFormData;
+        }
+        return mergeSavedInputIntoFormData(defaultFormData, templateDetail.sampleInputJson);
+    }, [schemaFields, defaultFormData, hasSampleData, templateDetail?.sampleInputJson]);
+
+    const initialFormData = useMemo(() => {
+        if (initMode === 'sample' && hasSampleData) {
+            return sampleInitFormData;
+        }
+        return emptyInitFormData;
+    }, [initMode, hasSampleData, sampleInitFormData, emptyInitFormData]);
 
     const initialMasterDataSelections = useMemo(() => {
         if (masterTypesLoading) {
@@ -258,6 +283,7 @@ export function ExecutionPanel() {
     function applyTemplateSelection(templateId: number | null, template: TemplateListItem | null) {
         resetInputOverrides();
         restoredToastTemplateId.current = null;
+        setInitMode('empty');
         setSelectedTemplateId(templateId);
         setSelectedTemplate(template);
         setOutputXml(null);
@@ -283,6 +309,16 @@ export function ExecutionPanel() {
             setJsonError(null);
         }
         setInputMode(mode);
+    }
+
+    function handleInitModeChange(mode: InitMode) {
+        if (mode === initMode) {
+            return;
+        }
+        setInitMode(mode);
+        setFormDataOverride(null);
+        setInputJsonOverride(null);
+        setJsonError(null);
     }
 
     function handleGroupOpenChange(groupKey: string, open: boolean) {
@@ -333,6 +369,29 @@ export function ExecutionPanel() {
                 <div className="max-w-md">
                     <TemplateSelector value={selectedTemplateId} onChange={handleTemplateChange} />
                 </div>
+                {selectedTemplateId && hasSampleData ? (
+                    <div className="space-y-2">
+                        <p className="text-sm font-medium text-foreground">Initialization</p>
+                        <div className="flex flex-wrap gap-2">
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={initMode === 'empty' ? 'default' : 'outline'}
+                                onClick={() => handleInitModeChange('empty')}
+                            >
+                                New Empty Input
+                            </Button>
+                            <Button
+                                type="button"
+                                size="sm"
+                                variant={initMode === 'sample' ? 'default' : 'outline'}
+                                onClick={() => handleInitModeChange('sample')}
+                            >
+                                Load Sample Data
+                            </Button>
+                        </div>
+                    </div>
+                ) : null}
             </div>
 
             <div className="flex min-h-0 flex-1 flex-col py-4">
@@ -381,7 +440,7 @@ export function ExecutionPanel() {
                             ) : inputMode === 'form' ? (
                                 schemaReady && inputFieldCount > 0 ? (
                                     <DynamicInputForm
-                                        key={selectedTemplateId}
+                                        key={`${selectedTemplateId}-${initMode}`}
                                         fields={schemaFields}
                                         value={formData}
                                         groupOpenState={groupOpenState}
@@ -396,7 +455,7 @@ export function ExecutionPanel() {
                                 )
                             ) : (
                                 <JsonInputEditor
-                                    key={selectedTemplateId}
+                                    key={`${selectedTemplateId}-${initMode}`}
                                     value={inputJson}
                                     onChange={(next) => setInputJsonOverride(next)}
                                     onValidationChange={setJsonError}

@@ -2,6 +2,7 @@ package com.company.xmlgen.template.importing.service;
 
 import com.company.xmlgen.template.entity.TemplateFieldEmptyHandling;
 import com.company.xmlgen.template.entity.TemplateFieldNodeType;
+import com.company.xmlgen.template.entity.TemplateFieldOccurrenceRule;
 import com.company.xmlgen.template.entity.TemplateFieldValueType;
 import com.company.xmlgen.template.importing.domain.XmlImportNode;
 import com.company.xmlgen.template.importing.domain.XmlImportNodeType;
@@ -9,6 +10,7 @@ import com.company.xmlgen.template.importing.dto.response.TemplateImportDraftFie
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,13 +27,14 @@ public class TemplateDraftBuilderImpl implements TemplateDraftBuilder {
         List<TemplateImportDraftFieldResponse> fields = new ArrayList<>();
         Set<String> usedFieldNames = new HashSet<>();
         Set<String> conflictingXmlNames = findConflictingXmlNames(root);
-        appendNode(root, null, fields, usedFieldNames, conflictingXmlNames);
+        appendNode(root, null, null, fields, usedFieldNames, conflictingXmlNames);
         return fields;
     }
 
     private String appendNode(
             XmlImportNode node,
             String parentFieldName,
+            TemplateFieldOccurrenceRule occurrenceRule,
             List<TemplateImportDraftFieldResponse> fields,
             Set<String> usedFieldNames,
             Set<String> conflictingXmlNames) {
@@ -68,7 +71,7 @@ public class TemplateDraftBuilderImpl implements TemplateDraftBuilder {
                 nodeType,
                 isLeaf || isAttribute ? TemplateFieldValueType.STRING : null,
                 null,
-                null,
+                occurrenceRule,
                 importedValue.emptyHandling(),
                 false,
                 null,
@@ -80,11 +83,50 @@ public class TemplateDraftBuilderImpl implements TemplateDraftBuilder {
                 null,
                 true));
 
-        for (XmlImportNode child : node.getChildren()) {
-            appendNode(child, fieldName, fields, usedFieldNames, conflictingXmlNames);
-        }
+        appendChildren(node, fieldName, fields, usedFieldNames, conflictingXmlNames);
 
         return fieldName;
+    }
+
+    private void appendChildren(
+            XmlImportNode parentNode,
+            String parentFieldName,
+            List<TemplateImportDraftFieldResponse> fields,
+            Set<String> usedFieldNames,
+            Set<String> conflictingXmlNames) {
+        List<XmlImportNode> attributes = new ArrayList<>();
+        List<XmlImportNode> elements = new ArrayList<>();
+
+        for (XmlImportNode child : parentNode.getChildren()) {
+            if (child.getNodeType() == XmlImportNodeType.ATTRIBUTE) {
+                attributes.add(child);
+            } else {
+                elements.add(child);
+            }
+        }
+
+        for (XmlImportNode attribute : attributes) {
+            appendNode(attribute, parentFieldName, null, fields, usedFieldNames, conflictingXmlNames);
+        }
+
+        Map<String, List<XmlImportNode>> siblingsByXmlName = new LinkedHashMap<>();
+        for (XmlImportNode element : elements) {
+            siblingsByXmlName.computeIfAbsent(element.getNodeName(), ignored -> new ArrayList<>()).add(element);
+        }
+
+        for (List<XmlImportNode> siblings : siblingsByXmlName.values()) {
+            if (siblings.size() > 1) {
+                appendNode(
+                        siblings.getFirst(),
+                        parentFieldName,
+                        TemplateFieldOccurrenceRule.ONE_OR_MORE,
+                        fields,
+                        usedFieldNames,
+                        conflictingXmlNames);
+            } else {
+                appendNode(siblings.getFirst(), parentFieldName, null, fields, usedFieldNames, conflictingXmlNames);
+            }
+        }
     }
 
     /**

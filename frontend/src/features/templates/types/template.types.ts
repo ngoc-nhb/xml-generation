@@ -60,6 +60,7 @@ export interface TemplateImportDraft {
     suggestedName: string;
     sourceFileName: string;
     fields: Array<TemplateField & { imported: boolean }>;
+    sampleInputJson: Record<string, unknown> | null;
 }
 
 export interface TemplateMapping {
@@ -82,6 +83,7 @@ export interface TemplateDetail {
     createdAt: string;
     updatedAt: string;
     schema: TemplateSchema | null;
+    sampleInputJson: Record<string, unknown> | null;
 }
 
 export interface CreateTemplateRequest {
@@ -89,6 +91,7 @@ export interface CreateTemplateRequest {
     name: string;
     description?: string | null;
     schema?: TemplateSchema | null;
+    sampleInputJson?: Record<string, unknown> | null;
 }
 
 export interface UpdateTemplateRequest {

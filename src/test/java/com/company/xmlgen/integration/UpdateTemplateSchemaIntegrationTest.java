@@ -185,7 +185,7 @@ class UpdateTemplateSchemaIntegrationTest {
                                 1)),
                 List.of());
         return templateService
-                .create(new CreateTemplateRequest(code, "Template", "description", schema))
+                .create(new CreateTemplateRequest(code, "Template", "description", schema, null))
                 .id();
     }
 

@@ -59,7 +59,7 @@ class TemplateDeleteIntegrationTest {
     @Test
     void createAfterDelete_allowsSameTemplateCode() {
         String code = "DELETE_INTEGRATION_TEST";
-        CreateTemplateRequest request = new CreateTemplateRequest(code, "Original Name", "description", null);
+        CreateTemplateRequest request = new CreateTemplateRequest(code, "Original Name", "description", null, null);
 
         Long id = templateService.create(request).id();
         assertThat(templateRepository.findByWorkspaceIdAndCode(1L, code)).isPresent();

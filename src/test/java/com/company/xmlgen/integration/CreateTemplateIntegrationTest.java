@@ -89,7 +89,7 @@ class CreateTemplateIntegrationTest {
         String code = "CREATE_NO_SCHEMA_" + UUID.randomUUID();
 
         Long templateId = templateService
-                .create(new CreateTemplateRequest(code, "No Schema Template", "description", null))
+                .create(new CreateTemplateRequest(code, "No Schema Template", "description", null, null))
                 .id();
 
         var template = templateRepository.findById(templateId).orElseThrow();
@@ -161,7 +161,7 @@ class CreateTemplateIntegrationTest {
                 List.of(new CreateTemplateMappingRequest("GameKindId", masterDataFieldId)));
 
         Long templateId = templateService
-                .create(new CreateTemplateRequest(code, "Schema Template", "description", schema))
+                .create(new CreateTemplateRequest(code, "Schema Template", "description", schema, null))
                 .id();
 
         var template = templateRepository.findById(templateId).orElseThrow();

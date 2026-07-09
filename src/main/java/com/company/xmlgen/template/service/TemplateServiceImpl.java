@@ -91,6 +91,7 @@ public class TemplateServiceImpl implements TemplateService {
                 currentUser.id());
         template.setWorkspaceId(workspaceId);
         template.setDescription(request.description());
+        template.setSampleInputJson(request.sampleInputJson());
 
         TemplateEntity saved = templateRepository.save(template);
 
@@ -160,7 +161,8 @@ public class TemplateServiceImpl implements TemplateService {
                 template.getStatus(),
                 template.getCreatedAt(),
                 template.getUpdatedAt(),
-                loadSchemaFromMetadata(template.getId()));
+                loadSchemaFromMetadata(template.getId()),
+                template.getSampleInputJson());
     }
 
     @Override
