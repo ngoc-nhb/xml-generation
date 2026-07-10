@@ -38,33 +38,44 @@ export function useResolvedMasterDataTypes(mappings: TemplateMapping[], fields: 
     }, [fieldQueries]);
 
 /**
-     * Types required by mappings, ordered by first appearance in the template mapping list,
-     * each paired with the repeatable group field name that owns it (or `null` when the
-     * mapped field lives outside any repeatable group — the pre-existing single-selection case).
-     * The owning group is derived from the *first* mapping seen for that type, since every
-     * field mapped to the same Master Data type is expected to belong to the same group
-     * instance (e.g. SeasonID and SeasonName both live under GameCategory).
+     * Master Data contexts required by mappings, ordered by first appearance in the template
+     * mapping list. A context is one (type, owning repeatable group) pair — the same type
+     * mapped inside two different repeatable groups (or once at template level and once in a
+     * group) yields separate contexts, each with its own occurrence-scoped selections.
+     * `groupFieldName` is `null` when the mapped field lives outside any repeatable group —
+     * the pre-existing single-selection case.
      */
     const requiredTypeContexts = useMemo((): MasterDataTypeContext[] => {
         const types = typesQuery.data?.items ?? [];
         const typeById = new Map(types.map((type) => [type.id, type]));
+        const fieldByName = new Map(fields.map((field) => [field.fieldName, field]));
         const result: MasterDataTypeContext[] = [];
-        const seenTypeIds = new Set<number>();
+        const seenContextKeys = new Set<string>();
 
         for (const mapping of mappings) {
             if (!mapping.masterDataFieldId) {
                 continue;
             }
+            // A mapping row can outlive its field's MASTER_DATA sourceType (e.g. the field was
+            // mapped, then switched back to INPUT) — such stale mappings must not spawn a section.
+            if (fieldByName.get(mapping.fieldName)?.sourceType !== 'MASTER_DATA') {
+                continue;
+            }
             const typeId = fieldIdToTypeId.get(mapping.masterDataFieldId);
-            if (!typeId || seenTypeIds.has(typeId)) {
+            if (!typeId) {
+                continue;
+            }
+            const groupFieldName = findOwningRepeatableGroupFieldName(fields, mapping.fieldName);
+            const contextKey = `${typeId}:${groupFieldName ?? ''}`;
+            if (seenContextKeys.has(contextKey)) {
                 continue;
             }
             const type = typeById.get(typeId);
             if (!type) {
                 continue;
             }
-            result.push({ type, groupFieldName: findOwningRepeatableGroupFieldName(fields, mapping.fieldName) });
-            seenTypeIds.add(typeId);
+            result.push({ type, groupFieldName });
+            seenContextKeys.add(contextKey);
         }
 
         return result;

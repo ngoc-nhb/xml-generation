@@ -72,7 +72,7 @@ export function TemplateMappedMasterDataSelector({
                     const label =
                         groupFieldName === null
                             ? type.name
-                            : `${groupFieldName}[${occurrenceIndex}] — ${type.name}`;
+                            : `${groupFieldName}[${occurrenceIndex}].${type.name}`;
 
                     return (
                         <li key={`${type.id}-${groupFieldName ?? 'root'}-${occurrenceIndex}`} className="space-y-0.5">

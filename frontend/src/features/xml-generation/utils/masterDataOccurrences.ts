@@ -8,6 +8,38 @@ export interface MasterDataTypeContext {
 }
 
 /**
+ * The repeatable group may sit at any depth of the form data tree (e.g.
+ * `GameSchedule.GameCategory`), so a top-level key lookup is not enough.
+ * Field names are unique within a template schema, so the first key match found
+ * while walking nested objects is the group.
+ */
+function findGroupValue(scope: unknown, groupFieldName: string): unknown {
+    if (scope === null || typeof scope !== 'object') {
+        return undefined;
+    }
+    if (Array.isArray(scope)) {
+        for (const item of scope) {
+            const found = findGroupValue(item, groupFieldName);
+            if (found !== undefined) {
+                return found;
+            }
+        }
+        return undefined;
+    }
+    const record = scope as Record<string, unknown>;
+    if (groupFieldName in record) {
+        return record[groupFieldName];
+    }
+    for (const value of Object.values(record)) {
+        const found = findGroupValue(value, groupFieldName);
+        if (found !== undefined) {
+            return found;
+        }
+    }
+    return undefined;
+}
+
+/**
  * Number of Master Data sections `groupFieldName` currently needs, derived from the live
  * input form data — not the schema — so it tracks add/remove/duplicate of group instances
  * automatically. `null` (template-level, not inside a repeatable group) always needs exactly 1.
@@ -19,7 +51,7 @@ export function countGroupOccurrences(
     if (groupFieldName === null) {
         return 1;
     }
-    const raw = formData[groupFieldName];
+    const raw = findGroupValue(formData, groupFieldName);
     return Array.isArray(raw) ? raw.length : 0;
 }
 
