@@ -1,5 +1,7 @@
 import type { MasterDataTypeListItem } from '@/features/master-data/types/master-data.types';
+import type { TemplateField } from '@/features/templates/types/template.types';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
+import { isSchemaContainerField, type FormObject } from '@/features/xml-generation/utils/inputFormSchema';
 
 /** A Master Data type required by the template schema, scoped to the repeatable group that owns it (if any). */
 export interface MasterDataTypeContext {
@@ -130,4 +132,107 @@ export function removeGroupOccurrenceAndReindex(
                 ? { ...entry, occurrenceIndex: entry.occurrenceIndex - 1 }
                 : entry,
         );
+}
+
+function isRepeatableRule(rule: TemplateField['occurrenceRule']): boolean {
+    return rule === 'ONE_OR_MORE' || rule === 'ZERO_OR_MORE';
+}
+
+/** Writes `value` at the schema path of `fieldName`, cloning only the touched branch so React state updates correctly. Returns null when the path cannot be resolved. */
+function setFieldValueAtPath(
+    fields: TemplateField[],
+    formData: FormObject,
+    fieldName: string,
+    groupFieldName: string | null,
+    occurrenceIndex: number,
+    value: unknown,
+): FormObject | null {
+    const byName = new Map(fields.map((field) => [field.fieldName, field]));
+    const field = byName.get(fieldName);
+    if (!field) {
+        return null;
+    }
+
+    const ancestors: TemplateField[] = [];
+    let current: TemplateField | undefined = field;
+    while (current?.parentFieldName) {
+        const parent = byName.get(current.parentFieldName);
+        if (!parent) {
+            return null;
+        }
+        ancestors.unshift(parent);
+        current = parent;
+    }
+
+    // resolveInitialFormData unwraps a single root container, so drop it from the path too.
+    const roots = fields.filter((item) => !item.parentFieldName);
+    if (
+        ancestors.length > 0 &&
+        roots.length === 1 &&
+        isSchemaContainerField(roots[0], fields) &&
+        ancestors[0].fieldName === roots[0].fieldName
+    ) {
+        ancestors.shift();
+    }
+
+    const result: FormObject = { ...formData };
+    let scope: FormObject = result;
+    for (const ancestor of ancestors) {
+        const key = ancestor.fieldName;
+        if (isRepeatableRule(ancestor.occurrenceRule)) {
+            // Only the occurrence the user picked for may be written; a repeatable ancestor
+            // other than the selection's own group would make the target occurrence ambiguous.
+            if (ancestor.fieldName !== groupFieldName) {
+                return null;
+            }
+            const items = scope[key];
+            if (!Array.isArray(items) || occurrenceIndex >= items.length) {
+                return null;
+            }
+            const nextItems = [...items];
+            nextItems[occurrenceIndex] = { ...nextItems[occurrenceIndex] };
+            scope[key] = nextItems;
+            scope = nextItems[occurrenceIndex];
+            continue;
+        }
+
+        const child = scope[key];
+        const nextChild: FormObject =
+            child !== null && typeof child === 'object' && !Array.isArray(child) ? { ...child } : {};
+        scope[key] = nextChild;
+        scope = nextChild;
+    }
+
+    scope[field.fieldName] = value === null || value === undefined ? '' : (value as FormObject[string]);
+    return result;
+}
+
+/**
+ * Applies a picked Master Data record's values onto the input form data, so the mapped
+ * MASTER_DATA fields (e.g. SeasonID/SeasonName) update live in the Input Data panel the
+ * moment a record is selected — scoped to the one group occurrence the pick belongs to.
+ */
+export function applyMasterDataRecordToFormData(
+    fields: TemplateField[],
+    formData: FormObject,
+    mappings: Array<{ fieldName: string; masterDataFieldName: string }>,
+    entry: Pick<SelectedMasterDataEntry, 'groupFieldName' | 'occurrenceIndex'>,
+    recordData: Record<string, unknown>,
+): FormObject {
+    let next = formData;
+    for (const mapping of mappings) {
+        const value = recordData[mapping.masterDataFieldName];
+        const updated = setFieldValueAtPath(
+            fields,
+            next,
+            mapping.fieldName,
+            entry.groupFieldName,
+            entry.occurrenceIndex,
+            value,
+        );
+        if (updated) {
+            next = updated;
+        }
+    }
+    return next;
 }

@@ -7,7 +7,8 @@ import { formatMasterDataRecordLabel } from '@/features/xml-generation/utils/mas
 interface MasterDataTypeRecordPickerProps {
     typeId: number;
     value: number | null;
-    onChange: (recordId: number, recordLabel: string) => void;
+    /** `recordData` is the picked record's raw field values, `null` when the selection is cleared. */
+    onChange: (recordId: number, recordLabel: string, recordData: Record<string, unknown> | null) => void;
     disabled?: boolean;
 }
 
@@ -39,7 +40,7 @@ export function MasterDataTypeRecordPicker({
                 const recordId = Number(event.target.value);
                 const record = records.find((item) => item.id === recordId);
                 const label = record ? formatMasterDataRecordLabel(fields, record.data) : '';
-                onChange(recordId, label);
+                onChange(recordId, label, record?.data ?? null);
             }}
         >
             <option value="">{isLoading ? 'Loading records…' : 'Select a record…'}</option>

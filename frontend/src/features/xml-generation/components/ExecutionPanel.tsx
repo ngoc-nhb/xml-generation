@@ -25,7 +25,12 @@ import { TemplateMappedMasterDataSelector } from '@/features/xml-generation/comp
 import { TemplateSelector } from '@/features/xml-generation/components/TemplateSelector';
 import { XmlPreviewDialog } from '@/features/xml-generation/components/XmlPreviewDialog';
 import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useResolvedMasterDataTypes';
-import { buildDefaultSelections, removeGroupOccurrenceAndReindex } from '@/features/xml-generation/utils/masterDataOccurrences';
+import {
+    applyMasterDataRecordToFormData,
+    buildDefaultSelections,
+    removeGroupOccurrenceAndReindex,
+} from '@/features/xml-generation/utils/masterDataOccurrences';
+import { findOwningRepeatableGroupFieldName } from '@/features/templates/utils/schemaTree';
 import { useExportXml, usePreviewXml } from '@/features/xml-generation/hooks/useXmlGeneration';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
 import {
@@ -390,6 +395,24 @@ export function ExecutionPanel() {
         setMasterDataOverride(removeGroupOccurrenceAndReindex(masterDataSelections, groupFieldName, removedIndex));
     }
 
+    /** Mirrors a picked Master Data record's values into the mapped input fields immediately. */
+    function handleMasterDataRecordPicked(entry: SelectedMasterDataEntry, recordData: Record<string, unknown> | null) {
+        if (!recordData) {
+            return;
+        }
+        const mappingsForContext = compileMappings.filter(
+            (mapping) =>
+                mapping.masterDataTypeCode === entry.typeCode &&
+                findOwningRepeatableGroupFieldName(schemaFields, mapping.fieldName) === entry.groupFieldName,
+        );
+        if (mappingsForContext.length === 0) {
+            return;
+        }
+        setFormDataOverride(
+            applyMasterDataRecordToFormData(schemaFields, formData, mappingsForContext, entry, recordData),
+        );
+    }
+
     function expandAllGroups() {
         setGroupOpenState(buildInputGroupOpenState(groupKeys, true));
     }
@@ -405,6 +428,7 @@ export function ExecutionPanel() {
             formData={formData}
             selections={masterDataSelections}
             onChange={setMasterDataOverride}
+            onRecordPicked={handleMasterDataRecordPicked}
         />
     ) : (
         <p className="text-sm text-muted-foreground">Select a template to load master data selectors.</p>

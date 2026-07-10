@@ -16,6 +16,8 @@ interface TemplateMappedMasterDataSelectorProps {
     formData: Record<string, unknown>;
     selections: SelectedMasterDataEntry[];
     onChange: (selections: SelectedMasterDataEntry[]) => void;
+    /** Fired alongside `onChange` with the picked record's raw field values, so the parent can mirror them into the input form. `recordData` is `null` when the selection is cleared. */
+    onRecordPicked?: (entry: SelectedMasterDataEntry, recordData: Record<string, unknown> | null) => void;
 }
 
 export function TemplateMappedMasterDataSelector({
@@ -24,6 +26,7 @@ export function TemplateMappedMasterDataSelector({
     formData,
     selections,
     onChange,
+    onRecordPicked,
 }: TemplateMappedMasterDataSelectorProps) {
     const { requiredTypeContexts, isLoading } = useResolvedMasterDataTypes(mappings, fields);
 
@@ -45,18 +48,19 @@ export function TemplateMappedMasterDataSelector({
         occurrenceIndex: number,
         recordId: number,
         recordLabel: string,
+        recordData: Record<string, unknown> | null,
     ) {
-        onChange(
-            upsertSelectionEntry(selections, {
-                typeId,
-                typeCode,
-                typeName,
-                recordId,
-                recordLabel,
-                groupFieldName,
-                occurrenceIndex,
-            }),
-        );
+        const entry: SelectedMasterDataEntry = {
+            typeId,
+            typeCode,
+            typeName,
+            recordId,
+            recordLabel,
+            groupFieldName,
+            occurrenceIndex,
+        };
+        onChange(upsertSelectionEntry(selections, entry));
+        onRecordPicked?.(entry, recordData);
     }
 
     return (
@@ -80,7 +84,7 @@ export function TemplateMappedMasterDataSelector({
                             <MasterDataTypeRecordPicker
                                 typeId={type.id}
                                 value={entry && entry.recordId > 0 ? entry.recordId : null}
-                                onChange={(recordId, recordLabel) =>
+                                onChange={(recordId, recordLabel, recordData) =>
                                     updateSelection(
                                         type.id,
                                         type.code,
@@ -89,6 +93,7 @@ export function TemplateMappedMasterDataSelector({
                                         occurrenceIndex,
                                         recordId,
                                         recordLabel,
+                                        recordData,
                                     )
                                 }
                             />
