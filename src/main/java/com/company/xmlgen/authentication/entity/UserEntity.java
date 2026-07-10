@@ -38,6 +38,13 @@ public class UserEntity extends BaseEntity {
     protected UserEntity() {
     }
 
+    public UserEntity(String username, String passwordHash, boolean admin) {
+        this.username = username;
+        this.passwordHash = passwordHash;
+        this.admin = admin;
+        this.active = true;
+    }
+
     public String getUsername() {
         return username;
     }

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
-import { Database, FileCode2, History, LogOut, Settings, Shapes } from 'lucide-react';
+import { Database, FileCode2, History, LogOut, Settings, Shapes, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { WorkspaceSwitcher } from '@/features/workspace';
@@ -14,6 +14,8 @@ const navItems = [
     { to: '/export-history', label: 'Export History', icon: History, adminOnly: false },
     { to: '/settings', label: 'Settings', icon: Settings, adminOnly: false },
 ];
+
+const adminNavItems = [{ to: '/administration/users', label: 'User Management', icon: Users }];
 
 function AppShellContent() {
     const { user, logout } = useAuth();
@@ -47,6 +49,30 @@ function AppShellContent() {
                                 {label}
                             </NavLink>
                         ))}
+                    {user?.isAdmin ? (
+                        <div className="pt-4">
+                            <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                                Administration
+                            </p>
+                            {adminNavItems.map(({ to, label, icon: Icon }) => (
+                                <NavLink
+                                    key={to}
+                                    to={to}
+                                    className={({ isActive }) =>
+                                        cn(
+                                            'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                                            isActive
+                                                ? 'bg-accent text-accent-foreground'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                                        )
+                                    }
+                                >
+                                    <Icon className="h-4 w-4" aria-hidden />
+                                    {label}
+                                </NavLink>
+                            ))}
+                        </div>
+                    ) : null}
                 </nav>
                 <div className="border-t border-border p-4">
                     <div className="mb-3 space-y-0.5">

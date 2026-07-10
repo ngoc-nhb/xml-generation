@@ -87,6 +87,13 @@ const ROUTE_META_RULES: RouteMetaRule[] = [
         },
     },
     {
+        pattern: /^\/administration\/users$/,
+        meta: {
+            title: 'User Management',
+            description: 'Create and manage system user accounts and roles.',
+        },
+    },
+    {
         pattern: /^\/workspaces$/,
         meta: {
             title: 'Workspaces',

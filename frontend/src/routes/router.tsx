@@ -29,6 +29,7 @@ import {
     MasterDataTypeEditPage,
     MasterDataTypeListPage,
 } from '@/features/master-data';
+import { UserListPage } from '@/features/user-management';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { DefaultHomeRedirect } from '@/routes/DefaultHomeRedirect';
 
@@ -72,6 +73,11 @@ export const router = createBrowserRouter([
                             { path: 'types/:typeId/fields', element: <MasterDataFieldListPage /> },
                             { path: 'types/:typeId/records', element: <MasterDataRecordListPage /> },
                         ],
+                    },
+                    {
+                        path: 'administration/users',
+                        element: <ProtectedRoute requireAdmin />,
+                        children: [{ index: true, element: <UserListPage /> }],
                     },
                     {
                         path: 'workspaces',
