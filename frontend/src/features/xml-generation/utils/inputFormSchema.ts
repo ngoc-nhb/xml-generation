@@ -89,12 +89,15 @@ function coerceOutputScalar(value: FormScalar, valueType: TemplateField['valueTy
     }
 }
 
-function isInputField(field: TemplateField): boolean {
-    return (field.nodeType === 'ELEMENT' || field.nodeType === 'ATTRIBUTE') && field.sourceType === 'INPUT';
+function isScalarDataField(field: TemplateField): boolean {
+    return (
+        (field.nodeType === 'ELEMENT' || field.nodeType === 'ATTRIBUTE') &&
+        (field.sourceType === 'INPUT' || field.sourceType === 'MASTER_DATA')
+    );
 }
 
 export function isFormInputField(field: TemplateField): boolean {
-    return isInputField(field);
+    return isScalarDataField(field);
 }
 
 function fieldHasChildren(field: TemplateField, fields: TemplateField[]): boolean {
@@ -130,7 +133,7 @@ export function buildNodeDefault(node: FieldTreeNode): FormValue | undefined {
         return object;
     }
 
-    if (!isInputField(field)) {
+    if (!isScalarDataField(field)) {
         return undefined;
     }
 
@@ -194,6 +197,135 @@ function mergeFormValue(base: FormValue | undefined, saved: unknown): FormValue 
     return saved as FormScalar;
 }
 
+/**
+ * Accepts both canonical input ({@code CommentReport: {...}}) and wrapped root input
+ * ({@code Football: { CommentReport: {...} }}) when the template has a single root container.
+ */
+export function unwrapRootInputScope(
+    fields: TemplateField[],
+    inputData: Record<string, unknown>,
+): Record<string, unknown> {
+    const tree = buildFieldTree(fields);
+    if (tree.length !== 1) {
+        return inputData;
+    }
+
+    const root = tree[0];
+    if (!isSchemaContainerField(root.field, fields)) {
+        return inputData;
+    }
+
+    if (root.children.some((child) => child.field.fieldName in inputData)) {
+        return inputData;
+    }
+
+    const wrapped = inputData[root.field.fieldName];
+    if (wrapped !== null && typeof wrapped === 'object' && !Array.isArray(wrapped)) {
+        return wrapped as Record<string, unknown>;
+    }
+
+    return inputData;
+}
+
+function normalizeRepeatableWriteItems(value: FormValue | undefined): FormObject[] {
+    if (Array.isArray(value)) {
+        return value.filter((item) => typeof item === 'object' && item !== null && !Array.isArray(item)) as FormObject[];
+    }
+    if (value !== null && typeof value === 'object') {
+        return [value as FormObject];
+    }
+    return [];
+}
+
+function readScalarValue(raw: unknown): FormScalar {
+    if (raw === null || raw === undefined) {
+        return '';
+    }
+    if (typeof raw === 'boolean' || typeof raw === 'number') {
+        return raw;
+    }
+    return String(raw);
+}
+
+function readNodeInput(node: FieldTreeNode, value: unknown): FormValue | undefined {
+    const { field, children } = node;
+
+    if (isContainerNode(node)) {
+        if (isRepeatable(field.occurrenceRule)) {
+            const items = normalizeRepeatableWriteItems(value as FormValue | undefined);
+            return items.map((item) => readGroupObject(children, item));
+        }
+
+        if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+            return {};
+        }
+        return readGroupObject(children, value as Record<string, unknown>);
+    }
+
+    if (!isScalarDataField(field)) {
+        return undefined;
+    }
+
+    return readScalarValue(value);
+}
+
+function readGroupObject(children: FieldTreeNode[], value: Record<string, unknown>): FormObject {
+    const result: FormObject = {};
+    for (const child of children) {
+        const childValue = readNodeInput(child, value[child.field.fieldName]);
+        if (childValue !== undefined) {
+            result[child.field.fieldName] = childValue;
+        }
+    }
+    return result;
+}
+
+/** Converts runtime {@code inputData} into editable form state using the template schema. */
+export function inputDataToFormData(fields: TemplateField[], inputData: Record<string, unknown>): FormObject {
+    const tree = buildFieldTree(fields);
+    const inputScope = unwrapRootInputScope(fields, inputData);
+    const result: FormObject = {};
+
+    for (const root of tree) {
+        if (isSchemaContainerField(root.field, fields)) {
+            for (const child of root.children) {
+                const value = readNodeInput(child, inputScope[child.field.fieldName]);
+                if (value !== undefined) {
+                    result[child.field.fieldName] = value;
+                }
+            }
+            continue;
+        }
+
+        const value = readNodeInput(root, inputScope[root.field.fieldName]);
+        if (value !== undefined) {
+            result[root.field.fieldName] = value;
+        }
+    }
+
+    return result;
+}
+
+/**
+ * Resolves the initial form state using initialization priority:
+ * Saved Input → Imported Base Data → Empty Template defaults.
+ */
+export function resolveInitialFormData(
+    fields: TemplateField[],
+    options: {
+        savedInputData?: Record<string, unknown> | null;
+        importedBaseData?: Record<string, unknown> | null;
+    },
+): FormObject {
+    if (options.savedInputData) {
+        return inputDataToFormData(fields, options.savedInputData);
+    }
+    if (options.importedBaseData && Object.keys(options.importedBaseData).length > 0) {
+        return inputDataToFormData(fields, options.importedBaseData);
+    }
+    return buildDefaultFormData(fields);
+}
+
 /** Saved input values override template defaults; missing keys keep defaults. */
 export function mergeSavedInputIntoFormData(
     defaults: FormObject,
@@ -214,10 +346,8 @@ function writeNodeOutput(node: FieldTreeNode, value: FormValue | undefined): unk
 
     if (isContainerNode(node)) {
         if (isRepeatable(field.occurrenceRule)) {
-            if (!Array.isArray(value)) {
-                return [];
-            }
-            return value.map((item) => writeGroupObject(children, item));
+            const items = normalizeRepeatableWriteItems(value);
+            return items.map((item) => writeGroupObject(children, item));
         }
 
         if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -226,7 +356,7 @@ function writeNodeOutput(node: FieldTreeNode, value: FormValue | undefined): unk
         return writeGroupObject(children, value);
     }
 
-    if (!isInputField(field)) {
+    if (!isScalarDataField(field)) {
         return undefined;
     }
 
@@ -278,7 +408,7 @@ export function countInputFields(fields: TemplateField[]): number {
 }
 
 export function listInputFields(fields: TemplateField[]): TemplateField[] {
-    return fields.filter(isInputField).sort((a, b) => a.displayOrder - b.displayOrder);
+    return fields.filter(isScalarDataField).sort((a, b) => a.displayOrder - b.displayOrder);
 }
 
 export function buildDefaultFlatFormData(fields: TemplateField[]): Record<string, FormScalar> {

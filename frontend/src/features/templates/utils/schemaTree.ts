@@ -433,7 +433,11 @@ export function normalizeDraftFieldMetadata(field: DraftTemplateField): DraftTem
             sourceType: null,
             valueType: null,
             staticValue: null,
-            occurrenceRule: withNames.occurrenceRule ?? 'ONE_OR_MORE',
+            // Imported fields carry the occurrenceRule inferred by the backend XML parser
+            // (including `null` for containers observed exactly once) — that inference is
+            // the source of truth and must not be overwritten. The `ONE_OR_MORE` default
+            // below only applies to fields manually created in the Schema Editor.
+            occurrenceRule: withNames.imported ? withNames.occurrenceRule : (withNames.occurrenceRule ?? 'ONE_OR_MORE'),
         };
     }
 

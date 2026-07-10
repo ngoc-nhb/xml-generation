@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Check, ChevronRight, Circle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -11,6 +12,7 @@ interface MasterDataWorkflowStepsProps {
     hasTypes: boolean;
     hasFields: boolean;
     hasRecords: boolean;
+    action?: ReactNode;
 }
 
 interface StepDefinition {
@@ -40,6 +42,7 @@ export function MasterDataWorkflowSteps({
     hasTypes,
     hasFields,
     hasRecords,
+    action,
 }: MasterDataWorkflowStepsProps) {
     const completed: Record<MasterDataWorkflowStep, boolean> = {
         type: hasTypes,
@@ -65,8 +68,9 @@ export function MasterDataWorkflowSteps({
 
     return (
         <nav aria-label="Master data workflow" className="rounded-lg border border-border bg-card p-4">
-            <ol className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
-                {steps.map((step, index) => {
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2">
+                <ol className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-2 sm:flex-1 sm:justify-start">
+                    {steps.map((step, index) => {
                     const status = resolveStatus(step.id, activeStep, completed);
                     const isDisabled = !step.enabled || status === 'upcoming';
                     const content = (
@@ -107,7 +111,10 @@ export function MasterDataWorkflowSteps({
                         </li>
                     );
                 })}
-            </ol>
+                </ol>
+                {action ? <div className="flex justify-center sm:flex-1">{action}</div> : null}
+                {action ? <div className="hidden sm:block sm:flex-1" aria-hidden /> : null}
+            </div>
         </nav>
     );
 }

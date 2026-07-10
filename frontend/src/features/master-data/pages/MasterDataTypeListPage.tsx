@@ -7,7 +7,6 @@ import { FullPageError } from '@/components/full-page-error';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/features/master-data/components/ConfirmDialog';
-import { MasterDataPageHeader } from '@/features/master-data/components/MasterDataPageHeader';
 import { MasterDataPagination } from '@/features/master-data/components/MasterDataPagination';
 import { MasterDataWorkflowSteps } from '@/features/master-data/components/MasterDataWorkflowSteps';
 import { SearchToolbar } from '@/features/master-data/components/SearchToolbar';
@@ -83,19 +82,17 @@ export function MasterDataTypeListPage() {
 
     return (
         <div className="space-y-8">
-            <MasterDataPageHeader
-                actions={
-                    <Button onClick={() => setCreateOpen(true)}>
-                        <Plus className="h-4 w-4" />
-                        Create Master Type
-                    </Button>
-                }
-            />
             <MasterDataWorkflowSteps
                 activeStep="type"
                 hasTypes={hasTypes}
                 hasFields={false}
                 hasRecords={false}
+                action={
+                    <Button onClick={() => setCreateOpen(true)}>
+                        <Plus className="h-4 w-4" />
+                        Create Master Type
+                    </Button>
+                }
             />
             <SearchToolbar
                 value={keywordInput}

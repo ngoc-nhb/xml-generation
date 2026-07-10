@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { CollapsibleSection } from '@/components/collapsible-section';
@@ -22,6 +22,7 @@ import {
     type FormScalar,
     type FormValue,
 } from '@/features/xml-generation/utils/inputFormSchema';
+import { logRuntimeCheckpoint, summarizeNestedScheduleInfo } from '@/features/xml-generation/utils/runtimeInvestigation';
 
 interface DynamicInputFormProps {
     fields: TemplateField[];
@@ -41,10 +42,18 @@ export function DynamicInputForm({
     const tree = useMemo(() => buildFieldTree(fields), [fields]);
     const inputFields = useMemo(() => listInputFields(fields), [fields]);
 
+    useEffect(() => {
+        logRuntimeCheckpoint('5_DynamicInputForm_props', {
+            fieldsCount: fields.length,
+            value,
+            nestedSummary: summarizeNestedScheduleInfo(value),
+        });
+    }, [fields, value]);
+
     if (inputFields.length === 0) {
         return (
             <p className="text-sm text-muted-foreground">
-                This template has no input fields. Use master data or static values in the schema instead.
+                This template has no editable data fields.
             </p>
         );
     }
@@ -166,6 +175,20 @@ function RepeatableGroupForm({
 }) {
     const items = normalizeRepeatableItems(node, value);
     const label = node.field.displayName || node.field.fieldName;
+
+    useEffect(() => {
+        if (node.field.fieldName !== 'ScheduleInfo' && node.field.fieldName !== 'GameCategory') {
+            return;
+        }
+        logRuntimeCheckpoint(`6_repeatable_${node.field.fieldName}_componentData`, {
+            groupKey,
+            parentPath: groupKey,
+            fieldName: node.field.fieldName,
+            rawValue: value,
+            normalizedItems: items,
+            itemCount: items.length,
+        });
+    }, [groupKey, items, node.field.fieldName, value]);
     const occurrenceHint = formatOccurrenceHint(node.field.occurrenceRule);
     const minOne = node.field.occurrenceRule === 'ONE_OR_MORE';
 
@@ -316,6 +339,9 @@ function InputFieldRow({
         <div className="grid grid-cols-1 gap-y-0.5 sm:grid-cols-[minmax(0,40%)_minmax(0,1fr)] sm:items-center sm:gap-x-3 sm:gap-y-0">
             <label className="font-mono text-sm font-medium leading-tight text-foreground">
                 {field.fieldName}
+                {field.sourceType === 'MASTER_DATA' ? (
+                    <span className="ml-1 text-xs font-normal text-muted-foreground">(master data)</span>
+                ) : null}
                 {field.emptyHandling === 'REQUIRED' ? <span className="ml-1 text-destructive">*</span> : null}
             </label>
             <FieldInput field={field} value={value} onChange={onChange} />

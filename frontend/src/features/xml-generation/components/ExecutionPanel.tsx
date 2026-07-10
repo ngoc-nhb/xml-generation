@@ -16,9 +16,10 @@ import {
 import { ExportSuccessDialog } from '@/features/xml-generation/components/ExportSuccessDialog';
 import { JsonInputEditor, parseInputJson } from '@/features/xml-generation/components/JsonInputEditor';
 import {
-    applySavedMasterDataSelections,
-    toSelectedMasterDataPayload,
-} from '@/features/xml-generation/components/MasterDataSelector';
+    applyPickerSelectionsToMasterData,
+    buildImportedSelectedMasterData,
+} from '@/features/xml-generation/utils/importedMasterDataBuilder';
+import { applySavedMasterDataSelections, toSelectedMasterDataPayload } from '@/features/xml-generation/components/MasterDataSelector';
 import { ExportToolbar, PreviewToolbar } from '@/features/xml-generation/components/PreviewToolbar';
 import { TemplateMappedMasterDataSelector } from '@/features/xml-generation/components/TemplateMappedMasterDataSelector';
 import { TemplateSelector } from '@/features/xml-generation/components/TemplateSelector';
@@ -27,10 +28,9 @@ import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useR
 import { useExportXml, usePreviewXml } from '@/features/xml-generation/hooks/useXmlGeneration';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
 import {
-    buildDefaultFormData,
     countInputFields,
     formDataToInputData,
-    mergeSavedInputIntoFormData,
+    resolveInitialFormData,
     serializeFormState,
     type FormObject,
 } from '@/features/xml-generation/utils/inputFormSchema';
@@ -38,23 +38,22 @@ import {
     resolveXmlDownloadFilename,
 } from '@/features/xml-generation/utils/downloadXml';
 import { EMPTY_JSON } from '@/features/xml-generation/utils/jsonEditor';
+import { logRuntimeCheckpoint, scheduleArrayLength, summarizeNestedScheduleInfo, summarizeSchemaHierarchy } from '@/features/xml-generation/utils/runtimeInvestigation';
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 import { toast } from '@/providers/ToastProvider';
 import { useQueryClient } from '@tanstack/react-query';
 
 type InputMode = 'form' | 'json';
-type InitMode = 'empty' | 'sample';
 
-function hasSampleInputData(sample: Record<string, unknown> | null | undefined): boolean {
-    return sample != null && typeof sample === 'object' && Object.keys(sample).length > 0;
+function hasImportedBaseData(data: Record<string, unknown> | null | undefined): boolean {
+    return data != null && typeof data === 'object' && Object.keys(data).length > 0;
 }
 
 export function ExecutionPanel() {
     const [selectedTemplateId, setSelectedTemplateId] = useState<number | null>(null);
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateListItem | null>(null);
     const [inputMode, setInputMode] = useState<InputMode>('form');
-    const [initMode, setInitMode] = useState<InitMode>('empty');
     const [formDataOverride, setFormDataOverride] = useState<FormObject | null>(null);
     const [masterDataOverride, setMasterDataOverride] = useState<SelectedMasterDataEntry[] | null>(null);
     const [inputJsonOverride, setInputJsonOverride] = useState<string | null>(null);
@@ -80,7 +79,7 @@ export function ExecutionPanel() {
     const schemaFields = useMemo(() => templateDetail?.schema?.fields ?? [], [templateDetail?.schema?.fields]);
     const schemaMappings = useMemo(() => templateDetail?.schema?.mappings ?? [], [templateDetail?.schema?.mappings]);
     const inputFieldCount = useMemo(() => countInputFields(schemaFields), [schemaFields]);
-    const { emptySelections, isLoading: masterTypesLoading } = useResolvedMasterDataTypes(schemaMappings);
+    const { emptySelections, compileMappings, isLoading: masterTypesLoading } = useResolvedMasterDataTypes(schemaMappings);
 
     const groupKeys = useMemo(() => {
         if (schemaFields.length === 0) {
@@ -93,39 +92,31 @@ export function ExecutionPanel() {
         setGroupOpenState(buildInputGroupOpenState(groupKeys, true));
     }, [selectedTemplateId, groupKeys]);
 
-    const defaultFormData = useMemo(
-        () => (schemaFields.length > 0 ? buildDefaultFormData(schemaFields) : {}),
-        [schemaFields],
-    );
-
-    const hasSampleData = useMemo(
-        () => hasSampleInputData(templateDetail?.sampleInputJson),
+    const hasImportedData = useMemo(
+        () => hasImportedBaseData(templateDetail?.sampleInputJson),
         [templateDetail?.sampleInputJson],
     );
 
-    const emptyInitFormData = useMemo(() => {
+    const initialFormData = useMemo(() => {
         if (schemaFields.length === 0) {
             return {};
         }
-        if (!savedInputQuery.data) {
-            return defaultFormData;
-        }
-        return mergeSavedInputIntoFormData(defaultFormData, savedInputQuery.data.inputData);
-    }, [schemaFields, defaultFormData, savedInputQuery.data]);
+        return resolveInitialFormData(schemaFields, {
+            savedInputData: savedInputQuery.data?.inputData ?? null,
+            importedBaseData: templateDetail?.sampleInputJson ?? null,
+        });
+    }, [schemaFields, savedInputQuery.data, templateDetail?.sampleInputJson]);
 
-    const sampleInitFormData = useMemo(() => {
-        if (schemaFields.length === 0 || !hasSampleData || !templateDetail?.sampleInputJson) {
-            return defaultFormData;
+    const importedMasterData = useMemo(() => {
+        if (!hasImportedData || !templateDetail?.sampleInputJson || schemaFields.length === 0) {
+            return {};
         }
-        return mergeSavedInputIntoFormData(defaultFormData, templateDetail.sampleInputJson);
-    }, [schemaFields, defaultFormData, hasSampleData, templateDetail?.sampleInputJson]);
-
-    const initialFormData = useMemo(() => {
-        if (initMode === 'sample' && hasSampleData) {
-            return sampleInitFormData;
-        }
-        return emptyInitFormData;
-    }, [initMode, hasSampleData, sampleInitFormData, emptyInitFormData]);
+        return buildImportedSelectedMasterData(
+            schemaFields,
+            compileMappings,
+            templateDetail.sampleInputJson,
+        );
+    }, [compileMappings, hasImportedData, schemaFields, templateDetail?.sampleInputJson]);
 
     const initialMasterDataSelections = useMemo(() => {
         if (masterTypesLoading) {
@@ -154,8 +145,26 @@ export function ExecutionPanel() {
     const masterDataSelections = masterDataOverride ?? initialMasterDataSelections;
     const inputJson = inputJsonOverride ?? defaultInputJson;
 
+    const selectedMasterDataPayload = useMemo(() => {
+        if (savedInputQuery.data?.selectedMasterData && !masterDataOverride) {
+            return savedInputQuery.data.selectedMasterData;
+        }
+        if (Object.keys(importedMasterData).length > 0) {
+            if (masterDataOverride) {
+                return applyPickerSelectionsToMasterData(importedMasterData, masterDataSelections);
+            }
+            return importedMasterData;
+        }
+        return toSelectedMasterDataPayload(masterDataSelections);
+    }, [
+        importedMasterData,
+        masterDataOverride,
+        masterDataSelections,
+        savedInputQuery.data?.selectedMasterData,
+    ]);
+
     useEffect(() => {
-        if (!savedInputQuery.data || selectedTemplateId === null) {
+        if (selectedTemplateId === null) {
             return;
         }
         if (templateDetailLoading || masterTypesLoading || savedInputQuery.isLoading) {
@@ -164,9 +173,13 @@ export function ExecutionPanel() {
         if (restoredToastTemplateId.current === selectedTemplateId) {
             return;
         }
+        if (!savedInputQuery.data && !hasImportedData) {
+            return;
+        }
         restoredToastTemplateId.current = selectedTemplateId;
-        toast.success('Loaded previous input.');
+        toast.success(savedInputQuery.data ? 'Loaded previous input.' : 'Loaded imported data.');
     }, [
+        hasImportedData,
         savedInputQuery.data,
         savedInputQuery.isLoading,
         selectedTemplateId,
@@ -184,6 +197,48 @@ export function ExecutionPanel() {
 
     const schemaReady =
         Boolean(selectedTemplateId && templateDetail?.schema && !masterTypesLoading && !savedInputQuery.isLoading);
+    const investigationLoggedTemplateId = useRef<number | null>(null);
+
+    useEffect(() => {
+        if (!schemaReady || selectedTemplateId === null) {
+            return;
+        }
+        if (investigationLoggedTemplateId.current === selectedTemplateId) {
+            return;
+        }
+        investigationLoggedTemplateId.current = selectedTemplateId;
+
+        logRuntimeCheckpoint('0_templateSchema_hierarchy', summarizeSchemaHierarchy(schemaFields));
+        logRuntimeCheckpoint('1_sampleInputJson_fromApi', {
+            raw: templateDetail?.sampleInputJson ?? null,
+            summary: summarizeNestedScheduleInfo(templateDetail?.sampleInputJson),
+        });
+        logRuntimeCheckpoint('2_savedInput_fromApi', savedInputQuery.data ?? null);
+        logRuntimeCheckpoint('3_resolvedInitialFormData', {
+            raw: initialFormData,
+            summary: summarizeNestedScheduleInfo(
+                formDataToInputData(schemaFields, initialFormData),
+            ),
+        });
+        logRuntimeCheckpoint('4_reactState_beforeFirstRender', {
+            formDataOverride,
+            initialFormData,
+            effectiveFormData: formData,
+            formDataOverrideIsNull: formDataOverride === null,
+            nestedSummaryFromEffectiveFormData: summarizeNestedScheduleInfo(
+                formDataToInputData(schemaFields, formData),
+            ),
+        });
+    }, [
+        formData,
+        formDataOverride,
+        initialFormData,
+        savedInputQuery.data,
+        schemaReady,
+        selectedTemplateId,
+        templateDetail?.sampleInputJson,
+    ]);
+
     const executionDisabled =
         selectedTemplateId === null ||
         templateDetailLoading ||
@@ -198,7 +253,7 @@ export function ExecutionPanel() {
         if (inputMode === 'form') {
             return {
                 inputData: formDataToInputData(templateDetail.schema.fields, formData),
-                selectedMasterData: toSelectedMasterDataPayload(masterDataSelections),
+                selectedMasterData: selectedMasterDataPayload,
             };
         }
 
@@ -210,7 +265,7 @@ export function ExecutionPanel() {
 
         return {
             inputData,
-            selectedMasterData: toSelectedMasterDataPayload(masterDataSelections),
+            selectedMasterData: selectedMasterDataPayload,
         };
     }
 
@@ -222,6 +277,12 @@ export function ExecutionPanel() {
         if (!body) {
             return;
         }
+        logRuntimeCheckpoint('7_previewRequestPayload', {
+            templateId: selectedTemplateId,
+            body,
+            nestedSummary: summarizeNestedScheduleInfo(body.inputData),
+            scheduleArrayLengthInInputData: scheduleArrayLength(body.inputData),
+        });
         setValidationErrors([]);
         try {
             const result = await previewMutation.mutateAsync({ templateId: selectedTemplateId, body });
@@ -283,7 +344,6 @@ export function ExecutionPanel() {
     function applyTemplateSelection(templateId: number | null, template: TemplateListItem | null) {
         resetInputOverrides();
         restoredToastTemplateId.current = null;
-        setInitMode('empty');
         setSelectedTemplateId(templateId);
         setSelectedTemplate(template);
         setOutputXml(null);
@@ -309,16 +369,6 @@ export function ExecutionPanel() {
             setJsonError(null);
         }
         setInputMode(mode);
-    }
-
-    function handleInitModeChange(mode: InitMode) {
-        if (mode === initMode) {
-            return;
-        }
-        setInitMode(mode);
-        setFormDataOverride(null);
-        setInputJsonOverride(null);
-        setJsonError(null);
     }
 
     function handleGroupOpenChange(groupKey: string, open: boolean) {
@@ -348,30 +398,6 @@ export function ExecutionPanel() {
             <section className="space-y-2">
                 <TemplateSelector value={selectedTemplateId} onChange={handleTemplateChange} />
             </section>
-
-            {selectedTemplateId && hasSampleData ? (
-                <section className="space-y-2">
-                    <h2 className="text-sm font-medium text-foreground">Initialization</h2>
-                    <div className="flex flex-col gap-2">
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={initMode === 'empty' ? 'default' : 'outline'}
-                            onClick={() => handleInitModeChange('empty')}
-                        >
-                            New Empty Input
-                        </Button>
-                        <Button
-                            type="button"
-                            size="sm"
-                            variant={initMode === 'sample' ? 'default' : 'outline'}
-                            onClick={() => handleInitModeChange('sample')}
-                        >
-                            Load Sample Data
-                        </Button>
-                    </div>
-                </section>
-            ) : null}
 
             <section className="space-y-2">
                 <h2 className="text-sm font-medium text-foreground">Master Data</h2>
@@ -464,7 +490,7 @@ export function ExecutionPanel() {
                         ) : inputMode === 'form' ? (
                             schemaReady && inputFieldCount > 0 ? (
                                 <DynamicInputForm
-                                    key={`${selectedTemplateId}-${initMode}`}
+                                    key={selectedTemplateId}
                                     fields={schemaFields}
                                     value={formData}
                                     groupOpenState={groupOpenState}
@@ -473,13 +499,13 @@ export function ExecutionPanel() {
                                 />
                             ) : (
                                 <p className="text-sm text-muted-foreground">
-                                    This template has no INPUT fields. Switch to JSON for manual input or use master data
-                                    mappings.
+                                    This template has no editable data fields. Switch to JSON for manual input or use
+                                    master data mappings.
                                 </p>
                             )
                         ) : (
                             <JsonInputEditor
-                                key={`${selectedTemplateId}-${initMode}`}
+                                key={selectedTemplateId}
                                 value={inputJson}
                                 onChange={(next) => setInputJsonOverride(next)}
                                 onValidationChange={setJsonError}

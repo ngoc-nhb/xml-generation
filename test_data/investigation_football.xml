@@ -1,0 +1,33 @@
+<Football>
+  <GameSchedule>
+    <SendDate>20260101</SendDate>
+    <Year>2026</Year>
+    <GameKindID>2</GameKindID>
+    <GameKindName>J1</GameKindName>
+    <GameCategory>
+      <SeasonID>10</SeasonID>
+      <SeasonName>Spring</SeasonName>
+      <CupName>Cup A</CupName>
+      <GameC>G1</GameC>
+    </GameCategory>
+    <GameCategory>
+      <SeasonID>11</SeasonID>
+      <SeasonName>Summer</SeasonName>
+      <CupName>Cup B</CupName>
+      <GameC>G2</GameC>
+    </GameCategory>
+    <GameCategory>
+      <SeasonID>12</SeasonID>
+      <SeasonName>Fall</SeasonName>
+      <CupName>Cup C</CupName>
+      <GameC>G3</GameC>
+    </GameCategory>
+  </GameSchedule>
+  <ScheduleInfo>
+    <Schedule ScheduleNo="1"><GameID>G1</GameID></Schedule>
+    <Schedule ScheduleNo="2"><GameID>G2</GameID></Schedule>
+    <Schedule ScheduleNo="3"><GameID>G3</GameID></Schedule>
+    <Schedule ScheduleNo="4"><GameID>G4</GameID></Schedule>
+    <Schedule ScheduleNo="5"><GameID>G5</GameID></Schedule>
+  </ScheduleInfo>
+</Football>

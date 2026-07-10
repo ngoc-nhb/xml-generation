@@ -2,7 +2,8 @@ import type { ApiError } from '@/types/api/common';
 
 export interface ExecutionRequestBody {
     inputData: Record<string, unknown>;
-    selectedMasterData: Record<string, { id: number }>;
+    /** Record references ({ id }) or expanded field-value scopes from import. */
+    selectedMasterData: Record<string, unknown>;
 }
 
 export interface PreviewSuccess {

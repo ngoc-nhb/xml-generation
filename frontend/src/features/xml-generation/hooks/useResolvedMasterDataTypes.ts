@@ -7,6 +7,7 @@ import { useMasterDataTypeList } from '@/features/master-data/hooks/useMasterDat
 import type { MasterDataTypeListItem } from '@/features/master-data/types/master-data.types';
 import type { TemplateMapping } from '@/features/templates/types/template.types';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
+import type { TemplateCompileMapping } from '@/features/xml-generation/utils/importedMasterDataBuilder';
 
 export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
     const mappedFieldIds = useMemo(
@@ -76,6 +77,40 @@ export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
         }));
     }, [orderedRequiredTypes]);
 
+    const compileMappings = useMemo((): TemplateCompileMapping[] => {
+        const types = typesQuery.data?.items ?? [];
+        const typeById = new Map(types.map((type) => [type.id, type]));
+        const fieldById = new Map<number, (typeof fieldQueries)[number]['data']>();
+
+        mappedFieldIds.forEach((fieldId, index) => {
+            const field = fieldQueries[index]?.data;
+            if (field) {
+                fieldById.set(fieldId, field);
+            }
+        });
+
+        const result: TemplateCompileMapping[] = [];
+        for (const mapping of mappings) {
+            if (!mapping.masterDataFieldId) {
+                continue;
+            }
+            const field = fieldById.get(mapping.masterDataFieldId);
+            if (!field) {
+                continue;
+            }
+            const type = typeById.get(field.typeId);
+            if (!type) {
+                continue;
+            }
+            result.push({
+                fieldName: mapping.fieldName,
+                masterDataTypeCode: type.code,
+                masterDataFieldName: field.code,
+            });
+        }
+        return result;
+    }, [fieldQueries, mappedFieldIds, mappings, typesQuery.data?.items]);
+
     return {
         mappedFieldIds,
         requiredTypeIds,
@@ -83,6 +118,7 @@ export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
         /** @deprecated Use orderedRequiredTypes */
         requiredTypes: orderedRequiredTypes,
         emptySelections,
+        compileMappings,
         isLoading,
     };
 }

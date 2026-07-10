@@ -1,0 +1,1134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Football>
+	<GameSchedule>
+		<SendDate>20260520</SendDate>
+		<Year>2026</Year>
+		<GameKindID>4</GameKindID>
+		<GameKindName>ＪリーグYBCルヴァンカップ</GameKindName>
+		<GameCategory>
+			<SeasonID>15</SeasonID>
+			<SeasonName>1stラウンド</SeasonName>
+			<CupName>2026JリーグYBCルヴァンカップ 1stラウンド</CupName>
+			<GameC>30</GameC>
+			<ScheduleInfo ScheduleNO="1">
+				<GameID>2026051911</GameID>
+				<MatchNumber>14</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1300</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30598</StadiumID>
+				<StadiumName>プライフーズスタジアム</StadiumName>
+				<StadiumNameS>プラスタ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31219</HomeTeamID>
+				<HomeTeamName>ヴァンラーレ八戸</HomeTeamName>
+				<HomeTeamNameS>八戸</HomeTeamNameS>
+				<HomeTeamNameE>Vanraure Hachinohe</HomeTeamNameE>
+				<HomeTeamNameES>Hachinohe</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>193</AwayTeamID>
+				<AwayTeamName>アルビレックス新潟</AwayTeamName>
+				<AwayTeamNameS>新潟</AwayTeamNameS>
+				<AwayTeamNameE>Albirex Niigata</AwayTeamNameE>
+				<AwayTeamNameES>Niigata</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="2">
+				<GameID>2026051912</GameID>
+				<MatchNumber>8</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>31203</StadiumID>
+				<StadiumName>ＣＩＴＹ　ＦＯＯＴＢＡＬＬ　ＳＴＡＴＩＯＮ</StadiumName>
+				<StadiumNameS>ＣＦＳ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30527</HomeTeamID>
+				<HomeTeamName>栃木シティ</HomeTeamName>
+				<HomeTeamNameS>栃木Ｃ</HomeTeamNameS>
+				<HomeTeamNameE>TOCHIGI CITY</HomeTeamNameE>
+				<HomeTeamNameES>TOCHIGI CITY</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>120</AwayTeamID>
+				<AwayTeamName>鹿島アントラーズ</AwayTeamName>
+				<AwayTeamNameS>鹿島</AwayTeamNameS>
+				<AwayTeamNameE>Kashima Antlers</AwayTeamNameE>
+				<AwayTeamNameES>Kashima</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="3">
+				<GameID>2026051913</GameID>
+				<MatchNumber>12</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30330</StadiumID>
+				<StadiumName>長野Ｕスタジアム</StadiumName>
+				<StadiumNameS>長野Ｕ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30535</HomeTeamID>
+				<HomeTeamName>ＡＣ長野パルセイロ</HomeTeamName>
+				<HomeTeamNameS>長野</HomeTeamNameS>
+				<HomeTeamNameE>AC Nagano Parceiro</HomeTeamNameE>
+				<HomeTeamNameES>Nagano</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>123</AwayTeamID>
+				<AwayTeamName>東京ヴェルディ</AwayTeamName>
+				<AwayTeamNameS>東京Ｖ</AwayTeamNameS>
+				<AwayTeamNameE>Tokyo Verdy</AwayTeamNameE>
+				<AwayTeamNameES>Tokyo-V</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="4">
+				<GameID>2026051914</GameID>
+				<MatchNumber>18</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>76</StadiumID>
+				<StadiumName>石川県西部緑地公園陸上競技場</StadiumName>
+				<StadiumNameS>石川西部</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30526</HomeTeamID>
+				<HomeTeamName>ツエーゲン金沢</HomeTeamName>
+				<HomeTeamNameS>金沢</HomeTeamNameS>
+				<HomeTeamNameE>Zweigen Kanazawa</HomeTeamNameE>
+				<HomeTeamNameES>Kanazawa</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>130</AwayTeamID>
+				<AwayTeamName>湘南ベルマーレ</AwayTeamName>
+				<AwayTeamNameS>湘南</AwayTeamNameS>
+				<AwayTeamNameE>Shonan Bellmare</AwayTeamNameE>
+				<AwayTeamNameES>Shonan</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="5">
+				<GameID>2026051915</GameID>
+				<MatchNumber>10</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30561</StadiumID>
+				<StadiumName>愛鷹広域公園多目的競技場</StadiumName>
+				<StadiumNameS>愛鷹</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31296</HomeTeamID>
+				<HomeTeamName>アスルクラロ沼津</HomeTeamName>
+				<HomeTeamNameS>沼津</HomeTeamNameS>
+				<HomeTeamNameE>Azul Claro Numazu</HomeTeamNameE>
+				<HomeTeamNameES>Numazu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>132</AwayTeamID>
+				<AwayTeamName>柏レイソル</AwayTeamName>
+				<AwayTeamNameS>柏</AwayTeamNameS>
+				<AwayTeamNameE>Kashiwa Reysol</AwayTeamNameE>
+				<AwayTeamNameES>Kashiwa</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="6">
+				<GameID>2026051916</GameID>
+				<MatchNumber>2</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>47</StadiumID>
+				<StadiumName>岐阜メモリアルセンター長良川競技場</StadiumName>
+				<StadiumNameS>長良川</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30302</HomeTeamID>
+				<HomeTeamName>ＦＣ岐阜</HomeTeamName>
+				<HomeTeamNameS>岐阜</HomeTeamNameS>
+				<HomeTeamNameE>FC Gifu</HomeTeamNameE>
+				<HomeTeamNameES>FC Gifu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>296</AwayTeamID>
+				<AwayTeamName>横浜ＦＣ</AwayTeamName>
+				<AwayTeamNameS>横浜FC</AwayTeamNameS>
+				<AwayTeamNameE>Yokohama FC</AwayTeamNameE>
+				<AwayTeamNameES>Yokohama FC</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="7">
+				<GameID>2026051917</GameID>
+				<MatchNumber>16</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>87</StadiumID>
+				<StadiumName>ロートフィールド奈良</StadiumName>
+				<StadiumNameS>ロートＦ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30985</HomeTeamID>
+				<HomeTeamName>奈良クラブ</HomeTeamName>
+				<HomeTeamNameS>奈良</HomeTeamNameS>
+				<HomeTeamNameE>Nara Club</HomeTeamNameE>
+				<HomeTeamNameES>Nara</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>270</AwayTeamID>
+				<AwayTeamName>ＦＣ東京</AwayTeamName>
+				<AwayTeamNameS>FC東京</AwayTeamNameS>
+				<AwayTeamNameE>FC TOKYO</AwayTeamNameE>
+				<AwayTeamNameES>FC TOKYO</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="8">
+				<GameID>2026051918</GameID>
+				<MatchNumber>22</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>204</StadiumID>
+				<StadiumName>Ａｘｉｓバードスタジアム</StadiumName>
+				<StadiumNameS>Ａｘｉｓ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30000</HomeTeamID>
+				<HomeTeamName>ガイナーレ鳥取</HomeTeamName>
+				<HomeTeamNameS>鳥取</HomeTeamNameS>
+				<HomeTeamNameE>Gainare Tottori</HomeTeamNameE>
+				<HomeTeamNameES>Tottori</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>134</AwayTeamID>
+				<AwayTeamName>京都サンガF.C.</AwayTeamName>
+				<AwayTeamNameS>京都</AwayTeamNameS>
+				<AwayTeamNameE>Kyoto Sanga F.C.</AwayTeamNameE>
+				<AwayTeamNameES>Kyoto</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="9">
+				<GameID>2026051919</GameID>
+				<MatchNumber>20</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>107</StadiumID>
+				<StadiumName>Ｐｉｋａｒａスタジアム</StadiumName>
+				<StadiumNameS>ピカスタ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30536</HomeTeamID>
+				<HomeTeamName>カマタマーレ讃岐</HomeTeamName>
+				<HomeTeamNameS>讃岐</HomeTeamNameS>
+				<HomeTeamNameE>Kamatamare Sanuki</HomeTeamNameE>
+				<HomeTeamNameES>Sanuki</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>133</AwayTeamID>
+				<AwayTeamName>セレッソ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｃ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Cerezo Osaka</AwayTeamNameE>
+				<AwayTeamNameES>C-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="10">
+				<GameID>2026051920</GameID>
+				<MatchNumber>4</MatchNumber>
+				<GameDate>20260519</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>64</StadiumID>
+				<StadiumName>高知県立春野総合運動公園陸上競技場</StadiumName>
+				<StadiumNameS>春野陸</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31204</HomeTeamID>
+				<HomeTeamName>高知ユナイテッドＳＣ</HomeTeamName>
+				<HomeTeamNameS>高知</HomeTeamNameS>
+				<HomeTeamNameE>Kochi United SC</HomeTeamNameE>
+				<HomeTeamNameES>KOCHI</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>128</AwayTeamID>
+				<AwayTeamName>ガンバ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｇ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Gamba Osaka</AwayTeamNameE>
+				<AwayTeamNameES>G-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="11">
+				<GameID>2026052011</GameID>
+				<MatchNumber>14</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1300</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30598</StadiumID>
+				<StadiumName>プライフーズスタジアム</StadiumName>
+				<StadiumNameS>プラスタ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31219</HomeTeamID>
+				<HomeTeamName>ヴァンラーレ八戸</HomeTeamName>
+				<HomeTeamNameS>八戸</HomeTeamNameS>
+				<HomeTeamNameE>Vanraure Hachinohe</HomeTeamNameE>
+				<HomeTeamNameES>Hachinohe</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>193</AwayTeamID>
+				<AwayTeamName>アルビレックス新潟</AwayTeamName>
+				<AwayTeamNameS>新潟</AwayTeamNameS>
+				<AwayTeamNameE>Albirex Niigata</AwayTeamNameE>
+				<AwayTeamNameES>Niigata</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="12">
+				<GameID>2026052012</GameID>
+				<MatchNumber>8</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>31203</StadiumID>
+				<StadiumName>ＣＩＴＹ　ＦＯＯＴＢＡＬＬ　ＳＴＡＴＩＯＮ</StadiumName>
+				<StadiumNameS>ＣＦＳ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30527</HomeTeamID>
+				<HomeTeamName>栃木シティ</HomeTeamName>
+				<HomeTeamNameS>栃木Ｃ</HomeTeamNameS>
+				<HomeTeamNameE>TOCHIGI CITY</HomeTeamNameE>
+				<HomeTeamNameES>TOCHIGI CITY</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>120</AwayTeamID>
+				<AwayTeamName>鹿島アントラーズ</AwayTeamName>
+				<AwayTeamNameS>鹿島</AwayTeamNameS>
+				<AwayTeamNameE>Kashima Antlers</AwayTeamNameE>
+				<AwayTeamNameES>Kashima</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="13">
+				<GameID>2026052013</GameID>
+				<MatchNumber>12</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30330</StadiumID>
+				<StadiumName>長野Ｕスタジアム</StadiumName>
+				<StadiumNameS>長野Ｕ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30535</HomeTeamID>
+				<HomeTeamName>ＡＣ長野パルセイロ</HomeTeamName>
+				<HomeTeamNameS>長野</HomeTeamNameS>
+				<HomeTeamNameE>AC Nagano Parceiro</HomeTeamNameE>
+				<HomeTeamNameES>Nagano</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>123</AwayTeamID>
+				<AwayTeamName>東京ヴェルディ</AwayTeamName>
+				<AwayTeamNameS>東京Ｖ</AwayTeamNameS>
+				<AwayTeamNameE>Tokyo Verdy</AwayTeamNameE>
+				<AwayTeamNameES>Tokyo-V</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="14">
+				<GameID>2026052014</GameID>
+				<MatchNumber>18</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>76</StadiumID>
+				<StadiumName>石川県西部緑地公園陸上競技場</StadiumName>
+				<StadiumNameS>石川西部</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30526</HomeTeamID>
+				<HomeTeamName>ツエーゲン金沢</HomeTeamName>
+				<HomeTeamNameS>金沢</HomeTeamNameS>
+				<HomeTeamNameE>Zweigen Kanazawa</HomeTeamNameE>
+				<HomeTeamNameES>Kanazawa</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>130</AwayTeamID>
+				<AwayTeamName>湘南ベルマーレ</AwayTeamName>
+				<AwayTeamNameS>湘南</AwayTeamNameS>
+				<AwayTeamNameE>Shonan Bellmare</AwayTeamNameE>
+				<AwayTeamNameES>Shonan</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="15">
+				<GameID>2026052015</GameID>
+				<MatchNumber>10</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30561</StadiumID>
+				<StadiumName>愛鷹広域公園多目的競技場</StadiumName>
+				<StadiumNameS>愛鷹</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31296</HomeTeamID>
+				<HomeTeamName>アスルクラロ沼津</HomeTeamName>
+				<HomeTeamNameS>沼津</HomeTeamNameS>
+				<HomeTeamNameE>Azul Claro Numazu</HomeTeamNameE>
+				<HomeTeamNameES>Numazu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>132</AwayTeamID>
+				<AwayTeamName>柏レイソル</AwayTeamName>
+				<AwayTeamNameS>柏</AwayTeamNameS>
+				<AwayTeamNameE>Kashiwa Reysol</AwayTeamNameE>
+				<AwayTeamNameES>Kashiwa</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="16">
+				<GameID>2026052016</GameID>
+				<MatchNumber>2</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>47</StadiumID>
+				<StadiumName>岐阜メモリアルセンター長良川競技場</StadiumName>
+				<StadiumNameS>長良川</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30302</HomeTeamID>
+				<HomeTeamName>ＦＣ岐阜</HomeTeamName>
+				<HomeTeamNameS>岐阜</HomeTeamNameS>
+				<HomeTeamNameE>FC Gifu</HomeTeamNameE>
+				<HomeTeamNameES>FC Gifu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>296</AwayTeamID>
+				<AwayTeamName>横浜ＦＣ</AwayTeamName>
+				<AwayTeamNameS>横浜FC</AwayTeamNameS>
+				<AwayTeamNameE>Yokohama FC</AwayTeamNameE>
+				<AwayTeamNameES>Yokohama FC</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="17">
+				<GameID>2026052017</GameID>
+				<MatchNumber>16</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>87</StadiumID>
+				<StadiumName>ロートフィールド奈良</StadiumName>
+				<StadiumNameS>ロートＦ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30985</HomeTeamID>
+				<HomeTeamName>奈良クラブ</HomeTeamName>
+				<HomeTeamNameS>奈良</HomeTeamNameS>
+				<HomeTeamNameE>Nara Club</HomeTeamNameE>
+				<HomeTeamNameES>Nara</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>270</AwayTeamID>
+				<AwayTeamName>ＦＣ東京</AwayTeamName>
+				<AwayTeamNameS>FC東京</AwayTeamNameS>
+				<AwayTeamNameE>FC TOKYO</AwayTeamNameE>
+				<AwayTeamNameES>FC TOKYO</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="18">
+				<GameID>2026052018</GameID>
+				<MatchNumber>22</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>204</StadiumID>
+				<StadiumName>Ａｘｉｓバードスタジアム</StadiumName>
+				<StadiumNameS>Ａｘｉｓ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30000</HomeTeamID>
+				<HomeTeamName>ガイナーレ鳥取</HomeTeamName>
+				<HomeTeamNameS>鳥取</HomeTeamNameS>
+				<HomeTeamNameE>Gainare Tottori</HomeTeamNameE>
+				<HomeTeamNameES>Tottori</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>134</AwayTeamID>
+				<AwayTeamName>京都サンガF.C.</AwayTeamName>
+				<AwayTeamNameS>京都</AwayTeamNameS>
+				<AwayTeamNameE>Kyoto Sanga F.C.</AwayTeamNameE>
+				<AwayTeamNameES>Kyoto</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="19">
+				<GameID>2026052019</GameID>
+				<MatchNumber>20</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>107</StadiumID>
+				<StadiumName>Ｐｉｋａｒａスタジアム</StadiumName>
+				<StadiumNameS>ピカスタ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30536</HomeTeamID>
+				<HomeTeamName>カマタマーレ讃岐</HomeTeamName>
+				<HomeTeamNameS>讃岐</HomeTeamNameS>
+				<HomeTeamNameE>Kamatamare Sanuki</HomeTeamNameE>
+				<HomeTeamNameES>Sanuki</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>133</AwayTeamID>
+				<AwayTeamName>セレッソ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｃ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Cerezo Osaka</AwayTeamNameE>
+				<AwayTeamNameES>C-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="20">
+				<GameID>2026052020</GameID>
+				<MatchNumber>4</MatchNumber>
+				<GameDate>20260520</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>64</StadiumID>
+				<StadiumName>高知県立春野総合運動公園陸上競技場</StadiumName>
+				<StadiumNameS>春野陸</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31204</HomeTeamID>
+				<HomeTeamName>高知ユナイテッドＳＣ</HomeTeamName>
+				<HomeTeamNameS>高知</HomeTeamNameS>
+				<HomeTeamNameE>Kochi United SC</HomeTeamNameE>
+				<HomeTeamNameES>KOCHI</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>128</AwayTeamID>
+				<AwayTeamName>ガンバ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｇ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Gamba Osaka</AwayTeamNameE>
+				<AwayTeamNameES>G-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="21">
+				<GameID>2026052111</GameID>
+				<MatchNumber>14</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1300</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30598</StadiumID>
+				<StadiumName>プライフーズスタジアム</StadiumName>
+				<StadiumNameS>プラスタ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31219</HomeTeamID>
+				<HomeTeamName>ヴァンラーレ八戸</HomeTeamName>
+				<HomeTeamNameS>八戸</HomeTeamNameS>
+				<HomeTeamNameE>Vanraure Hachinohe</HomeTeamNameE>
+				<HomeTeamNameES>Hachinohe</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>193</AwayTeamID>
+				<AwayTeamName>アルビレックス新潟</AwayTeamName>
+				<AwayTeamNameS>新潟</AwayTeamNameS>
+				<AwayTeamNameE>Albirex Niigata</AwayTeamNameE>
+				<AwayTeamNameES>Niigata</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="22">
+				<GameID>2026052112</GameID>
+				<MatchNumber>8</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>31203</StadiumID>
+				<StadiumName>ＣＩＴＹ　ＦＯＯＴＢＡＬＬ　ＳＴＡＴＩＯＮ</StadiumName>
+				<StadiumNameS>ＣＦＳ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30527</HomeTeamID>
+				<HomeTeamName>栃木シティ</HomeTeamName>
+				<HomeTeamNameS>栃木Ｃ</HomeTeamNameS>
+				<HomeTeamNameE>TOCHIGI CITY</HomeTeamNameE>
+				<HomeTeamNameES>TOCHIGI CITY</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>120</AwayTeamID>
+				<AwayTeamName>鹿島アントラーズ</AwayTeamName>
+				<AwayTeamNameS>鹿島</AwayTeamNameS>
+				<AwayTeamNameE>Kashima Antlers</AwayTeamNameE>
+				<AwayTeamNameES>Kashima</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="23">
+				<GameID>2026052113</GameID>
+				<MatchNumber>12</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30330</StadiumID>
+				<StadiumName>長野Ｕスタジアム</StadiumName>
+				<StadiumNameS>長野Ｕ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30535</HomeTeamID>
+				<HomeTeamName>ＡＣ長野パルセイロ</HomeTeamName>
+				<HomeTeamNameS>長野</HomeTeamNameS>
+				<HomeTeamNameE>AC Nagano Parceiro</HomeTeamNameE>
+				<HomeTeamNameES>Nagano</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>123</AwayTeamID>
+				<AwayTeamName>東京ヴェルディ</AwayTeamName>
+				<AwayTeamNameS>東京Ｖ</AwayTeamNameS>
+				<AwayTeamNameE>Tokyo Verdy</AwayTeamNameE>
+				<AwayTeamNameES>Tokyo-V</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="24">
+				<GameID>2026052114</GameID>
+				<MatchNumber>18</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>76</StadiumID>
+				<StadiumName>石川県西部緑地公園陸上競技場</StadiumName>
+				<StadiumNameS>石川西部</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30526</HomeTeamID>
+				<HomeTeamName>ツエーゲン金沢</HomeTeamName>
+				<HomeTeamNameS>金沢</HomeTeamNameS>
+				<HomeTeamNameE>Zweigen Kanazawa</HomeTeamNameE>
+				<HomeTeamNameES>Kanazawa</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>130</AwayTeamID>
+				<AwayTeamName>湘南ベルマーレ</AwayTeamName>
+				<AwayTeamNameS>湘南</AwayTeamNameS>
+				<AwayTeamNameE>Shonan Bellmare</AwayTeamNameE>
+				<AwayTeamNameES>Shonan</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="25">
+				<GameID>2026052115</GameID>
+				<MatchNumber>10</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>30561</StadiumID>
+				<StadiumName>愛鷹広域公園多目的競技場</StadiumName>
+				<StadiumNameS>愛鷹</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31296</HomeTeamID>
+				<HomeTeamName>アスルクラロ沼津</HomeTeamName>
+				<HomeTeamNameS>沼津</HomeTeamNameS>
+				<HomeTeamNameE>Azul Claro Numazu</HomeTeamNameE>
+				<HomeTeamNameES>Numazu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>132</AwayTeamID>
+				<AwayTeamName>柏レイソル</AwayTeamName>
+				<AwayTeamNameS>柏</AwayTeamNameS>
+				<AwayTeamNameE>Kashiwa Reysol</AwayTeamNameE>
+				<AwayTeamNameES>Kashiwa</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="26">
+				<GameID>2026052116</GameID>
+				<MatchNumber>2</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>47</StadiumID>
+				<StadiumName>岐阜メモリアルセンター長良川競技場</StadiumName>
+				<StadiumNameS>長良川</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30302</HomeTeamID>
+				<HomeTeamName>ＦＣ岐阜</HomeTeamName>
+				<HomeTeamNameS>岐阜</HomeTeamNameS>
+				<HomeTeamNameE>FC Gifu</HomeTeamNameE>
+				<HomeTeamNameES>FC Gifu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>296</AwayTeamID>
+				<AwayTeamName>横浜ＦＣ</AwayTeamName>
+				<AwayTeamNameS>横浜FC</AwayTeamNameS>
+				<AwayTeamNameE>Yokohama FC</AwayTeamNameE>
+				<AwayTeamNameES>Yokohama FC</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="27">
+				<GameID>2026052117</GameID>
+				<MatchNumber>16</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>87</StadiumID>
+				<StadiumName>ロートフィールド奈良</StadiumName>
+				<StadiumNameS>ロートＦ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30985</HomeTeamID>
+				<HomeTeamName>奈良クラブ</HomeTeamName>
+				<HomeTeamNameS>奈良</HomeTeamNameS>
+				<HomeTeamNameE>Nara Club</HomeTeamNameE>
+				<HomeTeamNameES>Nara</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>270</AwayTeamID>
+				<AwayTeamName>ＦＣ東京</AwayTeamName>
+				<AwayTeamNameS>FC東京</AwayTeamNameS>
+				<AwayTeamNameE>FC TOKYO</AwayTeamNameE>
+				<AwayTeamNameES>FC TOKYO</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="28">
+				<GameID>2026052118</GameID>
+				<MatchNumber>22</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>204</StadiumID>
+				<StadiumName>Ａｘｉｓバードスタジアム</StadiumName>
+				<StadiumNameS>Ａｘｉｓ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30000</HomeTeamID>
+				<HomeTeamName>ガイナーレ鳥取</HomeTeamName>
+				<HomeTeamNameS>鳥取</HomeTeamNameS>
+				<HomeTeamNameE>Gainare Tottori</HomeTeamNameE>
+				<HomeTeamNameES>Tottori</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>134</AwayTeamID>
+				<AwayTeamName>京都サンガF.C.</AwayTeamName>
+				<AwayTeamNameS>京都</AwayTeamNameS>
+				<AwayTeamNameE>Kyoto Sanga F.C.</AwayTeamNameE>
+				<AwayTeamNameES>Kyoto</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="29">
+				<GameID>2026052119</GameID>
+				<MatchNumber>20</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>107</StadiumID>
+				<StadiumName>Ｐｉｋａｒａスタジアム</StadiumName>
+				<StadiumNameS>ピカスタ</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30536</HomeTeamID>
+				<HomeTeamName>カマタマーレ讃岐</HomeTeamName>
+				<HomeTeamNameS>讃岐</HomeTeamNameS>
+				<HomeTeamNameE>Kamatamare Sanuki</HomeTeamNameE>
+				<HomeTeamNameES>Sanuki</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>133</AwayTeamID>
+				<AwayTeamName>セレッソ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｃ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Cerezo Osaka</AwayTeamNameE>
+				<AwayTeamNameES>C-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+<ScheduleInfo ScheduleNO="30">
+				<GameID>2026052120</GameID>
+				<MatchNumber>4</MatchNumber>
+				<GameDate>20260521</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>64</StadiumID>
+				<StadiumName>高知県立春野総合運動公園陸上競技場</StadiumName>
+				<StadiumNameS>春野陸</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>31204</HomeTeamID>
+				<HomeTeamName>高知ユナイテッドＳＣ</HomeTeamName>
+				<HomeTeamNameS>高知</HomeTeamNameS>
+				<HomeTeamNameE>Kochi United SC</HomeTeamNameE>
+				<HomeTeamNameES>KOCHI</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>128</AwayTeamID>
+				<AwayTeamName>ガンバ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｇ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Gamba Osaka</AwayTeamNameE>
+				<AwayTeamNameES>G-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+</GameCategory>
+		<GameCategory>
+			<SeasonID>16</SeasonID>
+			<SeasonName>プレーオフラウンド</SeasonName>
+			<CupName>2025JリーグYBCルヴァンカップ プレーオフラウンド</CupName>
+			<GameC>8</GameC>
+		<ScheduleInfo ScheduleNO="1">
+				<GameID>2026052201</GameID>
+				<MatchNumber>1</MatchNumber>
+				<GameDate>20260706</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>1</Round>
+				<RoundName>１回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>64</StadiumID>
+				<StadiumName>高知県立春野総合運動公園陸上競技場</StadiumName>
+				<StadiumNameS>春野陸</StadiumNameS>
+				<Site>日本</Site>
+				<HomeTeamID>30302</HomeTeamID>
+				<HomeTeamName>ＦＣ岐阜</HomeTeamName>
+				<HomeTeamNameS>岐阜</HomeTeamNameS>
+				<HomeTeamNameE>FC Gifu</HomeTeamNameE>
+				<HomeTeamNameES>FC Gifu</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+				<AwayTeamID>296</AwayTeamID>
+				<AwayTeamName>ガンバ大阪</AwayTeamName>
+				<AwayTeamNameS>Ｇ大阪</AwayTeamNameS>
+				<AwayTeamNameE>Gamba Osaka</AwayTeamNameE>
+				<AwayTeamNameES>G-Osaka</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+<ScheduleInfo ScheduleNO="2">
+				<GameID>2026070701</GameID>
+				<MatchNumber>1</MatchNumber>
+				<GameDate>20260707</GameDate>
+				<GameTime>1400</GameTime>
+				<LocalDate></LocalDate>
+				<LocalTime></LocalTime>
+				<OccasionNo>1</OccasionNo>
+				<Round>2</Round>
+				<RoundName>２回戦</RoundName>
+				<GroupID></GroupID>
+				<Subject>0</Subject>
+				<DayNight>1</DayNight>
+				<StadiumID>64</StadiumID>
+				<StadiumName>高知県立春野総合運動公園陸上競技場</StadiumName>
+				<StadiumNameS>春野陸</StadiumNameS>
+				<Site>日本</Site>
+
+				<HomeTeamID>296</HomeTeamID>
+				<HomeTeamName>ガンバ大阪</HomeTeamName>
+				<HomeTeamNameS>Ｇ大阪</HomeTeamNameS>
+				<HomeTeamNameE>Gamba Osaka</HomeTeamNameE>
+				<HomeTeamNameES>G-Osaka</HomeTeamNameES>
+				<HomePreviousGameID></HomePreviousGameID>
+
+				<AwayTeamID>30302</AwayTeamID>
+				<AwayTeamName>ＦＣ岐阜</AwayTeamName>
+				<AwayTeamNameS>岐阜</AwayTeamNameS>
+				<AwayTeamNameE>FC Gifu</AwayTeamNameE>
+				<AwayTeamNameES>FC Gifu</AwayTeamNameES>
+				<AwayPreviousGameID></AwayPreviousGameID>
+			
+				<RealtimeDeliveryF>1</RealtimeDeliveryF>
+				<AnimationDeliveryF>0</AnimationDeliveryF>
+				<AnimationURL></AnimationURL>
+			</ScheduleInfo>
+
+
+
+
+
+
+
+</GameCategory>
+		<GameCategory>
+			<SeasonID>17</SeasonID>
+			<SeasonName>プライムラウンド</SeasonName>
+			<CupName>2025JリーグYBCルヴァンカップ プライムラウンド</CupName>
+			<GameC>13</GameC>
+
+
+
+
+
+
+
+
+
+
+
+
+</GameCategory>
+	</GameSchedule>
+</Football>
