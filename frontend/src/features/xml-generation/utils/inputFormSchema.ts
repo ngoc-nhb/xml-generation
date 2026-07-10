@@ -253,6 +253,12 @@ function readNodeInput(node: FieldTreeNode, value: unknown): FormValue | undefin
     if (isContainerNode(node)) {
         if (isRepeatable(field.occurrenceRule)) {
             const items = normalizeRepeatableWriteItems(value as FormValue | undefined);
+            // ONE_OR_MORE requires at least one occurrence, and the form renders a default
+            // item when the array is empty — materialize that item into state too, so what
+            // the user sees is exactly what preview/export serializes.
+            if (field.occurrenceRule === 'ONE_OR_MORE' && items.length === 0) {
+                return [createRepeatableItemDefault(node)];
+            }
             return items.map((item) => readGroupObject(children, item));
         }
 
