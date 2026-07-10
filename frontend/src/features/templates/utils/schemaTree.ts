@@ -160,6 +160,30 @@ export function flattenFieldTree(nodes: FieldTreeNode[]): TemplateField[] {
     return result;
 }
 
+/**
+ * Finds the nearest ancestor GROUP field (walking up `parentFieldName`) whose
+ * `occurrenceRule` makes it repeatable. Returns `null` when the field is not
+ * nested inside any repeatable group — the field is scoped to the whole template.
+ */
+export function findOwningRepeatableGroupFieldName(
+    fields: TemplateField[],
+    fieldName: string,
+): string | null {
+    const byName = new Map(fields.map((field) => [field.fieldName, field]));
+    let current = byName.get(fieldName);
+    while (current?.parentFieldName) {
+        const parent = byName.get(current.parentFieldName);
+        if (!parent) {
+            return null;
+        }
+        if (parent.nodeType === 'GROUP' && (parent.occurrenceRule === 'ONE_OR_MORE' || parent.occurrenceRule === 'ZERO_OR_MORE')) {
+            return parent.fieldName;
+        }
+        current = parent;
+    }
+    return null;
+}
+
 export function getSiblingFields(fields: TemplateField[], field: TemplateField): TemplateField[] {
     return fields
         .filter((item) => (item.parentFieldName ?? null) === (field.parentFieldName ?? null))

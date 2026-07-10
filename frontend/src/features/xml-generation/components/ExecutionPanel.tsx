@@ -25,6 +25,7 @@ import { TemplateMappedMasterDataSelector } from '@/features/xml-generation/comp
 import { TemplateSelector } from '@/features/xml-generation/components/TemplateSelector';
 import { XmlPreviewDialog } from '@/features/xml-generation/components/XmlPreviewDialog';
 import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useResolvedMasterDataTypes';
+import { buildDefaultSelections, removeGroupOccurrenceAndReindex } from '@/features/xml-generation/utils/masterDataOccurrences';
 import { useExportXml, usePreviewXml } from '@/features/xml-generation/hooks/useXmlGeneration';
 import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
 import {
@@ -79,7 +80,11 @@ export function ExecutionPanel() {
     const schemaFields = useMemo(() => templateDetail?.schema?.fields ?? [], [templateDetail?.schema?.fields]);
     const schemaMappings = useMemo(() => templateDetail?.schema?.mappings ?? [], [templateDetail?.schema?.mappings]);
     const inputFieldCount = useMemo(() => countInputFields(schemaFields), [schemaFields]);
-    const { emptySelections, compileMappings, isLoading: masterTypesLoading } = useResolvedMasterDataTypes(schemaMappings);
+    const {
+        requiredTypeContexts,
+        compileMappings,
+        isLoading: masterTypesLoading,
+    } = useResolvedMasterDataTypes(schemaMappings, schemaFields);
 
     const groupKeys = useMemo(() => {
         if (schemaFields.length === 0) {
@@ -119,11 +124,12 @@ export function ExecutionPanel() {
     }, [compileMappings, hasImportedData, schemaFields, templateDetail?.sampleInputJson]);
 
     const initialMasterDataSelections = useMemo(() => {
+        const defaults = buildDefaultSelections(requiredTypeContexts, initialFormData);
         if (masterTypesLoading) {
-            return emptySelections;
+            return defaults;
         }
-        return applySavedMasterDataSelections(emptySelections, savedInputQuery.data?.selectedMasterData ?? null);
-    }, [emptySelections, masterTypesLoading, savedInputQuery.data]);
+        return applySavedMasterDataSelections(defaults, savedInputQuery.data?.selectedMasterData ?? null);
+    }, [requiredTypeContexts, initialFormData, masterTypesLoading, savedInputQuery.data]);
 
     const defaultInputJson = useMemo(
         () =>
@@ -375,6 +381,15 @@ export function ExecutionPanel() {
         setGroupOpenState((current) => ({ ...current, [groupKey]: open }));
     }
 
+    /**
+     * Removing a repeatable group occurrence shifts every later occurrence's array index down.
+     * Master Data selections are keyed by that same index, so without this they'd end up
+     * pointing at the wrong occurrence (or a stale, removed one) after the shift.
+     */
+    function handleRepeatableItemRemove(groupFieldName: string, removedIndex: number) {
+        setMasterDataOverride(removeGroupOccurrenceAndReindex(masterDataSelections, groupFieldName, removedIndex));
+    }
+
     function expandAllGroups() {
         setGroupOpenState(buildInputGroupOpenState(groupKeys, true));
     }
@@ -385,7 +400,9 @@ export function ExecutionPanel() {
 
     const masterDataSidebar = selectedTemplateId ? (
         <TemplateMappedMasterDataSelector
+            fields={schemaFields}
             mappings={schemaMappings}
+            formData={formData}
             selections={masterDataSelections}
             onChange={setMasterDataOverride}
         />
@@ -496,6 +513,7 @@ export function ExecutionPanel() {
                                     groupOpenState={groupOpenState}
                                     onGroupOpenChange={handleGroupOpenChange}
                                     onChange={(next) => setFormDataOverride(next)}
+                                    onRepeatableItemRemove={handleRepeatableItemRemove}
                                 />
                             ) : (
                                 <p className="text-sm text-muted-foreground">

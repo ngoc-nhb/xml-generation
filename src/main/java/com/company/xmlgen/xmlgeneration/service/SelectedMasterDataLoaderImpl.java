@@ -7,6 +7,7 @@ import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.company.xmlgen.xmlgeneration.exception.XMLGenerationErrorCode;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Iterator;
@@ -17,6 +18,11 @@ import org.springframework.stereotype.Service;
  * Loads master data records referenced by {@code { "TYPE_CODE": { "id": recordId } }} selections.
  *
  * <p>Already-expanded selections ({@code { "TYPE_CODE": { "field": value } }}) are passed through.
+ *
+ * <p>A repeatable group's selections are carried as an array aligned by index with the group's
+ * input occurrences, e.g. {@code { "GameCategory": [ { "SEASON": { "id": 1 } }, { "SEASON": { "id": 2 } } ] } }.
+ * Each array element is itself a {@code { "TYPE_CODE": ... } } scope and is resolved the same way
+ * as the request root, so record references nested inside repeated groups are expanded per occurrence.
  */
 @Service
 public class SelectedMasterDataLoaderImpl implements SelectedMasterDataLoader {
@@ -47,8 +53,13 @@ public class SelectedMasterDataLoaderImpl implements SelectedMasterDataLoader {
                     XMLGenerationErrorCode.MASTER_DATA_NOT_FOUND, "selectedMasterData must be an object");
         }
 
+        return resolveScope(selectedMasterData);
+    }
+
+    /** Resolves one {@code { "TYPE_CODE": selection, ... } } scope — the request root, or one repeated-group occurrence. */
+    private JsonNode resolveScope(JsonNode scope) {
         ObjectNode resolved = objectMapper.createObjectNode();
-        Iterator<Map.Entry<String, JsonNode>> fields = selectedMasterData.fields();
+        Iterator<Map.Entry<String, JsonNode>> fields = scope.fields();
         while (fields.hasNext()) {
             Map.Entry<String, JsonNode> entry = fields.next();
             resolved.set(entry.getKey(), resolveSelection(entry.getKey(), entry.getValue()));
@@ -62,6 +73,14 @@ public class SelectedMasterDataLoaderImpl implements SelectedMasterDataLoader {
         }
         if (isRecordReference(selection)) {
             return loadRecordData(typeCode, selection.get("id").asLong());
+        }
+        if (selection.isArray()) {
+            ArrayNode resolvedOccurrences = objectMapper.createArrayNode();
+            for (JsonNode occurrence : selection) {
+                resolvedOccurrences.add(
+                        occurrence != null && occurrence.isObject() ? resolveScope(occurrence) : occurrence);
+            }
+            return resolvedOccurrences;
         }
         return selection;
     }

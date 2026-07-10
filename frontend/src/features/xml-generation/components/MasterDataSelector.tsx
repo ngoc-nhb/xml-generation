@@ -55,6 +55,8 @@ export function MasterDataSelector({
                 typeName: type.name,
                 recordId: 0,
                 recordLabel: '',
+                groupFieldName: null,
+                occurrenceIndex: 0,
             },
         ]);
     }
@@ -168,27 +170,74 @@ function MasterDataRecordPicker({
     );
 }
 
-export function toSelectedMasterDataPayload(
-    selections: SelectedMasterDataEntry[],
-): Record<string, { id: number }> {
-    const payload: Record<string, { id: number }> = {};
-    for (const entry of selections) {
-        if (entry.recordId > 0) {
-            payload[entry.typeCode] = { id: entry.recordId };
-        }
+function asRecordIdRef(value: unknown): { id: number } | undefined {
+    if (
+        value !== null &&
+        typeof value === 'object' &&
+        !Array.isArray(value) &&
+        typeof (value as { id?: unknown }).id === 'number'
+    ) {
+        return value as { id: number };
     }
+    return undefined;
+}
+
+/**
+ * Builds the request-ready `selectedMasterData`: template-level selections (`groupFieldName === null`)
+ * as a flat `{ typeCode: { id } }`, and per-occurrence selections as `{ groupFieldName: [{ typeCode: { id } }, ...] }`
+ * aligned by index with `inputData[groupFieldName]` — the array shape `ValueResolutionServiceImpl` already expects.
+ */
+export function toSelectedMasterDataPayload(selections: SelectedMasterDataEntry[]): Record<string, unknown> {
+    const payload: Record<string, unknown> = {};
+    const groupedEntries = new Map<string, SelectedMasterDataEntry[]>();
+
+    for (const entry of selections) {
+        if (entry.groupFieldName === null) {
+            if (entry.recordId > 0) {
+                payload[entry.typeCode] = { id: entry.recordId };
+            }
+            continue;
+        }
+        const list = groupedEntries.get(entry.groupFieldName) ?? [];
+        list.push(entry);
+        groupedEntries.set(entry.groupFieldName, list);
+    }
+
+    for (const [groupFieldName, entries] of groupedEntries) {
+        const maxIndex = entries.reduce((max, entry) => Math.max(max, entry.occurrenceIndex), -1);
+        const occurrences: Record<string, unknown>[] = Array.from({ length: maxIndex + 1 }, () => ({}));
+        for (const entry of entries) {
+            if (entry.recordId > 0) {
+                occurrences[entry.occurrenceIndex][entry.typeCode] = { id: entry.recordId };
+            }
+        }
+        payload[groupFieldName] = occurrences;
+    }
+
     return payload;
 }
 
+/** Restores `recordId`/`recordLabel` onto each (typeId, groupFieldName, occurrenceIndex) entry from a previously saved payload. */
 export function applySavedMasterDataSelections(
     base: SelectedMasterDataEntry[],
-    saved: Record<string, { id: number }> | null | undefined,
+    saved: Record<string, unknown> | null | undefined,
 ): SelectedMasterDataEntry[] {
     if (!saved) {
         return base;
     }
     return base.map((entry) => {
-        const savedEntry = saved[entry.typeCode];
+        let savedRef: unknown;
+        if (entry.groupFieldName === null) {
+            savedRef = saved[entry.typeCode];
+        } else {
+            const groupSaved = saved[entry.groupFieldName];
+            const occurrence = Array.isArray(groupSaved) ? groupSaved[entry.occurrenceIndex] : undefined;
+            savedRef =
+                occurrence !== null && typeof occurrence === 'object' && !Array.isArray(occurrence)
+                    ? (occurrence as Record<string, unknown>)[entry.typeCode]
+                    : undefined;
+        }
+        const savedEntry = asRecordIdRef(savedRef);
         if (savedEntry && savedEntry.id > 0) {
             return {
                 ...entry,

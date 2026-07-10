@@ -30,6 +30,14 @@ interface DynamicInputFormProps {
     onChange: (value: FormObject) => void;
     groupOpenState: Record<string, boolean>;
     onGroupOpenChange: (groupKey: string, open: boolean) => void;
+    /**
+     * Called right before an item is removed from a repeatable group, with the group's
+     * field name and the index being removed. Repeated-group state kept elsewhere (e.g.
+     * per-occurrence Master Data selections) is keyed by array index, so removing from the
+     * middle must shift every later occurrence's key down — this callback is how the parent
+     * finds out an index-shift is needed, since `onChange` alone only carries the new array.
+     */
+    onRepeatableItemRemove?: (groupFieldName: string, removedIndex: number) => void;
 }
 
 export function DynamicInputForm({
@@ -38,6 +46,7 @@ export function DynamicInputForm({
     onChange,
     groupOpenState,
     onGroupOpenChange,
+    onRepeatableItemRemove,
 }: DynamicInputFormProps) {
     const tree = useMemo(() => buildFieldTree(fields), [fields]);
     const inputFields = useMemo(() => listInputFields(fields), [fields]);
@@ -75,6 +84,7 @@ export function DynamicInputForm({
                             value={value[child.field.fieldName]}
                             groupOpenState={groupOpenState}
                             onGroupOpenChange={onGroupOpenChange}
+                            onRepeatableItemRemove={onRepeatableItemRemove}
                             onChange={(next) => updateRootField(child.field.fieldName, next)}
                         />
                     ));
@@ -89,6 +99,7 @@ export function DynamicInputForm({
                         value={value[root.field.fieldName]}
                         groupOpenState={groupOpenState}
                         onGroupOpenChange={onGroupOpenChange}
+                        onRepeatableItemRemove={onRepeatableItemRemove}
                         onChange={(next) => updateRootField(root.field.fieldName, next)}
                     />
                 );
@@ -105,6 +116,7 @@ interface FormFieldNodeProps {
     groupOpenState: Record<string, boolean>;
     onGroupOpenChange: (groupKey: string, open: boolean) => void;
     onChange: (value: FormValue) => void;
+    onRepeatableItemRemove?: (groupFieldName: string, removedIndex: number) => void;
 }
 
 function FormFieldNode({
@@ -115,6 +127,7 @@ function FormFieldNode({
     groupOpenState,
     onGroupOpenChange,
     onChange,
+    onRepeatableItemRemove,
 }: FormFieldNodeProps) {
     if (isInputGroupContainer(node, fields)) {
         if (isInputRepeatableGroup(node)) {
@@ -127,6 +140,7 @@ function FormFieldNode({
                     groupOpenState={groupOpenState}
                     onGroupOpenChange={onGroupOpenChange}
                     onChange={onChange}
+                    onRepeatableItemRemove={onRepeatableItemRemove}
                 />
             );
         }
@@ -139,6 +153,7 @@ function FormFieldNode({
                 groupOpenState={groupOpenState}
                 onGroupOpenChange={onGroupOpenChange}
                 onChange={onChange}
+                onRepeatableItemRemove={onRepeatableItemRemove}
             />
         );
     }
@@ -164,6 +179,7 @@ function RepeatableGroupForm({
     groupOpenState,
     onGroupOpenChange,
     onChange,
+    onRepeatableItemRemove,
 }: {
     node: FieldTreeNode;
     fields: TemplateField[];
@@ -172,6 +188,7 @@ function RepeatableGroupForm({
     groupOpenState: Record<string, boolean>;
     onGroupOpenChange: (groupKey: string, open: boolean) => void;
     onChange: (value: FormValue) => void;
+    onRepeatableItemRemove?: (groupFieldName: string, removedIndex: number) => void;
 }) {
     const items = normalizeRepeatableItems(node, value);
     const label = node.field.displayName || node.field.fieldName;
@@ -209,6 +226,7 @@ function RepeatableGroupForm({
             return;
         }
         updateItems(items.filter((_, itemIndex) => itemIndex !== index));
+        onRepeatableItemRemove?.(node.field.fieldName, index);
     }
 
     return (
@@ -254,6 +272,7 @@ function RepeatableGroupForm({
                                     value={item[child.field.fieldName]}
                                     groupOpenState={groupOpenState}
                                     onGroupOpenChange={onGroupOpenChange}
+                                    onRepeatableItemRemove={onRepeatableItemRemove}
                                     onChange={(next) =>
                                         updateItem(index, {
                                             ...item,
@@ -283,6 +302,7 @@ function SingleGroupForm({
     groupOpenState,
     onGroupOpenChange,
     onChange,
+    onRepeatableItemRemove,
 }: {
     node: FieldTreeNode;
     fields: TemplateField[];
@@ -291,6 +311,7 @@ function SingleGroupForm({
     groupOpenState: Record<string, boolean>;
     onGroupOpenChange: (groupKey: string, open: boolean) => void;
     onChange: (value: FormValue) => void;
+    onRepeatableItemRemove?: (groupFieldName: string, removedIndex: number) => void;
 }) {
     const objectValue =
         typeof value === 'object' && value !== null && !Array.isArray(value) ? (value as FormObject) : {};
@@ -318,6 +339,7 @@ function SingleGroupForm({
                         value={objectValue[child.field.fieldName]}
                         groupOpenState={groupOpenState}
                         onGroupOpenChange={onGroupOpenChange}
+                        onRepeatableItemRemove={onRepeatableItemRemove}
                         onChange={(next) => updateChild(child.field.fieldName, next)}
                     />
                 );

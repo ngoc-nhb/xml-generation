@@ -131,15 +131,47 @@ export function buildImportedSelectedMasterData(
     return result;
 }
 
+/**
+ * Overlays user-picked records on top of the imported baseline. Template-level picks
+ * (`groupFieldName === null`) replace the flat `{ typeCode }` entry as before. Per-occurrence
+ * picks are merged into the existing per-index object at `base[groupFieldName][occurrenceIndex]`,
+ * so picking a record for one occurrence never touches the imported values of any other occurrence.
+ */
 export function applyPickerSelectionsToMasterData(
     base: Record<string, unknown>,
     selections: SelectedMasterDataEntry[],
 ): Record<string, unknown> {
-    const result = { ...base };
+    const result: Record<string, unknown> = { ...base };
+    const groupedEntries = new Map<string, SelectedMasterDataEntry[]>();
+
     for (const entry of selections) {
-        if (entry.recordId > 0) {
-            result[entry.typeCode] = { id: entry.recordId };
+        if (entry.groupFieldName === null) {
+            if (entry.recordId > 0) {
+                result[entry.typeCode] = { id: entry.recordId };
+            }
+            continue;
         }
+        const list = groupedEntries.get(entry.groupFieldName) ?? [];
+        list.push(entry);
+        groupedEntries.set(entry.groupFieldName, list);
     }
+
+    for (const [groupFieldName, entries] of groupedEntries) {
+        const existing = Array.isArray(result[groupFieldName]) ? (result[groupFieldName] as unknown[]) : [];
+        const maxIndex = entries.reduce((max, entry) => Math.max(max, entry.occurrenceIndex), existing.length - 1);
+        const next: Record<string, unknown>[] = Array.from({ length: maxIndex + 1 }, (_, index) => {
+            const prior = existing[index];
+            return prior !== null && typeof prior === 'object' && !Array.isArray(prior)
+                ? { ...(prior as Record<string, unknown>) }
+                : {};
+        });
+        for (const entry of entries) {
+            if (entry.recordId > 0) {
+                next[entry.occurrenceIndex][entry.typeCode] = { id: entry.recordId };
+            }
+        }
+        result[groupFieldName] = next;
+    }
+
     return result;
 }

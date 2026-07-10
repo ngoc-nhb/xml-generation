@@ -26,4 +26,12 @@ export interface SelectedMasterDataEntry {
     typeName: string;
     recordId: number;
     recordLabel: string;
+    /**
+     * Field name of the repeatable GROUP this selection is scoped to (e.g. `GameCategory`),
+     * or `null` when the mapped field is not inside a repeatable group — the template-level,
+     * single-selection case that existed before repeated Master Data contexts were supported.
+     */
+    groupFieldName: string | null;
+    /** 0-based occurrence index within `groupFieldName`. Always 0 when `groupFieldName` is null. */
+    occurrenceIndex: number;
 }

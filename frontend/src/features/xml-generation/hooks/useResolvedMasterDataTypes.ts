@@ -5,11 +5,12 @@ import { fetchMasterDataField } from '@/features/master-data/api/fields.api';
 import { masterDataQueryKeys } from '@/features/master-data/hooks/queryKeys';
 import { useMasterDataTypeList } from '@/features/master-data/hooks/useMasterDataTypes';
 import type { MasterDataTypeListItem } from '@/features/master-data/types/master-data.types';
-import type { TemplateMapping } from '@/features/templates/types/template.types';
-import type { SelectedMasterDataEntry } from '@/features/xml-generation/types/xml-generation.types';
+import type { TemplateField, TemplateMapping } from '@/features/templates/types/template.types';
+import { findOwningRepeatableGroupFieldName } from '@/features/templates/utils/schemaTree';
+import type { MasterDataTypeContext } from '@/features/xml-generation/utils/masterDataOccurrences';
 import type { TemplateCompileMapping } from '@/features/xml-generation/utils/importedMasterDataBuilder';
 
-export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
+export function useResolvedMasterDataTypes(mappings: TemplateMapping[], fields: TemplateField[] = []) {
     const mappedFieldIds = useMemo(
         () => [...new Set(mappings.map((mapping) => mapping.masterDataFieldId).filter((id): id is number => id !== null))],
         [mappings],
@@ -36,11 +37,18 @@ export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
         return map;
     }, [fieldQueries]);
 
-    /** Types required by mappings, ordered by first appearance in the template mapping list. */
-    const orderedRequiredTypes = useMemo((): MasterDataTypeListItem[] => {
+/**
+     * Types required by mappings, ordered by first appearance in the template mapping list,
+     * each paired with the repeatable group field name that owns it (or `null` when the
+     * mapped field lives outside any repeatable group — the pre-existing single-selection case).
+     * The owning group is derived from the *first* mapping seen for that type, since every
+     * field mapped to the same Master Data type is expected to belong to the same group
+     * instance (e.g. SeasonID and SeasonName both live under GameCategory).
+     */
+    const requiredTypeContexts = useMemo((): MasterDataTypeContext[] => {
         const types = typesQuery.data?.items ?? [];
         const typeById = new Map(types.map((type) => [type.id, type]));
-        const result: MasterDataTypeListItem[] = [];
+        const result: MasterDataTypeContext[] = [];
         const seenTypeIds = new Set<number>();
 
         for (const mapping of mappings) {
@@ -55,27 +63,22 @@ export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
             if (!type) {
                 continue;
             }
-            result.push(type);
+            result.push({ type, groupFieldName: findOwningRepeatableGroupFieldName(fields, mapping.fieldName) });
             seenTypeIds.add(typeId);
         }
 
         return result;
-    }, [fieldIdToTypeId, mappings, typesQuery.data?.items]);
+    }, [fieldIdToTypeId, fields, mappings, typesQuery.data?.items]);
+
+    const orderedRequiredTypes = useMemo(
+        (): MasterDataTypeListItem[] => requiredTypeContexts.map((context) => context.type),
+        [requiredTypeContexts],
+    );
 
     const requiredTypeIds = useMemo(
         () => orderedRequiredTypes.map((type) => type.id),
         [orderedRequiredTypes],
     );
-
-    const emptySelections = useMemo((): SelectedMasterDataEntry[] => {
-        return orderedRequiredTypes.map((type) => ({
-            typeId: type.id,
-            typeCode: type.code,
-            typeName: type.name,
-            recordId: 0,
-            recordLabel: '',
-        }));
-    }, [orderedRequiredTypes]);
 
     const compileMappings = useMemo((): TemplateCompileMapping[] => {
         const types = typesQuery.data?.items ?? [];
@@ -115,9 +118,9 @@ export function useResolvedMasterDataTypes(mappings: TemplateMapping[]) {
         mappedFieldIds,
         requiredTypeIds,
         orderedRequiredTypes,
+        requiredTypeContexts,
         /** @deprecated Use orderedRequiredTypes */
         requiredTypes: orderedRequiredTypes,
-        emptySelections,
         compileMappings,
         isLoading,
     };
