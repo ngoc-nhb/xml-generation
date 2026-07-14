@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -13,7 +14,11 @@ import {
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
-import type { SystemRole } from '@/features/user-management/types/user-management.types';
+import { WorkspaceAssignmentField } from '@/features/user-management/components/WorkspaceAssignmentField';
+import type {
+    SystemRole,
+    WorkspaceMembershipAssignment,
+} from '@/features/user-management/types/user-management.types';
 
 const schema = z.object({
     username: z.string().min(1, 'Username is required'),
@@ -23,26 +28,40 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+export interface CreateUserSubmitValues extends FormValues {
+    memberships: WorkspaceMembershipAssignment[];
+}
+
 interface CreateUserDialogProps {
     open: boolean;
     loading?: boolean;
-    onSubmit: (values: FormValues) => void;
+    onSubmit: (values: CreateUserSubmitValues) => void;
     onClose: () => void;
 }
 
 export function CreateUserDialog({ open, loading, onSubmit, onClose }: CreateUserDialogProps) {
     const form = useForm<FormValues>({
         resolver: zodResolver(schema),
-        defaultValues: { username: '', password: '', role: 'USER' },
+        defaultValues: {
+            username: '',
+            password: '',
+            role: 'USER',
+        },
     });
+    const [memberships, setMemberships] = useState<WorkspaceMembershipAssignment[]>([]);
+
+    function handleClose() {
+        form.reset();
+        setMemberships([]);
+        onClose();
+    }
 
     return (
         <Dialog
             open={open}
             onOpenChange={(next) => {
                 if (!next) {
-                    form.reset();
-                    onClose();
+                    handleClose();
                 }
             }}
         >
@@ -51,7 +70,10 @@ export function CreateUserDialog({ open, loading, onSubmit, onClose }: CreateUse
                     <DialogTitle>Create User</DialogTitle>
                 </DialogHeader>
                 <Form {...form}>
-                    <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
+                    <form
+                        className="space-y-4"
+                        onSubmit={form.handleSubmit((values) => onSubmit({ ...values, memberships }))}
+                    >
                         <FormField
                             control={form.control}
                             name="username"
@@ -94,8 +116,16 @@ export function CreateUserDialog({ open, loading, onSubmit, onClose }: CreateUse
                                 </FormItem>
                             )}
                         />
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-foreground">Global workspaces</p>
+                            <p className="text-xs text-muted-foreground">
+                                Assign organization workspaces and permissions. Personal workspaces are
+                                created by the user later.
+                            </p>
+                            <WorkspaceAssignmentField value={memberships} onChange={setMemberships} />
+                        </div>
                         <DialogFooter>
-                            <Button type="button" variant="outline" onClick={onClose} disabled={loading}>
+                            <Button type="button" variant="outline" onClick={handleClose} disabled={loading}>
                                 Cancel
                             </Button>
                             <Button type="submit" disabled={loading}>

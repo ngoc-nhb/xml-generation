@@ -125,13 +125,78 @@ export function removeGroupOccurrenceAndReindex(
     groupFieldName: string,
     removedIndex: number,
 ): SelectedMasterDataEntry[] {
+    return removeGroupOccurrencesAndReindex(selections, groupFieldName, [removedIndex]);
+}
+
+/** Remove multiple occurrences at once, then compact remaining indices. */
+export function removeGroupOccurrencesAndReindex(
+    selections: SelectedMasterDataEntry[],
+    groupFieldName: string,
+    removedIndices: number[],
+): SelectedMasterDataEntry[] {
+    if (removedIndices.length === 0) {
+        return selections;
+    }
+    const removed = new Set(removedIndices);
     return selections
-        .filter((entry) => !(entry.groupFieldName === groupFieldName && entry.occurrenceIndex === removedIndex))
-        .map((entry) =>
-            entry.groupFieldName === groupFieldName && entry.occurrenceIndex > removedIndex
-                ? { ...entry, occurrenceIndex: entry.occurrenceIndex - 1 }
-                : entry,
-        );
+        .filter(
+            (entry) =>
+                !(entry.groupFieldName === groupFieldName && removed.has(entry.occurrenceIndex)),
+        )
+        .map((entry) => {
+            if (entry.groupFieldName !== groupFieldName) {
+                return entry;
+            }
+            let shift = 0;
+            for (const index of removed) {
+                if (index < entry.occurrenceIndex) {
+                    shift += 1;
+                }
+            }
+            return shift === 0 ? entry : { ...entry, occurrenceIndex: entry.occurrenceIndex - shift };
+        });
+}
+
+/**
+ * After duplicating selected occurrences (inserted after the last selected index),
+ * copy Master Data bindings for each new occurrence and shift later indices.
+ *
+ * Example: selected [1,2,4], copies=2 → insert at 5:
+ * new indices 5,6 get copies of 1,2,4 then 7,8 get another round.
+ */
+export function duplicateGroupOccurrencesAndReindex(
+    selections: SelectedMasterDataEntry[],
+    groupFieldName: string,
+    selectedIndices: number[],
+    copies: number,
+): SelectedMasterDataEntry[] {
+    if (selectedIndices.length === 0 || copies <= 0) {
+        return selections;
+    }
+
+    const ordered = [...selectedIndices].sort((a, b) => a - b);
+    const insertAt = ordered[ordered.length - 1]! + 1;
+    const insertedCount = ordered.length * copies;
+
+    const shifted = selections.map((entry) =>
+        entry.groupFieldName === groupFieldName && entry.occurrenceIndex >= insertAt
+            ? { ...entry, occurrenceIndex: entry.occurrenceIndex + insertedCount }
+            : entry,
+    );
+
+    const created: SelectedMasterDataEntry[] = [];
+    for (let copy = 0; copy < copies; copy += 1) {
+        ordered.forEach((sourceIndex, offset) => {
+            const newIndex = insertAt + copy * ordered.length + offset;
+            for (const entry of selections) {
+                if (entry.groupFieldName === groupFieldName && entry.occurrenceIndex === sourceIndex) {
+                    created.push({ ...entry, occurrenceIndex: newIndex });
+                }
+            }
+        });
+    }
+
+    return [...shifted, ...created];
 }
 
 function isRepeatableRule(rule: TemplateField['occurrenceRule']): boolean {

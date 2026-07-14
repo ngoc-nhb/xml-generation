@@ -23,10 +23,10 @@ import com.company.xmlgen.authentication.mapper.UserMapper;
 import com.company.xmlgen.authentication.repository.UserRepository;
 import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.CommonErrorCode;
+import com.company.xmlgen.exception.ConflictException;
 import com.company.xmlgen.exception.ForbiddenException;
 import com.company.xmlgen.exception.NotFoundException;
 import com.company.xmlgen.exception.ValidationException;
-import com.company.xmlgen.exception.ConflictException;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -43,6 +43,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceImplTest {
@@ -82,7 +83,8 @@ class UserServiceImplTest {
         Page<UserEntity> page = new PageImpl<>(List.of(entity), PageRequest.of(0, 20), 1);
         when(userRepository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
         when(userMapper.toListResponse(entity))
-                .thenReturn(new UserListResponse(10L, "alice", SystemRole.USER, entity.getCreatedAt(), entity.getUpdatedAt()));
+                .thenReturn(new UserListResponse(
+                        10L, "alice", SystemRole.USER, entity.getCreatedAt(), entity.getUpdatedAt()));
 
         PageResult<UserListResponse> result = userService.findAll(1, 20);
 
@@ -99,7 +101,7 @@ class UserServiceImplTest {
     }
 
     @Test
-    void create_success_encodesPassword() {
+    void create_success_encodesPasswordWithoutPersonalWorkspace() {
         CreateUserRequest request = new CreateUserRequest("newuser", "secret", SystemRole.USER);
         when(userRepository.existsByUsernameAndDeletedAtIsNull("newuser")).thenReturn(false);
         when(passwordEncoder.encode("secret")).thenReturn("encoded-hash");
@@ -137,8 +139,7 @@ class UserServiceImplTest {
         when(userMapper.toUpdateResponse(entity))
                 .thenReturn(new UpdateUserResponse(3L, "newname", SystemRole.ADMIN));
 
-        UpdateUserResponse response =
-                userService.update(3L, new UpdateUserRequest("newname", SystemRole.ADMIN));
+        UpdateUserResponse response = userService.update(3L, new UpdateUserRequest("newname", SystemRole.ADMIN));
 
         assertThat(response.username()).isEqualTo("newname");
         assertThat(entity.isAdmin()).isTrue();
@@ -183,6 +184,8 @@ class UserServiceImplTest {
     }
 
     private static UserEntity userEntity(long id, String username, boolean admin) {
-        return new UserEntity(username, "hash", admin);
+        UserEntity entity = new UserEntity(username, "hash", admin);
+        ReflectionTestUtils.setField(entity, "id", id);
+        return entity;
     }
 }

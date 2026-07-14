@@ -13,6 +13,7 @@ import com.company.xmlgen.masterdata.dto.response.UpdateMasterDataTypeResponse;
 import com.company.xmlgen.masterdata.entity.MasterDataTypeEntity;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.UserPermissionGuard;
 import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.util.List;
 import org.springframework.data.domain.Page;
@@ -35,11 +36,15 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
 
     private final MasterDataTypeRepository masterDataTypeRepository;
     private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
+    private final UserPermissionGuard userPermissionGuard;
 
     public MasterDataTypeServiceImpl(
-            MasterDataTypeRepository masterDataTypeRepository, WorkspaceOwnershipGuard workspaceOwnershipGuard) {
+            MasterDataTypeRepository masterDataTypeRepository,
+            WorkspaceOwnershipGuard workspaceOwnershipGuard,
+            UserPermissionGuard userPermissionGuard) {
         this.masterDataTypeRepository = masterDataTypeRepository;
         this.workspaceOwnershipGuard = workspaceOwnershipGuard;
+        this.userPermissionGuard = userPermissionGuard;
     }
 
     @Override
@@ -83,6 +88,7 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional
     public CreateMasterDataTypeResponse create(CreateMasterDataTypeRequest request) {
+        userPermissionGuard.requireMasterDataWritePermission();
         long workspaceId = workspaceOwnershipGuard.currentWorkspaceId();
         if (masterDataTypeRepository.existsByWorkspaceIdAndCode(workspaceId, request.code())) {
             throw new ConflictException(MasterDataTypeErrorCode.MASTER_DATA_TYPE_CODE_ALREADY_EXISTS);
@@ -106,6 +112,7 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional
     public UpdateMasterDataTypeResponse update(Long id, UpdateMasterDataTypeRequest request) {
+        userPermissionGuard.requireMasterDataWritePermission();
         MasterDataTypeEntity entity = workspaceOwnershipGuard.requireMasterDataType(id);
 
         entity.setName(request.name());
@@ -125,6 +132,7 @@ public class MasterDataTypeServiceImpl implements MasterDataTypeService {
     @Override
     @Transactional
     public void delete(Long id) {
+        userPermissionGuard.requireMasterDataWritePermission();
         MasterDataTypeEntity entity = workspaceOwnershipGuard.requireMasterDataType(id);
         masterDataTypeRepository.delete(entity);
     }

@@ -11,15 +11,18 @@ import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 
 import { isWorkspaceErrorCode, setWorkspaceErrorHandler } from '@/api/workspaceErrors';
+import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { useWorkspaceList } from '@/features/workspace/hooks/useWorkspaces';
-import type { WorkspaceSummary } from '@/features/workspace/types/workspace.types';
+import {
+    useCreatePersonalWorkspace,
+    useWorkspaceList,
+} from '@/features/workspace/hooks/useWorkspaces';
+import type { WorkspacePermissionCode, WorkspaceSummary } from '@/features/workspace/types/workspace.types';
 import { useAuth } from '@/providers/AuthProvider';
 import { toast } from '@/providers/ToastProvider';
 import { clearStoredWorkspaceId, getStoredWorkspaceId, setStoredWorkspaceId } from '@/utils/storage';
-
-/** Default workspace from backend migration — used only to bootstrap workspace list loading. */
-const BOOTSTRAP_WORKSPACE_ID = 1;
+import { ApiClientError } from '@/types/api/common';
+import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 
 interface WorkspaceContextValue {
     currentWorkspace: WorkspaceSummary | null;
@@ -27,6 +30,9 @@ interface WorkspaceContextValue {
     isLoading: boolean;
     switchWorkspace: (workspaceId: number) => void;
     refreshWorkspaces: () => Promise<void>;
+    hasPermission: (permission: WorkspacePermissionCode) => boolean;
+    createPersonalWorkspace: (name?: string) => Promise<void>;
+    isCreatingPersonalWorkspace: boolean;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextValue | undefined>(undefined);
@@ -48,25 +54,13 @@ function findActiveWorkspace(
     return active[0] ?? null;
 }
 
-function ensureBootstrapWorkspaceId(): number {
-    const stored = getStoredWorkspaceId();
-    if (stored !== null) {
-        return stored;
-    }
-    setStoredWorkspaceId(BOOTSTRAP_WORKSPACE_ID);
-    return BOOTSTRAP_WORKSPACE_ID;
-}
-
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
     const { isAuthenticated, user } = useAuth();
     const navigate = useNavigate();
     const queryClient = useQueryClient();
     const { data: workspaces = [], isLoading, refetch } = useWorkspaceList();
+    const createPersonalMutation = useCreatePersonalWorkspace();
     const [workspaceRevision, setWorkspaceRevision] = useState(0);
-
-    if (isAuthenticated) {
-        ensureBootstrapWorkspaceId();
-    }
 
     const currentWorkspace = useMemo(() => {
         void workspaceRevision;
@@ -107,9 +101,39 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             setStoredWorkspaceId(target.id);
             setWorkspaceRevision((revision) => revision + 1);
             queryClient.clear();
-            navigate(user?.isAdmin ? '/templates' : '/xml-generation', { replace: true });
+            navigate('/dashboard', { replace: true });
         },
-        [workspaces, queryClient, navigate, user?.isAdmin],
+        [workspaces, queryClient, navigate],
+    );
+
+    const hasPermission = useCallback(
+        (permission: WorkspacePermissionCode) => {
+            if (user?.isAdmin) {
+                return true;
+            }
+            return Boolean(currentWorkspace?.myPermissions?.includes(permission));
+        },
+        [currentWorkspace, user?.isAdmin],
+    );
+
+    const createPersonalWorkspace = useCallback(
+        async (name?: string) => {
+            try {
+                const created = await createPersonalMutation.mutateAsync(name ? { name } : {});
+                setStoredWorkspaceId(created.id);
+                await refreshWorkspaces();
+                toast.success('Personal workspace created');
+                navigate('/dashboard', { replace: true });
+            } catch (error) {
+                const message =
+                    error instanceof ApiClientError
+                        ? getPrimaryErrorMessage(error.errors)
+                        : 'Failed to create personal workspace';
+                toast.error(message);
+                throw error;
+            }
+        },
+        [createPersonalMutation, refreshWorkspaces, navigate],
     );
 
     const handleWorkspaceError = useCallback(
@@ -120,10 +144,17 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 
             switch (code) {
                 case 'WORKSPACE_REQUIRED':
-                    navigate('/workspace-required', { replace: true });
+                    navigate('/dashboard', { replace: true });
+                    clearStoredWorkspaceId();
+                    void refreshWorkspaces();
                     break;
                 case 'INVALID_WORKSPACE':
                 case 'WORKSPACE_NOT_FOUND':
+                    clearStoredWorkspaceId();
+                    void refreshWorkspaces();
+                    break;
+                case 'WORKSPACE_ACCESS_DENIED':
+                    toast.error('You do not have access to this workspace.');
                     clearStoredWorkspaceId();
                     void refreshWorkspaces();
                     break;
@@ -151,15 +182,27 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
             isLoading,
             switchWorkspace,
             refreshWorkspaces,
+            hasPermission,
+            createPersonalWorkspace,
+            isCreatingPersonalWorkspace: createPersonalMutation.isPending,
         }),
-        [currentWorkspace, workspaces, isLoading, switchWorkspace, refreshWorkspaces],
+        [
+            currentWorkspace,
+            workspaces,
+            isLoading,
+            switchWorkspace,
+            refreshWorkspaces,
+            hasPermission,
+            createPersonalWorkspace,
+            createPersonalMutation.isPending,
+        ],
     );
 
     if (!isAuthenticated) {
         return <>{children}</>;
     }
 
-    if (isLoading || currentWorkspace === null) {
+    if (isLoading) {
         return <LoadingSpinner label="Loading workspace…" />;
     }
 
@@ -177,3 +220,25 @@ export function useWorkspace(): WorkspaceContextValue {
 
 // eslint-disable-next-line react-refresh/only-export-components
 export { isWorkspaceErrorCode };
+
+export function NoWorkspaceEmptyState() {
+    const { createPersonalWorkspace, isCreatingPersonalWorkspace } = useWorkspace();
+
+    return (
+        <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
+            <div className="space-y-2">
+                <h2 className="text-xl font-semibold text-foreground">No Workspace Available</h2>
+                <p className="max-w-md text-sm text-muted-foreground">
+                    You are not assigned to any global workspace yet. Create a personal workspace to get
+                    started, or ask an administrator to assign you to one.
+                </p>
+            </div>
+            <Button
+                disabled={isCreatingPersonalWorkspace}
+                onClick={() => void createPersonalWorkspace()}
+            >
+                {isCreatingPersonalWorkspace ? 'Creating…' : 'Create Personal Workspace'}
+            </Button>
+        </div>
+    );
+}

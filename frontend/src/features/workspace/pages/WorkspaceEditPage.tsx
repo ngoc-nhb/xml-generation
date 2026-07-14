@@ -1,6 +1,7 @@
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, Link } from 'react-router-dom';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { FullPageError } from '@/components/full-page-error';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { WorkspaceEditForm } from '@/features/workspace/components/WorkspaceForm';
@@ -61,6 +62,13 @@ export function WorkspaceEditPage() {
                         <CardTitle>{data.name}</CardTitle>
                     </CardHeader>
                     <CardContent>
+                        <div className="mb-4">
+                            <Button asChild variant="outline" size="sm">
+                                <Link to={`/workspaces/${workspaceId}/settings/permissions`}>
+                                    Manage Permissions
+                                </Link>
+                            </Button>
+                        </div>
                         <WorkspaceEditForm
                             code={data.code}
                             initialValues={{

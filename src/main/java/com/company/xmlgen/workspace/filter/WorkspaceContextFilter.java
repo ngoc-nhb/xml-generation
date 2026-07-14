@@ -4,6 +4,7 @@ import com.company.xmlgen.exception.ApplicationException;
 import com.company.xmlgen.exception.BusinessException;
 import com.company.xmlgen.exception.ConflictException;
 import com.company.xmlgen.exception.ErrorResponseWriter;
+import com.company.xmlgen.exception.ForbiddenException;
 import com.company.xmlgen.workspace.context.WorkspaceContext;
 import com.company.xmlgen.workspace.context.WorkspaceContextHeaders;
 import com.company.xmlgen.workspace.context.WorkspaceContextHolder;
@@ -81,6 +82,11 @@ public class WorkspaceContextFilter extends OncePerRequestFilter {
         if (HttpMethod.POST.matches(request.getMethod()) && "/api/v1/auth/login".equals(path)) {
             return false;
         }
+        // Workspace and user management endpoints are not scoped to an active workspace —
+        // they must stay reachable for users who are not (yet) members of any workspace.
+        if (path.startsWith("/api/v1/workspaces") || path.startsWith("/api/v1/users")) {
+            return false;
+        }
 
         return path.startsWith("/api/v1/");
     }
@@ -114,6 +120,9 @@ public class WorkspaceContextFilter extends OncePerRequestFilter {
     private static int statusFor(ApplicationException ex) {
         if (ex instanceof ConflictException) {
             return HttpStatus.CONFLICT.value();
+        }
+        if (ex instanceof ForbiddenException) {
+            return HttpStatus.FORBIDDEN.value();
         }
         return HttpStatus.BAD_REQUEST.value();
     }

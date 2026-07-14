@@ -25,7 +25,8 @@ import java.time.Instant;
         uniqueConstraints = @UniqueConstraint(name = "uk_workspaces_code", columnNames = "code"),
         indexes = {
             @Index(name = "idx_workspaces_status", columnList = "status"),
-            @Index(name = "idx_workspaces_created_by", columnList = "created_by")
+            @Index(name = "idx_workspaces_created_by", columnList = "created_by"),
+            @Index(name = "idx_workspaces_type", columnList = "workspace_type")
         })
 public class WorkspaceEntity extends BaseEntity {
 
@@ -42,6 +43,10 @@ public class WorkspaceEntity extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private WorkspaceStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "workspace_type", nullable = false, length = 20)
+    private WorkspaceType type;
+
     @Column(name = "created_by", nullable = false)
     private Long createdById;
 
@@ -51,10 +56,12 @@ public class WorkspaceEntity extends BaseEntity {
     protected WorkspaceEntity() {
     }
 
-    public WorkspaceEntity(String code, String name, WorkspaceStatus status, Long createdById) {
+    public WorkspaceEntity(
+            String code, String name, WorkspaceStatus status, WorkspaceType type, Long createdById) {
         this.code = code;
         this.name = name;
         this.status = status;
+        this.type = type;
         this.createdById = createdById;
     }
 
@@ -88,6 +95,14 @@ public class WorkspaceEntity extends BaseEntity {
 
     public void setStatus(WorkspaceStatus status) {
         this.status = status;
+    }
+
+    public WorkspaceType getType() {
+        return type;
+    }
+
+    public void setType(WorkspaceType type) {
+        this.type = type;
     }
 
     public Long getCreatedById() {

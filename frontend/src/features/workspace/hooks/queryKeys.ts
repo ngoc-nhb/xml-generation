@@ -8,4 +8,5 @@ export const workspaceQueryKeys = {
         [...workspaceQueryKeys.lists(), 'management', params] as const,
     details: () => [...workspaceQueryKeys.all, 'detail'] as const,
     detail: (id: number) => [...workspaceQueryKeys.details(), id] as const,
+    members: (workspaceId: number) => [...workspaceQueryKeys.all, 'members', workspaceId] as const,
 };

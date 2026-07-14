@@ -15,6 +15,7 @@ const WORKSPACE_ERROR_CODES = new Set([
     'INVALID_WORKSPACE',
     'WORKSPACE_INACTIVE',
     'WORKSPACE_NOT_FOUND',
+    'WORKSPACE_ACCESS_DENIED',
 ]);
 
 export function isWorkspaceErrorCode(code: string): boolean {

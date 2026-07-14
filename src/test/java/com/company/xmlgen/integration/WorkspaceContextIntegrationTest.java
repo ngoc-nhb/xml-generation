@@ -12,6 +12,7 @@ import com.company.xmlgen.support.WorkspaceTestSupport;
 import com.company.xmlgen.workspace.context.WorkspaceContextHeaders;
 import com.company.xmlgen.workspace.entity.WorkspaceEntity;
 import com.company.xmlgen.workspace.entity.WorkspaceStatus;
+import com.company.xmlgen.workspace.entity.WorkspaceType;
 import com.company.xmlgen.workspace.repository.WorkspaceRepository;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -71,7 +72,7 @@ class WorkspaceContextIntegrationTest {
 
     @Test
     void missingWorkspaceHeaderRejected() throws Exception {
-        mockMvc.perform(get("/api/v1/workspaces").with(authentication(adminAuthentication())))
+        mockMvc.perform(get("/api/v1/templates").with(authentication(adminAuthentication())))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.errors[0].code").value("WORKSPACE_REQUIRED"));
@@ -79,7 +80,7 @@ class WorkspaceContextIntegrationTest {
 
     @Test
     void validWorkspaceHeaderAllowsRequest() throws Exception {
-        mockMvc.perform(get("/api/v1/workspaces")
+        mockMvc.perform(get("/api/v1/templates")
                         .with(authentication(adminAuthentication()))
                         .header(WorkspaceContextHeaders.WORKSPACE_ID, "1"))
                 .andExpect(status().isOk())
@@ -88,7 +89,7 @@ class WorkspaceContextIntegrationTest {
 
     @Test
     void unknownWorkspaceRejected() throws Exception {
-        mockMvc.perform(get("/api/v1/workspaces")
+        mockMvc.perform(get("/api/v1/templates")
                         .with(authentication(adminAuthentication()))
                         .header(WorkspaceContextHeaders.WORKSPACE_ID, "99999"))
                 .andExpect(status().isBadRequest())
@@ -98,10 +99,10 @@ class WorkspaceContextIntegrationTest {
     @Test
     void inactiveWorkspaceRejected() throws Exception {
         WorkspaceEntity inactive = new WorkspaceEntity(
-                "INACTIVE_CTX", "Inactive Context Test", WorkspaceStatus.INACTIVE, 1L);
+                "INACTIVE_CTX", "Inactive Context Test", WorkspaceStatus.INACTIVE, WorkspaceType.GLOBAL, 1L);
         WorkspaceEntity saved = workspaceRepository.save(inactive);
 
-        mockMvc.perform(get("/api/v1/workspaces")
+        mockMvc.perform(get("/api/v1/templates")
                         .with(authentication(adminAuthentication()))
                         .header(WorkspaceContextHeaders.WORKSPACE_ID, String.valueOf(saved.getId())))
                 .andExpect(status().isConflict())
@@ -110,7 +111,7 @@ class WorkspaceContextIntegrationTest {
 
     @Test
     void workspaceIdQueryParameterFallbackWorks() throws Exception {
-        mockMvc.perform(get("/api/v1/workspaces")
+        mockMvc.perform(get("/api/v1/templates")
                         .with(authentication(adminAuthentication()))
                         .queryParam("workspaceId", "1"))
                 .andExpect(status().isOk())

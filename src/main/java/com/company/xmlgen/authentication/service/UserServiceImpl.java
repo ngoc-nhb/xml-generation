@@ -91,7 +91,8 @@ public class UserServiceImpl implements UserService {
         String username = request.username().trim();
         validateUsernameUnique(username, null);
 
-        UserEntity entity = new UserEntity(username, passwordEncoder.encode(request.password()), request.role().toAdminFlag());
+        UserEntity entity =
+                new UserEntity(username, passwordEncoder.encode(request.password()), request.role().toAdminFlag());
 
         UserEntity saved = userRepository.save(entity);
         return userMapper.toCreateResponse(saved);

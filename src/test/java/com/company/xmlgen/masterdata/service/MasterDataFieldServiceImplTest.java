@@ -79,7 +79,10 @@ class MasterDataFieldServiceImplTest {
                 masterDataFieldRepository,
                 masterDataRecordRepository);
         masterDataFieldService = new MasterDataFieldServiceImpl(
-                masterDataFieldRepository, masterDataTypeRepository, workspaceOwnershipGuard);
+                masterDataFieldRepository,
+                masterDataTypeRepository,
+                workspaceOwnershipGuard,
+                org.mockito.Mockito.mock(com.company.xmlgen.workspace.service.UserPermissionGuard.class));
         WorkspaceTestSupport.useDefaultWorkspace();
     }
 

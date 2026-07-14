@@ -329,7 +329,10 @@ class TemplateImportServiceImplTest {
         TemplateImportSampleInputBuilder sampleInputBuilder =
                 new TemplateImportSampleInputBuilder(new com.fasterxml.jackson.databind.ObjectMapper());
         service = new TemplateImportServiceImpl(
-                new XmlImportParserImpl(), new TemplateDraftBuilderImpl(), sampleInputBuilder);
+                new XmlImportParserImpl(),
+                new TemplateDraftBuilderImpl(),
+                sampleInputBuilder,
+                org.mockito.Mockito.mock(com.company.xmlgen.workspace.service.UserPermissionGuard.class));
     }
 
     @Test

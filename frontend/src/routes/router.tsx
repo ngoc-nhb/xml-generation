@@ -14,10 +14,12 @@ import {
     WorkspaceCreatePage,
     WorkspaceEditPage,
     WorkspaceListPage,
+    WorkspacePermissionsPage,
     WorkspaceProvider,
     WorkspaceRequiredPage,
 } from '@/features/workspace';
 import { AccessDeniedPage } from '@/pages/AccessDeniedPage';
+import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
 import { NotFoundPage } from '@/pages/NotFoundPage';
 import { PlaceholderPage } from '@/pages/PlaceholderPage';
@@ -32,6 +34,7 @@ import {
 import { UserListPage } from '@/features/user-management';
 import { ProtectedRoute } from '@/routes/ProtectedRoute';
 import { DefaultHomeRedirect } from '@/routes/DefaultHomeRedirect';
+import { NavigationGuardProvider } from '@/providers/NavigationGuardProvider';
 
 export const router = createBrowserRouter([
     {
@@ -46,14 +49,16 @@ export const router = createBrowserRouter([
             {
                 element: (
                     <WorkspaceProvider>
-                        <AppShell />
+                        <NavigationGuardProvider>
+                            <AppShell />
+                        </NavigationGuardProvider>
                     </WorkspaceProvider>
                 ),
                 children: [
                     { index: true, element: <DefaultHomeRedirect /> },
+                    { path: 'dashboard', element: <DashboardPage /> },
                     {
                         path: 'templates',
-                        element: <ProtectedRoute requireAdmin />,
                         children: [
                             { index: true, element: <TemplateListPage /> },
                             { path: 'new', element: <TemplateCreatePage /> },
@@ -65,7 +70,6 @@ export const router = createBrowserRouter([
                     },
                     {
                         path: 'master-data',
-                        element: <ProtectedRoute requireAdmin />,
                         children: [
                             { index: true, element: <MasterDataTypeListPage /> },
                             { path: 'types/:typeId', element: <MasterDataTypeDetailPage /> },
@@ -82,9 +86,15 @@ export const router = createBrowserRouter([
                     {
                         path: 'workspaces',
                         children: [
-                            { index: true, element: <WorkspaceListPage /> },
-                            { path: 'new', element: <WorkspaceCreatePage /> },
+                            {
+                                element: <ProtectedRoute requireAdmin />,
+                                children: [
+                                    { index: true, element: <WorkspaceListPage /> },
+                                    { path: 'new', element: <WorkspaceCreatePage /> },
+                                ],
+                            },
                             { path: ':id/edit', element: <WorkspaceEditPage /> },
+                            { path: ':id/settings/permissions', element: <WorkspacePermissionsPage /> },
                         ],
                     },
                     {

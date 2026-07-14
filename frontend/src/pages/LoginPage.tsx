@@ -16,7 +16,7 @@ export function LoginPage() {
     const [username, setUsername] = useState('admin');
     const [password, setPassword] = useState('admin123');
 
-    const from = (location.state as { from?: string } | null)?.from ?? '/templates';
+    const from = (location.state as { from?: string } | null)?.from ?? '/dashboard';
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();

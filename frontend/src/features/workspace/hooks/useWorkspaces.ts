@@ -3,9 +3,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import * as workspaceApi from '@/features/workspace/api/workspace.api';
 import { workspaceQueryKeys } from '@/features/workspace/hooks/queryKeys';
 import type {
+    CreatePersonalWorkspaceRequest,
     CreateWorkspaceRequest,
     UpdateWorkspaceRequest,
     WorkspaceListParams,
+    WorkspacePermissionCode,
 } from '@/features/workspace/types/workspace.types';
 import { useAuth } from '@/providers/AuthProvider';
 
@@ -52,6 +54,18 @@ export function useCreateWorkspace() {
     });
 }
 
+export function useCreatePersonalWorkspace() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (request?: CreatePersonalWorkspaceRequest) =>
+            workspaceApi.createPersonalWorkspace(request ?? {}),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
+        },
+    });
+}
+
 export function useUpdateWorkspace(id: number) {
     const queryClient = useQueryClient();
 
@@ -70,6 +84,27 @@ export function useDeleteWorkspace() {
     return useMutation({
         mutationFn: (id: number) => workspaceApi.deleteWorkspace(id),
         onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
+        },
+    });
+}
+
+export function useWorkspaceMembers(workspaceId: number | undefined) {
+    return useQuery({
+        queryKey: workspaceQueryKeys.members(workspaceId ?? 0),
+        queryFn: () => workspaceApi.fetchWorkspaceMembers(workspaceId!),
+        enabled: workspaceId !== undefined && !Number.isNaN(workspaceId),
+    });
+}
+
+export function useUpdateWorkspaceMemberPermissions(workspaceId: number) {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({ userId, permissions }: { userId: number; permissions: WorkspacePermissionCode[] }) =>
+            workspaceApi.updateWorkspaceMemberPermissions(workspaceId, userId, permissions),
+        onSuccess: () => {
+            void queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.members(workspaceId) });
             void queryClient.invalidateQueries({ queryKey: workspaceQueryKeys.all });
         },
     });

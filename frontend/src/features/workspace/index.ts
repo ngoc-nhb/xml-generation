@@ -9,7 +9,12 @@ export { WorkspaceRequiredPage } from '@/features/workspace/pages/WorkspaceRequi
 export { WorkspaceListPage } from '@/features/workspace/pages/WorkspaceListPage';
 export { WorkspaceCreatePage } from '@/features/workspace/pages/WorkspaceCreatePage';
 export { WorkspaceEditPage } from '@/features/workspace/pages/WorkspaceEditPage';
-export { WorkspaceProvider, useWorkspace } from '@/features/workspace/providers/WorkspaceProvider';
+export { WorkspacePermissionsPage } from '@/features/workspace/pages/WorkspacePermissionsPage';
+export {
+    WorkspaceProvider,
+    useWorkspace,
+    NoWorkspaceEmptyState,
+} from '@/features/workspace/providers/WorkspaceProvider';
 export { useWorkspaceList } from '@/features/workspace/hooks/useWorkspaces';
 
 export type {
@@ -17,4 +22,6 @@ export type {
     WorkspaceListItem,
     WorkspaceSummary,
     WorkspaceStatus,
+    WorkspaceType,
+    WorkspacePermissionCode,
 } from '@/features/workspace/types/workspace.types';

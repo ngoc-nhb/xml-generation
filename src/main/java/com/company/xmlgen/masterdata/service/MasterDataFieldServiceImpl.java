@@ -16,6 +16,7 @@ import com.company.xmlgen.masterdata.exception.MasterDataFieldErrorCode;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataFieldRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.UserPermissionGuard;
 import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import java.util.List;
 import java.util.Map;
@@ -40,14 +41,17 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     private final MasterDataFieldRepository masterDataFieldRepository;
     private final MasterDataTypeRepository masterDataTypeRepository;
     private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
+    private final UserPermissionGuard userPermissionGuard;
 
     public MasterDataFieldServiceImpl(
             MasterDataFieldRepository masterDataFieldRepository,
             MasterDataTypeRepository masterDataTypeRepository,
-            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
+            WorkspaceOwnershipGuard workspaceOwnershipGuard,
+            UserPermissionGuard userPermissionGuard) {
         this.masterDataFieldRepository = masterDataFieldRepository;
         this.masterDataTypeRepository = masterDataTypeRepository;
         this.workspaceOwnershipGuard = workspaceOwnershipGuard;
+        this.userPermissionGuard = userPermissionGuard;
     }
 
     @Override
@@ -84,6 +88,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Override
     @Transactional
     public CreateMasterDataFieldResponse create(CreateMasterDataFieldRequest request) {
+        userPermissionGuard.requireMasterDataWritePermission();
         Long typeId = request.typeId();
         workspaceOwnershipGuard.requireMasterDataType(typeId);
 
@@ -124,6 +129,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Override
     @Transactional
     public UpdateMasterDataFieldResponse update(Long id, UpdateMasterDataFieldRequest request) {
+        userPermissionGuard.requireMasterDataWritePermission();
         MasterDataFieldEntity entity = workspaceOwnershipGuard.requireMasterDataField(id);
 
         if (masterDataFieldRepository.existsByMasterDataTypeIdAndDisplayOrderAndIdNot(
@@ -161,6 +167,7 @@ public class MasterDataFieldServiceImpl implements MasterDataFieldService {
     @Override
     @Transactional
     public void delete(Long id) {
+        userPermissionGuard.requireMasterDataWritePermission();
         MasterDataFieldEntity entity = workspaceOwnershipGuard.requireMasterDataField(id);
 
         masterDataFieldRepository.delete(entity);

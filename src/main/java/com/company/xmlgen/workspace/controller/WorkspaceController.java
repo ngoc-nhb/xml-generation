@@ -2,6 +2,7 @@ package com.company.xmlgen.workspace.controller;
 
 import com.company.xmlgen.common.api.ApiResponse;
 import com.company.xmlgen.common.api.PageResult;
+import com.company.xmlgen.workspace.dto.request.CreatePersonalWorkspaceRequest;
 import com.company.xmlgen.workspace.dto.request.CreateWorkspaceRequest;
 import com.company.xmlgen.workspace.dto.request.UpdateWorkspaceRequest;
 import com.company.xmlgen.workspace.dto.response.CreateWorkspaceResponse;
@@ -55,6 +56,14 @@ public class WorkspaceController {
     @ResponseStatus(HttpStatus.CREATED)
     public ApiResponse<CreateWorkspaceResponse> create(@Valid @RequestBody CreateWorkspaceRequest request) {
         return ApiResponse.ok(workspaceService.create(request));
+    }
+
+    @PostMapping("/personal")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ApiResponse<CreateWorkspaceResponse> createPersonal(
+            @RequestBody(required = false) CreatePersonalWorkspaceRequest request) {
+        return ApiResponse.ok(workspaceService.createPersonal(
+                request == null ? new CreatePersonalWorkspaceRequest(null) : request));
     }
 
     @PutMapping("/{id}")

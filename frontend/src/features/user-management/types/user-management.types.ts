@@ -30,3 +30,23 @@ export interface ResetPasswordRequest {
     password: string;
     confirmPassword: string;
 }
+
+export type WorkspaceMemberRole = 'WORKSPACE_ADMIN' | 'WORKSPACE_USER';
+
+export type WorkspacePermissionCode = 'IMPORT_TEMPLATE' | 'MANAGE_MASTER_DATA';
+
+export type WorkspaceType = 'GLOBAL' | 'PERSONAL';
+
+export interface UserWorkspace {
+    workspaceId: number;
+    code: string;
+    name: string;
+    type: WorkspaceType;
+    role: WorkspaceMemberRole;
+    permissions: WorkspacePermissionCode[];
+}
+
+export interface WorkspaceMembershipAssignment {
+    workspaceId: number;
+    permissions: WorkspacePermissionCode[];
+}

@@ -1,12 +1,15 @@
 import { deleteData, getData, getPaginatedData, postData, putData } from '@/api/client';
 import type { PageMeta } from '@/types/api/common';
 import type {
+    CreatePersonalWorkspaceRequest,
     CreateWorkspaceRequest,
     CreateWorkspaceResponse,
     UpdateWorkspaceRequest,
     WorkspaceDetail,
     WorkspaceListItem,
     WorkspaceListParams,
+    WorkspaceMember,
+    WorkspacePermissionCode,
     WorkspaceSummary,
 } from '@/features/workspace/types/workspace.types';
 
@@ -76,6 +79,12 @@ export async function createWorkspace(request: CreateWorkspaceRequest): Promise<
     return postData<CreateWorkspaceResponse, CreateWorkspaceRequest>('/workspaces', request);
 }
 
+export async function createPersonalWorkspace(
+    request: CreatePersonalWorkspaceRequest = {},
+): Promise<CreateWorkspaceResponse> {
+    return postData<CreateWorkspaceResponse, CreatePersonalWorkspaceRequest>('/workspaces/personal', request);
+}
+
 export async function updateWorkspace(id: number, request: UpdateWorkspaceRequest): Promise<WorkspaceDetail> {
     await putData(`/workspaces/${id}`, request);
     return fetchWorkspace(id);
@@ -83,4 +92,19 @@ export async function updateWorkspace(id: number, request: UpdateWorkspaceReques
 
 export async function deleteWorkspace(id: number): Promise<void> {
     await deleteData(`/workspaces/${id}`);
+}
+
+export async function fetchWorkspaceMembers(workspaceId: number): Promise<WorkspaceMember[]> {
+    return getData<WorkspaceMember[]>(`/workspaces/${workspaceId}/members`);
+}
+
+export async function updateWorkspaceMemberPermissions(
+    workspaceId: number,
+    userId: number,
+    permissions: WorkspacePermissionCode[],
+): Promise<WorkspaceMember> {
+    return putData<WorkspaceMember, { permissions: WorkspacePermissionCode[] }>(
+        `/workspaces/${workspaceId}/members/${userId}/permissions`,
+        { permissions },
+    );
 }

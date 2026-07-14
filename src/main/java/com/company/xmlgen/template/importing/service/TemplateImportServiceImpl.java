@@ -5,6 +5,7 @@ import com.company.xmlgen.template.importing.dto.response.TemplateImportDraftFie
 import com.company.xmlgen.template.importing.dto.response.TemplateImportDraftResponse;
 import com.company.xmlgen.template.importing.exception.XmlImportErrorCode;
 import com.company.xmlgen.template.importing.exception.XmlImportException;
+import com.company.xmlgen.workspace.service.UserPermissionGuard;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
@@ -20,18 +21,23 @@ public class TemplateImportServiceImpl implements TemplateImportService {
     private final XmlImportParser xmlImportParser;
     private final TemplateDraftBuilder templateDraftBuilder;
     private final TemplateImportSampleInputBuilder templateImportSampleInputBuilder;
+    private final UserPermissionGuard userPermissionGuard;
 
     public TemplateImportServiceImpl(
             XmlImportParser xmlImportParser,
             TemplateDraftBuilder templateDraftBuilder,
-            TemplateImportSampleInputBuilder templateImportSampleInputBuilder) {
+            TemplateImportSampleInputBuilder templateImportSampleInputBuilder,
+            UserPermissionGuard userPermissionGuard) {
         this.xmlImportParser = xmlImportParser;
         this.templateDraftBuilder = templateDraftBuilder;
         this.templateImportSampleInputBuilder = templateImportSampleInputBuilder;
+        this.userPermissionGuard = userPermissionGuard;
     }
 
     @Override
     public TemplateImportDraftResponse importXml(MultipartFile file) {
+        userPermissionGuard.requireTemplateImportPermission();
+
         if (file == null || file.isEmpty()) {
             throw new XmlImportException(XmlImportErrorCode.XML_IMPORT_EMPTY, "XML file is required.");
         }

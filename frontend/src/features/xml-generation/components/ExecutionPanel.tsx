@@ -5,6 +5,7 @@ import { ResizableSidebarLayout } from '@/components/resizable-sidebar-layout';
 import { Button } from '@/components/ui/button';
 import type { ApiError } from '@/types/api/common';
 import { ConfirmDialog } from '@/features/templates/components/ConfirmDialog';
+import { useUnsavedChangesBlocker } from '@/features/templates/hooks/useUnsavedChangesBlocker';
 import { useTemplateDetail, type TemplateListItem } from '@/features/templates';
 import { buildFieldTree } from '@/features/templates/utils/schemaTree';
 import { useSavedInput, savedInputQueryKeys } from '@/features/saved-input/hooks/useSavedInput';
@@ -12,6 +13,7 @@ import {
     DynamicInputForm,
     buildInputGroupOpenState,
     collectInputGroupKeys,
+    collectInstanceGroupKeys,
 } from '@/features/xml-generation/components/DynamicInputForm';
 import { ExportSuccessDialog } from '@/features/xml-generation/components/ExportSuccessDialog';
 import { JsonInputEditor, parseInputJson } from '@/features/xml-generation/components/JsonInputEditor';
@@ -28,7 +30,8 @@ import { useResolvedMasterDataTypes } from '@/features/xml-generation/hooks/useR
 import {
     applyMasterDataRecordToFormData,
     buildDefaultSelections,
-    removeGroupOccurrenceAndReindex,
+    duplicateGroupOccurrencesAndReindex,
+    removeGroupOccurrencesAndReindex,
 } from '@/features/xml-generation/utils/masterDataOccurrences';
 import { findOwningRepeatableGroupFieldName } from '@/features/templates/utils/schemaTree';
 import { useExportXml, usePreviewXml } from '@/features/xml-generation/hooks/useXmlGeneration';
@@ -48,6 +51,7 @@ import { logRuntimeCheckpoint, scheduleArrayLength, summarizeNestedScheduleInfo,
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 import { toast } from '@/providers/ToastProvider';
+import { useNavigationGuard } from '@/providers/NavigationGuardProvider';
 import { useQueryClient } from '@tanstack/react-query';
 
 type InputMode = 'form' | 'json';
@@ -188,7 +192,9 @@ export function ExecutionPanel() {
             return;
         }
         restoredToastTemplateId.current = selectedTemplateId;
-        toast.success(savedInputQuery.data ? 'Loaded previous input.' : 'Loaded imported data.');
+        toast.success(
+            savedInputQuery.data ? 'Restored from your last export.' : 'Loaded imported data.',
+        );
     }, [
         hasImportedData,
         savedInputQuery.data,
@@ -204,7 +210,16 @@ export function ExecutionPanel() {
     const isFormDirty =
         schemaFields.length > 0 && serializeFormState(schemaFields, formData) !== formBaseline;
     const isMasterDirty = JSON.stringify(masterDataSelections) !== masterDataBaseline;
-    const isDirty = isFormDirty || isMasterDirty;
+    const isJsonDirty = inputJsonOverride !== null && inputJson !== defaultInputJson;
+    const isDirty = isFormDirty || isMasterDirty || isJsonDirty;
+
+    const { setDirty } = useNavigationGuard();
+    const blocker = useUnsavedChangesBlocker({ when: isDirty });
+
+    useEffect(() => {
+        setDirty(isDirty);
+        return () => setDirty(false);
+    }, [isDirty, setDirty]);
 
     const schemaReady =
         Boolean(selectedTemplateId && templateDetail?.schema && !masterTypesLoading && !savedInputQuery.isLoading);
@@ -387,12 +402,28 @@ export function ExecutionPanel() {
     }
 
     /**
-     * Removing a repeatable group occurrence shifts every later occurrence's array index down.
-     * Master Data selections are keyed by that same index, so without this they'd end up
-     * pointing at the wrong occurrence (or a stale, removed one) after the shift.
+     * Removing repeatable group occurrences shifts later indices down.
+     * Master Data selections are keyed by those indices and must be reindexed together.
      */
-    function handleRepeatableItemRemove(groupFieldName: string, removedIndex: number) {
-        setMasterDataOverride(removeGroupOccurrenceAndReindex(masterDataSelections, groupFieldName, removedIndex));
+    function handleRepeatableItemsRemove(groupFieldName: string, removedIndices: number[]) {
+        setMasterDataOverride(
+            removeGroupOccurrencesAndReindex(masterDataSelections, groupFieldName, removedIndices),
+        );
+    }
+
+    function handleRepeatableItemsDuplicate(
+        groupFieldName: string,
+        selectedIndices: number[],
+        copies: number,
+    ) {
+        setMasterDataOverride(
+            duplicateGroupOccurrencesAndReindex(
+                masterDataSelections,
+                groupFieldName,
+                selectedIndices,
+                copies,
+            ),
+        );
     }
 
     /** Mirrors a picked Master Data record's values into the mapped input fields immediately. */
@@ -414,11 +445,13 @@ export function ExecutionPanel() {
     }
 
     function expandAllGroups() {
-        setGroupOpenState(buildInputGroupOpenState(groupKeys, true));
+        const keys = collectInstanceGroupKeys(buildFieldTree(schemaFields), schemaFields, formData);
+        setGroupOpenState(buildInputGroupOpenState(keys, true));
     }
 
     function collapseAllGroups() {
-        setGroupOpenState(buildInputGroupOpenState(groupKeys, false));
+        const keys = collectInstanceGroupKeys(buildFieldTree(schemaFields), schemaFields, formData);
+        setGroupOpenState(buildInputGroupOpenState(keys, false));
     }
 
     const masterDataSidebar = selectedTemplateId ? (
@@ -519,7 +552,7 @@ export function ExecutionPanel() {
                         </div>
                     ) : null}
                     {jsonError ? (
-                        <div className="mb-3 shrink-0 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+                        <div className="mb-3 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
                             {jsonError}
                         </div>
                     ) : null}
@@ -536,8 +569,10 @@ export function ExecutionPanel() {
                                     value={formData}
                                     groupOpenState={groupOpenState}
                                     onGroupOpenChange={handleGroupOpenChange}
+                                    onGroupOpenStateReplace={setGroupOpenState}
                                     onChange={(next) => setFormDataOverride(next)}
-                                    onRepeatableItemRemove={handleRepeatableItemRemove}
+                                    onRepeatableItemsRemove={handleRepeatableItemsRemove}
+                                    onRepeatableItemsDuplicate={handleRepeatableItemsDuplicate}
                                 />
                             ) : (
                                 <p className="text-sm text-muted-foreground">
@@ -573,10 +608,26 @@ export function ExecutionPanel() {
             />
 
             <ConfirmDialog
+                open={blocker.state === 'blocked'}
+                title="You have unsaved changes."
+                description={
+                    'Leaving this page will discard all current edits.\n\nDo you want to continue?'
+                }
+                cancelLabel="Cancel"
+                confirmLabel="Leave"
+                destructive
+                onConfirm={() => blocker.proceed?.()}
+                onCancel={() => blocker.reset?.()}
+            />
+
+            <ConfirmDialog
                 open={showSwitchDialog}
-                title="Switch template?"
-                description="You have unsaved input changes. Switching templates will reset the form and master data selections."
-                confirmLabel="Switch template"
+                title="You have unsaved changes."
+                description={
+                    'Leaving this page will discard all current edits.\n\nDo you want to continue?'
+                }
+                cancelLabel="Cancel"
+                confirmLabel="Leave"
                 destructive
                 onConfirm={() => {
                     setShowSwitchDialog(false);

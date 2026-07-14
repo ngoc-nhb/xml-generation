@@ -7,6 +7,8 @@ import type {
     UserDetail,
     UserListItem,
     UserListParams,
+    UserWorkspace,
+    WorkspaceMembershipAssignment,
 } from '@/features/user-management/types/user-management.types';
 
 export async function fetchUsers(
@@ -33,4 +35,18 @@ export async function updateUser(id: number, request: UpdateUserRequest): Promis
 
 export async function resetUserPassword(id: number, request: ResetPasswordRequest): Promise<void> {
     await putData(`/users/${id}/password`, request);
+}
+
+export async function fetchUserWorkspaces(userId: number): Promise<UserWorkspace[]> {
+    return getData<UserWorkspace[]>(`/users/${userId}/workspaces`);
+}
+
+export async function assignUserWorkspaces(
+    userId: number,
+    memberships: WorkspaceMembershipAssignment[],
+): Promise<UserWorkspace[]> {
+    return putData<UserWorkspace[], { memberships: WorkspaceMembershipAssignment[] }>(
+        `/users/${userId}/workspaces`,
+        { memberships },
+    );
 }

@@ -14,6 +14,7 @@ import com.company.xmlgen.masterdata.entity.MasterDataRecordEntity;
 import com.company.xmlgen.masterdata.exception.MasterDataTypeErrorCode;
 import com.company.xmlgen.masterdata.repository.MasterDataRecordRepository;
 import com.company.xmlgen.masterdata.repository.MasterDataTypeRepository;
+import com.company.xmlgen.workspace.service.UserPermissionGuard;
 import com.company.xmlgen.workspace.service.WorkspaceOwnershipGuard;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -42,18 +43,21 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     private final MasterDataValidationService masterDataValidationService;
     private final ObjectMapper objectMapper;
     private final WorkspaceOwnershipGuard workspaceOwnershipGuard;
+    private final UserPermissionGuard userPermissionGuard;
 
     public MasterDataRecordServiceImpl(
             MasterDataRecordRepository masterDataRecordRepository,
             MasterDataTypeRepository masterDataTypeRepository,
             MasterDataValidationService masterDataValidationService,
             ObjectMapper objectMapper,
-            WorkspaceOwnershipGuard workspaceOwnershipGuard) {
+            WorkspaceOwnershipGuard workspaceOwnershipGuard,
+            UserPermissionGuard userPermissionGuard) {
         this.masterDataRecordRepository = masterDataRecordRepository;
         this.masterDataTypeRepository = masterDataTypeRepository;
         this.masterDataValidationService = masterDataValidationService;
         this.objectMapper = objectMapper;
         this.workspaceOwnershipGuard = workspaceOwnershipGuard;
+        this.userPermissionGuard = userPermissionGuard;
     }
 
     @Override
@@ -88,6 +92,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional
     public MasterDataRecordDetailResponse create(CreateMasterDataRecordRequest request) {
+        userPermissionGuard.requireMasterDataWritePermission();
         workspaceOwnershipGuard.requireMasterDataType(request.typeId());
 
         validate(ValidationContext.create(request.typeId(), request.data()));
@@ -109,6 +114,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional
     public MasterDataRecordDetailResponse update(Long id, UpdateMasterDataRecordRequest request) {
+        userPermissionGuard.requireMasterDataWritePermission();
         MasterDataRecordEntity entity = workspaceOwnershipGuard.requireMasterDataRecord(id);
 
         validate(ValidationContext.update(id, entity.getMasterDataTypeId(), request.data()));
@@ -122,6 +128,7 @@ public class MasterDataRecordServiceImpl implements MasterDataRecordService {
     @Override
     @Transactional
     public void delete(Long id) {
+        userPermissionGuard.requireMasterDataWritePermission();
         MasterDataRecordEntity entity = workspaceOwnershipGuard.requireMasterDataRecord(id);
 
         masterDataRecordRepository.delete(entity);

@@ -1,6 +1,8 @@
 package com.company.xmlgen.workspace.repository;
 
 import com.company.xmlgen.workspace.entity.WorkspaceEntity;
+import com.company.xmlgen.workspace.entity.WorkspaceType;
+import java.util.Collection;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -20,4 +22,11 @@ public interface WorkspaceRepository extends JpaRepository<WorkspaceEntity, Long
     Optional<WorkspaceEntity> findByIdAndDeletedAtIsNull(Long id);
 
     Page<WorkspaceEntity> findByDeletedAtIsNull(Pageable pageable);
+
+    Page<WorkspaceEntity> findByDeletedAtIsNullAndIdIn(Collection<Long> ids, Pageable pageable);
+
+    boolean existsByCreatedByIdAndTypeAndDeletedAtIsNull(Long createdById, WorkspaceType type);
+
+    Optional<WorkspaceEntity> findByCreatedByIdAndTypeAndDeletedAtIsNull(
+            Long createdById, WorkspaceType type);
 }

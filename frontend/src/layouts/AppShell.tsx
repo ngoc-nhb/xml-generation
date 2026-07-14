@@ -1,25 +1,61 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import { Database, FileCode2, History, LogOut, Settings, Shapes, Users } from 'lucide-react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { Database, FileCode2, History, Home, LogOut, Settings, Shapes, Users } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { WorkspaceSwitcher } from '@/features/workspace';
+import {
+    NoWorkspaceEmptyState,
+    WorkspaceSwitcher,
+    useWorkspace,
+} from '@/features/workspace';
 import { usePageMetaContext, PageMetaProvider } from '@/providers/PageMetaProvider';
 import { useAuth } from '@/providers/AuthProvider';
+import { useNavigationGuard } from '@/providers/NavigationGuardProvider';
 import { cn } from '@/utils/cn';
-
-const navItems = [
-    { to: '/templates', label: 'Templates', icon: Shapes, adminOnly: true },
-    { to: '/master-data', label: 'Master Data', icon: Database, adminOnly: true },
-    { to: '/xml-generation', label: 'XML Generation', icon: FileCode2, adminOnly: false },
-    { to: '/export-history', label: 'Export History', icon: History, adminOnly: false },
-    { to: '/settings', label: 'Settings', icon: Settings, adminOnly: false },
-];
-
-const adminNavItems = [{ to: '/administration/users', label: 'User Management', icon: Users }];
 
 function AppShellContent() {
     const { user, logout } = useAuth();
+    const { currentWorkspace, hasPermission, workspaces } = useWorkspace();
+    const { requestLeave } = useNavigationGuard();
     const { meta } = usePageMetaContext();
+    const location = useLocation();
+
+    const hasAnyWorkspace = workspaces.some((workspace) => workspace.status === 'ACTIVE');
+    const workspaceScoped = Boolean(currentWorkspace);
+    const onSafeRoute =
+        location.pathname === '/dashboard' ||
+        location.pathname === '/settings' ||
+        location.pathname.startsWith('/administration');
+
+    const navItems = [
+        { to: '/dashboard', label: 'Dashboard', icon: Home, visible: true, requiresWorkspace: false },
+        { to: '/templates', label: 'Templates', icon: Shapes, visible: workspaceScoped, requiresWorkspace: true },
+        {
+            to: '/master-data',
+            label: 'Master Data',
+            icon: Database,
+            visible: workspaceScoped && Boolean(user?.isAdmin || hasPermission('MANAGE_MASTER_DATA')),
+            requiresWorkspace: true,
+        },
+        {
+            to: '/xml-generation',
+            label: 'XML Generation',
+            icon: FileCode2,
+            visible: workspaceScoped,
+            requiresWorkspace: true,
+        },
+        {
+            to: '/export-history',
+            label: 'Export History',
+            icon: History,
+            visible: workspaceScoped,
+            requiresWorkspace: true,
+        },
+        { to: '/settings', label: 'Settings', icon: Settings, visible: true, requiresWorkspace: false },
+    ];
+
+    const adminNavItems = [{ to: '/administration/users', label: 'User Management', icon: Users }];
+
+    const showEmptyWorkspace = !hasAnyWorkspace && !onSafeRoute;
 
     return (
         <div className="flex min-h-screen bg-background">
@@ -31,7 +67,7 @@ function AppShellContent() {
                 <WorkspaceSwitcher />
                 <nav className="flex-1 space-y-1 p-4">
                     {navItems
-                        .filter((item) => !item.adminOnly || user?.isAdmin)
+                        .filter((item) => item.visible)
                         .map(({ to, label, icon: Icon }) => (
                             <NavLink
                                 key={to}
@@ -79,7 +115,12 @@ function AppShellContent() {
                         <p className="text-sm font-medium text-foreground">{user?.username ?? 'Unknown'}</p>
                         {user?.isAdmin ? <p className="text-xs text-muted-foreground">Administrator</p> : null}
                     </div>
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => void logout()}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => requestLeave(() => void logout())}
+                    >
                         <LogOut className="h-4 w-4" />
                         Logout
                     </Button>
@@ -91,7 +132,7 @@ function AppShellContent() {
                     <p className="mt-1 text-sm text-muted-foreground">{meta.description}</p>
                 </header>
                 <main className="flex-1 overflow-auto p-6">
-                    <Outlet />
+                    {showEmptyWorkspace ? <NoWorkspaceEmptyState /> : <Outlet />}
                 </main>
             </div>
         </div>

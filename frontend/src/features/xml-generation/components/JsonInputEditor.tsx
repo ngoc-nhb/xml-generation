@@ -1,12 +1,14 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/select';
 import {
     EMPTY_JSON,
     formatJson,
+    formatJsonValidationMessage,
     INPUT_JSON_PLACEHOLDER,
     parseJsonObject,
+    selectTextareaOffset,
 } from '@/features/xml-generation/utils/jsonEditor';
 
 interface JsonInputEditorProps {
@@ -17,12 +19,21 @@ interface JsonInputEditorProps {
 
 export function JsonInputEditor({ value, onChange, onValidationChange }: JsonInputEditorProps) {
     const [localError, setLocalError] = useState<string | null>(null);
+    const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     function validate(text: string) {
         const result = parseJsonObject(text);
-        const message = result.ok ? null : result.message;
+        if (result.ok) {
+            setLocalError(null);
+            onValidationChange?.(null);
+            return result;
+        }
+        const message = formatJsonValidationMessage(result);
         setLocalError(message);
         onValidationChange?.(message);
+        if (result.position != null && textareaRef.current) {
+            selectTextareaOffset(textareaRef.current, result.position);
+        }
         return result;
     }
 
@@ -41,8 +52,12 @@ export function JsonInputEditor({ value, onChange, onValidationChange }: JsonInp
                                 onChange(result.formatted);
                                 validate(result.formatted);
                             } else {
-                                setLocalError(result.message);
-                                onValidationChange?.(result.message);
+                                const message = formatJsonValidationMessage(result);
+                                setLocalError(message);
+                                onValidationChange?.(message);
+                                if (result.position != null && textareaRef.current) {
+                                    selectTextareaOffset(textareaRef.current, result.position);
+                                }
                             }
                         }}
                     >
@@ -62,6 +77,7 @@ export function JsonInputEditor({ value, onChange, onValidationChange }: JsonInp
                 </div>
             </div>
             <Textarea
+                ref={textareaRef}
                 className="min-h-[320px] flex-1 font-mono text-xs"
                 value={value}
                 placeholder={INPUT_JSON_PLACEHOLDER}
@@ -73,7 +89,11 @@ export function JsonInputEditor({ value, onChange, onValidationChange }: JsonInp
                 }}
                 onBlur={(event) => validate(event.target.value)}
             />
-            {localError ? <p className="text-sm text-destructive">{localError}</p> : null}
+            {localError ? (
+                <pre className="whitespace-pre-wrap rounded-md border border-destructive/30 bg-destructive/5 p-2 text-sm text-destructive">
+                    {localError}
+                </pre>
+            ) : null}
         </div>
     );
 }

@@ -1,6 +1,7 @@
 package com.company.xmlgen.workspace.service;
 
 import com.company.xmlgen.common.api.PageResult;
+import com.company.xmlgen.workspace.dto.request.CreatePersonalWorkspaceRequest;
 import com.company.xmlgen.workspace.dto.request.CreateWorkspaceRequest;
 import com.company.xmlgen.workspace.dto.request.UpdateWorkspaceRequest;
 import com.company.xmlgen.workspace.dto.response.CreateWorkspaceResponse;
@@ -20,6 +21,8 @@ public interface WorkspaceService {
     WorkspaceResponse findById(Long id);
 
     CreateWorkspaceResponse create(CreateWorkspaceRequest request);
+
+    CreateWorkspaceResponse createPersonal(CreatePersonalWorkspaceRequest request);
 
     UpdateWorkspaceResponse update(Long id, UpdateWorkspaceRequest request);
 

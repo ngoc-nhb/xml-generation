@@ -84,7 +84,8 @@ class MasterDataRecordServiceImplTest {
                 masterDataTypeRepository,
                 masterDataValidationService,
                 objectMapper,
-                workspaceOwnershipGuard);
+                workspaceOwnershipGuard,
+                org.mockito.Mockito.mock(com.company.xmlgen.workspace.service.UserPermissionGuard.class));
         WorkspaceTestSupport.useDefaultWorkspace();
         lenient()
                 .when(masterDataTypeRepository.findByIdAndWorkspaceId(any(), eq(1L)))

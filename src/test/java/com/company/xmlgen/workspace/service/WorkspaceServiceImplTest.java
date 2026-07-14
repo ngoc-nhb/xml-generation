@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.company.xmlgen.authentication.domain.AuthenticatedUser;
+import com.company.xmlgen.authentication.repository.UserRepository;
+import com.company.xmlgen.authentication.service.AdminAuthorizationGuard;
 import com.company.xmlgen.common.api.PageResult;
 import com.company.xmlgen.exception.BusinessException;
 import com.company.xmlgen.exception.ConflictException;
@@ -20,10 +22,11 @@ import com.company.xmlgen.workspace.dto.response.WorkspaceListResponse;
 import com.company.xmlgen.workspace.dto.response.WorkspaceResponse;
 import com.company.xmlgen.workspace.entity.WorkspaceEntity;
 import com.company.xmlgen.workspace.entity.WorkspaceStatus;
+import com.company.xmlgen.workspace.entity.WorkspaceType;
 import com.company.xmlgen.workspace.exception.WorkspaceErrorCode;
 import com.company.xmlgen.workspace.mapper.WorkspaceMapper;
+import com.company.xmlgen.workspace.repository.WorkspaceMemberRepository;
 import com.company.xmlgen.workspace.repository.WorkspaceRepository;
-import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -50,10 +53,22 @@ class WorkspaceServiceImplTest {
     private WorkspaceRepository workspaceRepository;
 
     @Mock
+    private WorkspaceMemberRepository workspaceMemberRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private WorkspaceMapper workspaceMapper;
 
     @Mock
     private WorkspaceValidator workspaceValidator;
+
+    @Mock
+    private AdminAuthorizationGuard adminAuthorizationGuard;
+
+    @Mock
+    private PersonalWorkspaceService personalWorkspaceService;
 
     @InjectMocks
     private WorkspaceServiceImpl workspaceService;
@@ -73,20 +88,24 @@ class WorkspaceServiceImplTest {
     void create_success() {
         CreateWorkspaceRequest request =
                 new CreateWorkspaceRequest("ACME", "Acme Workspace", "Desc", WorkspaceStatus.ACTIVE);
-        WorkspaceEntity saved = new WorkspaceEntity("ACME", "Acme Workspace", WorkspaceStatus.ACTIVE, 1L);
+        WorkspaceEntity saved =
+                new WorkspaceEntity("ACME", "Acme Workspace", WorkspaceStatus.ACTIVE, WorkspaceType.GLOBAL, 1L);
         saved.setDescription("Desc");
         when(workspaceRepository.save(any(WorkspaceEntity.class))).thenReturn(saved);
         when(workspaceMapper.toCreateResponse(saved))
-                .thenReturn(new CreateWorkspaceResponse(2L, "ACME", "Acme Workspace", "Desc", WorkspaceStatus.ACTIVE));
+                .thenReturn(new CreateWorkspaceResponse(
+                        2L, "ACME", "Acme Workspace", "Desc", WorkspaceStatus.ACTIVE, WorkspaceType.GLOBAL));
 
         CreateWorkspaceResponse response = workspaceService.create(request);
 
         assertThat(response.code()).isEqualTo("ACME");
         verify(workspaceValidator).validateCreate(request);
+        verify(adminAuthorizationGuard).requireAdmin();
 
         ArgumentCaptor<WorkspaceEntity> captor = ArgumentCaptor.forClass(WorkspaceEntity.class);
         verify(workspaceRepository).save(captor.capture());
         assertThat(captor.getValue().getCode()).isEqualTo("ACME");
+        assertThat(captor.getValue().getType()).isEqualTo(WorkspaceType.GLOBAL);
         assertThat(captor.getValue().getCreatedById()).isEqualTo(1L);
     }
 
@@ -108,7 +127,15 @@ class WorkspaceServiceImplTest {
         when(workspaceRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(entity));
         when(workspaceMapper.toResponse(entity))
                 .thenReturn(new WorkspaceResponse(
-                        1L, "DEFAULT", "Default Workspace", null, WorkspaceStatus.ACTIVE, 1L, null, null));
+                        1L,
+                        "DEFAULT",
+                        "Default Workspace",
+                        null,
+                        WorkspaceStatus.ACTIVE,
+                        WorkspaceType.GLOBAL,
+                        1L,
+                        null,
+                        null));
 
         WorkspaceResponse response = workspaceService.findById(1L);
 
@@ -132,7 +159,7 @@ class WorkspaceServiceImplTest {
         when(workspaceRepository.save(entity)).thenReturn(entity);
         when(workspaceMapper.toUpdateResponse(entity))
                 .thenReturn(new UpdateWorkspaceResponse(
-                        2L, "ACME", "Acme Updated", "Updated", WorkspaceStatus.INACTIVE));
+                        2L, "ACME", "Acme Updated", "Updated", WorkspaceStatus.INACTIVE, WorkspaceType.GLOBAL));
 
         UpdateWorkspaceRequest request = new UpdateWorkspaceRequest("Acme Updated", "Updated", WorkspaceStatus.INACTIVE);
         UpdateWorkspaceResponse response = workspaceService.update(2L, request);
@@ -171,8 +198,9 @@ class WorkspaceServiceImplTest {
         WorkspaceEntity entity = activeWorkspace(1L, "DEFAULT", "Default Workspace");
         Page<WorkspaceEntity> page = new PageImpl<>(List.of(entity), PageRequest.of(0, 20), 1);
         when(workspaceRepository.findByDeletedAtIsNull(any(Pageable.class))).thenReturn(page);
-        when(workspaceMapper.toListResponse(entity))
-                .thenReturn(new WorkspaceListResponse(1L, "DEFAULT", "Default Workspace", WorkspaceStatus.ACTIVE));
+        when(workspaceMapper.toListResponse(entity, null, null))
+                .thenReturn(new WorkspaceListResponse(
+                        1L, "DEFAULT", "Default Workspace", WorkspaceStatus.ACTIVE, WorkspaceType.GLOBAL, null, null));
 
         PageResult<WorkspaceListResponse> result = workspaceService.findAll(1, 20);
 
@@ -181,7 +209,8 @@ class WorkspaceServiceImplTest {
     }
 
     private static WorkspaceEntity activeWorkspace(Long id, String code, String name) {
-        WorkspaceEntity entity = new WorkspaceEntity(code, name, WorkspaceStatus.ACTIVE, 1L);
+        WorkspaceEntity entity =
+                new WorkspaceEntity(code, name, WorkspaceStatus.ACTIVE, WorkspaceType.GLOBAL, 1L);
         org.springframework.test.util.ReflectionTestUtils.setField(entity, "id", id);
         entity.setDeletedAt(null);
         return entity;

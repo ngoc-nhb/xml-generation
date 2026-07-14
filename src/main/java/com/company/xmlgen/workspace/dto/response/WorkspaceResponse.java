@@ -1,6 +1,7 @@
 package com.company.xmlgen.workspace.dto.response;
 
 import com.company.xmlgen.workspace.entity.WorkspaceStatus;
+import com.company.xmlgen.workspace.entity.WorkspaceType;
 import java.time.Instant;
 
 /**
@@ -12,6 +13,7 @@ public record WorkspaceResponse(
         String name,
         String description,
         WorkspaceStatus status,
+        WorkspaceType type,
         Long createdById,
         Instant createdAt,
         Instant updatedAt) {}

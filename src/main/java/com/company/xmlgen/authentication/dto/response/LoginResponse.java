@@ -5,5 +5,4 @@ package com.company.xmlgen.authentication.dto.response;
  *
  * @see docs/06-api-design/p2_authen-api.md §15
  */
-public record LoginResponse(Long userId, String username, boolean isAdmin, String accessToken) {
-}
+public record LoginResponse(Long userId, String username, boolean isAdmin, String accessToken) {}

@@ -17,8 +17,11 @@ import type { TemplateListItem } from '@/features/templates/types/template.types
 import { ApiClientError } from '@/types/api/common';
 import { getPrimaryErrorMessage } from '@/utils/errorMessages';
 import { toast } from '@/providers/ToastProvider';
+import { useWorkspace } from '@/features/workspace';
 
 export function TemplateListPage() {
+    const { hasPermission } = useWorkspace();
+    const canImportTemplate = hasPermission('IMPORT_TEMPLATE');
     const [searchParams, setSearchParams] = useSearchParams();
     const [keywordInput, setKeywordInput] = useState(searchParams.get('keyword') ?? '');
     const [deleteTarget, setDeleteTarget] = useState<TemplateListItem | null>(null);
@@ -78,10 +81,12 @@ export function TemplateListPage() {
             <TemplatePageHeader
                 actions={
                     <div className="flex flex-wrap gap-2">
-                        <Button variant="outline" onClick={() => setImportOpen(true)}>
-                            <Upload className="h-4 w-4" />
-                            Import XML
-                        </Button>
+                        {canImportTemplate ? (
+                            <Button variant="outline" onClick={() => setImportOpen(true)}>
+                                <Upload className="h-4 w-4" />
+                                Import XML
+                            </Button>
+                        ) : null}
                         <Button asChild>
                             <Link to="/templates/new">
                                 <Plus className="h-4 w-4" />

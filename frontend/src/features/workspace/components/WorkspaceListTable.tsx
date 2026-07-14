@@ -19,6 +19,7 @@ export function WorkspaceListTable({ items, onDelete }: WorkspaceListTableProps)
                 <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Code</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Created At</TableHead>
@@ -30,6 +31,7 @@ export function WorkspaceListTable({ items, onDelete }: WorkspaceListTableProps)
                     <TableRow key={item.id}>
                         <TableCell className="font-medium">{item.name}</TableCell>
                         <TableCell>{item.code}</TableCell>
+                        <TableCell>{item.type === 'PERSONAL' ? 'Personal' : 'Global'}</TableCell>
                         <TableCell className="max-w-xs truncate text-muted-foreground">
                             {item.description?.trim() ? item.description : '—'}
                         </TableCell>
@@ -43,6 +45,11 @@ export function WorkspaceListTable({ items, onDelete }: WorkspaceListTableProps)
                                     <Link to={`/workspaces/${item.id}/edit`}>
                                         <Pencil className="h-4 w-4" />
                                         Edit
+                                    </Link>
+                                </Button>
+                                <Button asChild variant="outline" size="sm">
+                                    <Link to={`/workspaces/${item.id}/settings/permissions`}>
+                                        Permissions
                                     </Link>
                                 </Button>
                                 <Button variant="destructive" size="sm" onClick={() => onDelete(item)}>

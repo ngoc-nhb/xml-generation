@@ -51,7 +51,7 @@ class WorkspaceContextFilterTest {
 
     @Test
     void resolvesFromHeader() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/workspaces");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/templates");
         request.addHeader(WorkspaceContextHeaders.WORKSPACE_ID, "1");
         MockHttpServletResponse response = new MockHttpServletResponse();
         WorkspaceContext context = new WorkspaceContext(1L, "DEFAULT");
@@ -92,7 +92,7 @@ class WorkspaceContextFilterTest {
 
     @Test
     void missingWorkspaceRejected() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/workspaces");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/templates");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
         workspaceContextFilter.doFilter(request, response, filterChain);
@@ -115,7 +115,7 @@ class WorkspaceContextFilterTest {
 
     @Test
     void setsContextDuringFilterChain() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/workspaces");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/templates");
         request.addHeader(WorkspaceContextHeaders.WORKSPACE_ID, "1");
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicReference<WorkspaceContext> contextDuringChain = new AtomicReference<>();
@@ -180,7 +180,7 @@ class WorkspaceContextFilterTest {
         ready.countDown();
         start.await(5, TimeUnit.SECONDS);
 
-        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/workspaces");
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/templates");
         request.addHeader(WorkspaceContextHeaders.WORKSPACE_ID, workspaceId);
         MockHttpServletResponse response = new MockHttpServletResponse();
         FilterChain chain = (req, res) -> captured.set(WorkspaceContextHolder.require());

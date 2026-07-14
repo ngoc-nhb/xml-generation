@@ -6,8 +6,8 @@ import { EmptyPlaceholder } from '@/components/empty-placeholder';
 import { FullPageError } from '@/components/full-page-error';
 import { LoadingSpinner } from '@/components/loading-spinner';
 import { Button } from '@/components/ui/button';
-import { CreateUserDialog } from '@/features/user-management/components/CreateUserDialog';
-import { EditUserDialog } from '@/features/user-management/components/EditUserDialog';
+import { CreateUserDialog, type CreateUserSubmitValues } from '@/features/user-management/components/CreateUserDialog';
+import { EditUserDialog, type EditUserSubmitValues } from '@/features/user-management/components/EditUserDialog';
 import { ResetPasswordDialog } from '@/features/user-management/components/ResetPasswordDialog';
 import { UserListTable } from '@/features/user-management/components/UserListTable';
 import {
@@ -16,6 +16,7 @@ import {
     useUpdateUser,
     useUserList,
 } from '@/features/user-management/hooks/useUsers';
+import { assignUserWorkspaces } from '@/features/user-management/api/users.api';
 import type { UserListItem } from '@/features/user-management/types/user-management.types';
 import { MasterDataPagination } from '@/features/master-data/components/MasterDataPagination';
 import { ApiClientError } from '@/types/api/common';
@@ -46,9 +47,11 @@ export function UserListPage() {
         setSearchParams(next);
     }
 
-    async function handleCreate(values: { username: string; password: string; role: 'ADMIN' | 'USER' }) {
+    async function handleCreate(values: CreateUserSubmitValues) {
         try {
-            await createMutation.mutateAsync(values);
+            const { memberships, ...request } = values;
+            const created = await createMutation.mutateAsync(request);
+            await assignUserWorkspaces(created.id, memberships);
             toast.success('User created successfully.');
             setCreateOpen(false);
         } catch (createError) {
@@ -56,10 +59,12 @@ export function UserListPage() {
         }
     }
 
-    async function handleEdit(values: { username: string; role: 'ADMIN' | 'USER' }) {
+    async function handleEdit(values: EditUserSubmitValues) {
         if (!editTarget) return;
         try {
-            await updateMutation.mutateAsync(values);
+            const { memberships, ...request } = values;
+            await updateMutation.mutateAsync(request);
+            await assignUserWorkspaces(editTarget.id, memberships);
             toast.success('User updated successfully.');
             setEditTarget(null);
         } catch (updateError) {
